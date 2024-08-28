@@ -8,7 +8,7 @@
 
 
 FMontageGraphEditorMode::FMontageGraphEditorMode(const TSharedPtr<FMontageGraphEditor>& InHBCharacterEditor)
-	: FApplicationMode(FMontageGraphEditorModes::HBCombatEditorMode)
+	: FApplicationMode(FMontageGraphEditorModes::MontageGraphEditorMode)
 {
 
 	CharacterBlueprint = InHBCharacterEditor;

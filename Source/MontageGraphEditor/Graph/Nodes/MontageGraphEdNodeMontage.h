@@ -17,8 +17,8 @@ class UMontageGraphEdNodeMontage : public UMontageGraphEdNode
 public:
 	UMontageGraphEdNodeMontage();
 	
-	UPROPERTY(EditAnywhere, Category=CachedPose)
-	FString NodeName;
+	UPROPERTY(EditAnywhere, Category=Animation, meta=(DisplayPriority=-1))
+	FString AnimationName;
 
 	//~ Begin UEdGraphNode Interface
 	virtual void AllocateDefaultPins() override;

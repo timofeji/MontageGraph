@@ -18,7 +18,7 @@ class AHBWeapon;
 struct FMontageGraphEditorModes
 {
 	// Mode constants
-	static const FName HBCombatEditorMode;
+	static const FName MontageGraphEditorMode;
 
 	static FText GetLocalizedMode(const FName InMode)
 	{
@@ -26,7 +26,7 @@ struct FMontageGraphEditorModes
 
 		if (LocModes.Num() == 0)
 		{
-			LocModes.Add(HBCombatEditorMode, NSLOCTEXT("HBCombatEditorModes", "HBCombatEditorMode", "Combat"));
+			LocModes.Add(MontageGraphEditorMode, NSLOCTEXT("HBCombatEditorModes", "MontageGraphEditorMode", "Combat"));
 		}
 
 		check(InMode != NAME_None);
@@ -124,7 +124,7 @@ public:
 
 
 	static const FName ViewportTabID;
-	static const FName MontageGraphTabID;
+	static const FName GraphViewportTabID;
 	static const FName ActionNameTabID;
 	static const FName DetailsTabID;
 	static const FName PaletteTabID;

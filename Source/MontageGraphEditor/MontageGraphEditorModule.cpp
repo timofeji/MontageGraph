@@ -8,6 +8,7 @@
 
 #include "AssetTypeActions_MontageGraph.h"
 #include "Graph/MontageGraphNodePanelFactory.h"
+#include "Slate/MontageGraphDetails.h"
 
 #define LOCTEXT_NAMESPACE "FMontageGraphEditorModule"
 
@@ -30,17 +31,27 @@ void FMontageGraphEditorModule::StartupModule()
 
 	AssetTools.RegisterAssetTypeActions(MontageGraphType.ToSharedRef());
 
-	
+
 	GraphNodeFactory = MakeShareable(new FMontageGraphNodePanelFactory());
 	FEdGraphUtilities::RegisterVisualNodeFactory(GraphNodeFactory);
+
+	FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>(
+		"PropertyEditor");
+	PropertyEditorModule.RegisterCustomClassLayout("MontageGraphEdNode",
+	                                               FOnGetDetailCustomizationInstance::CreateStatic(
+		                                               &FMontageGraphDetails::MakeInstance));
 }
 
 void FMontageGraphEditorModule::ShutdownModule()
 {
 	IModuleInterface::ShutdownModule();
+
+	FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
+	PropertyEditorModule.UnregisterCustomClassLayout("MontageGraphEdNode");
+
+	FEdGraphUtilities::UnregisterVisualNodeFactory(GraphNodeFactory);
 }
 
 #undef LOCTEXT_NAMESPACE
 
-IMPLEMENT_MODULE(FMontageGraphEditorModule,MontageGraphEditor)
-
+IMPLEMENT_MODULE(FMontageGraphEditorModule, MontageGraphEditor)

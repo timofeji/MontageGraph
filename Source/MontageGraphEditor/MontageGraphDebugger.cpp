@@ -82,12 +82,12 @@ bool FMontageGraphDebugger::IsDebuggerReady() const
 
 bool FMontageGraphDebugger::IsDebuggerRunning() const
 {
-	return HBComponentOwner.IsValid();
+	return MontageGraphComponentOwner.IsValid();
 }
 
 AActor* FMontageGraphDebugger::GetSelectedActor() const
 {
-	return HBComponentOwner.IsValid() ? HBComponentOwner.Get() : nullptr;
+	return MontageGraphComponentOwner.IsValid() ? MontageGraphComponentOwner.Get() : nullptr;
 }
 
 void FMontageGraphDebugger::OnGraphNodeSelected(const UMontageGraphNode& SelectedNode)
@@ -153,7 +153,7 @@ void FMontageGraphDebugger::OnObjectSelected(UObject* Object)
 			MontageGraph_LOG(
 				Verbose, TEXT("FMontageGraphDebugger TestDebugger OnObjectSelected Update actor instance %s"),
 				*GetNameSafe(Actor))
-			HBComponentOwner = Actor;
+			MontageGraphComponentOwner = Actor;
 		}
 	}
 }
@@ -167,12 +167,12 @@ void FMontageGraphDebugger::OnGraphEvaluated(const UHBActionComponent& EvaluateT
 	// MontageGraph_LOG(Verbose, TEXT("FMontageGraphDebugger TestDebugger OnHBMontageGraphStarted bAssetMatches %s)"), bAssetMatches ? TEXT("true") : TEXT("false"))
 	//
 	// // start debugging if combo graph asset matches, and no other actor was selected
-	// if (!HBComponentOwner.IsValid() && bAssetMatches)
+	// if (!MontageGraphComponentOwner.IsValid() && bAssetMatches)
 	// {
 	// 	AActor* Avatar = InOwnerTask.Character;
 	//
 	// 	MontageGraph_LOG(Verbose, TEXT("FMontageGraphDebugger TestDebugger OnHBMontageGraphStarted SetObjeSetActorBeingDebuggedctBeingDebugged %s"), *GetNameSafe(Avatar))
-	// 	HBComponentOwner = MakeWeakObjectPtr(Avatar);
+	// 	MontageGraphComponentOwner = MakeWeakObjectPtr(Avatar);
 	// }
 	//
 	// // Update known instances if combo graph asset matches
@@ -272,7 +272,7 @@ bool FMontageGraphDebugger::IsPIENotSimulating()
 
 FString FMontageGraphDebugger::GetDebuggedInstanceDesc() const
 {
-	AActor* Actor = HBComponentOwner.Get();
+	AActor* Actor = MontageGraphComponentOwner.Get();
 	if (Actor)
 	{
 		return DescribeInstance(*Actor);
@@ -354,7 +354,7 @@ void FMontageGraphDebugger::OnInstanceSelectedInDropdown(AActor* SelectedActor)
 			SelectedActors->DeselectAll();
 		}
 
-		HBComponentOwner = SelectedActor;
+		MontageGraphComponentOwner = SelectedActor;
 
 		if (SelectedActors)
 		{

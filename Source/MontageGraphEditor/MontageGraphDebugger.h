@@ -68,7 +68,7 @@ private:
 	TWeakObjectPtr<UHBMontageGraphNodeBase> RootNode;
 
 	/** instance for debugging */
-	TWeakObjectPtr<AActor> HBComponentOwner;
+	TWeakObjectPtr<AActor> MontageGraphComponentOwner;
 
 	/** all known ComboGraph task instances, cached for dropdown list */
 	TArray<TWeakObjectPtr<UHBActionComponent>> KnownInstances;

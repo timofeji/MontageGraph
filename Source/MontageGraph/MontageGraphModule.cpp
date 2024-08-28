@@ -6,6 +6,7 @@
 
 void FMontageGraphModule::StartupModule()
 {
+	
 }
 
 void FMontageGraphModule::ShutdownModule()

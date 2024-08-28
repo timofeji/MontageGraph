@@ -11,9 +11,8 @@ UMontageGraphEdNodeMontage::UMontageGraphEdNodeMontage()
 
 void UMontageGraphEdNodeMontage::OnRenameNode(const FString& NewName)
 {
-	NodeName = NewName;
-	
-	// FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(GetBlueprint());
+	AnimationName = NewName;
+	Modify(true);
 }
 
 void UMontageGraphEdNodeMontage::AllocateDefaultPins()
@@ -37,7 +36,7 @@ void UMontageGraphEdNodeMontage::AutowireNewNode(UEdGraphPin* FromPin)
 
 FText UMontageGraphEdNodeMontage::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
-	return NodeName.IsEmpty() ?  LOCTEXT("Action Montage", "Montage") : FText::FromString(NodeName);
+	return AnimationName.IsEmpty() ?  LOCTEXT("Action Montage", "Montage") : FText::FromString(AnimationName);
 }
 
 FText UMontageGraphEdNodeMontage::GetTooltipText() const

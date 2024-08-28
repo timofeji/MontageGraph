@@ -20,8 +20,8 @@ class MONTAGEGRAPH_API UMontageGraphNode_Animation : public UMontageGraphNode
 public:
 	UMontageGraphNode_Animation();
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
-	TArray<UAnimMontage*> ActionMontages;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation", meta=(DisplayPriority=1))
+	UAnimMontage* AnimationMontage;
 
 	virtual bool SupportsAssetClass(UClass* AssetClass);
 	virtual FText GetNodeTitle() const override;

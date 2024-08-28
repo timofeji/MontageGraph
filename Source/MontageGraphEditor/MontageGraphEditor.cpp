@@ -31,15 +31,10 @@
 
 #include "MontageGraph/MontageGraph.h"
 
-const FName FMontageGraphEditor::ViewportTabID(
-	TEXT("HBCharacterEditor_Viewport"));
-const FName FMontageGraphEditor::PaletteTabID(
-	TEXT("HBCharacterEditor_ActionBinds"));
-const FName FMontageGraphEditor::DetailsTabID(TEXT("HBCharacterEditor_Details"));
-const FName FMontageGraphEditor::ActionNameTabID(TEXT("HBCharacterEditor_ActionName"));
-const FName FMontageGraphEditor::MontageGraphTabID(TEXT("HBCharacterEditor_MontageGraph"));
+const FName FMontageGraphEditor::DetailsTabID(TEXT("MontageGraph_Details"));
+const FName FMontageGraphEditor::GraphViewportTabID(TEXT("MontageGraph_Viewport"));
 
-const FName FMontageGraphEditorModes::HBCombatEditorMode("CombatEditor");
+const FName FMontageGraphEditorModes::MontageGraphEditorMode("MontageGraphEditor");
 
 const FName CharacterEditorAppName = FName(TEXT("HBCharacterEditor"));
 
@@ -387,8 +382,6 @@ void FMontageGraphEditor::InitCharacterEditor(EToolkitMode::Type Mode,
 						->SetSizeCoefficient(0.2f)
 						->AddTab(DetailsTabID,
 						         ETabState::OpenedTab)
-						->AddTab(ActionNameTabID,
-						         ETabState::OpenedTab)
 					)
 					// ->SetOrientation(Orient_Vertical)
 					// ->SetSizeCoefficient(0.2f)
@@ -429,10 +422,10 @@ void FMontageGraphEditor::InitCharacterEditor(EToolkitMode::Type Mode,
 	RebuildMontageGraph();
 
 	AddApplicationMode(
-		FMontageGraphEditorModes::HBCombatEditorMode,
+		FMontageGraphEditorModes::MontageGraphEditorMode,
 		MakeShareable(new FMontageGraphEditorMode(SharedThis(this))));
 
-	SetCurrentMode(FMontageGraphEditorModes::HBCombatEditorMode);
+	SetCurrentMode(FMontageGraphEditorModes::MontageGraphEditorMode);
 
 
 	// extend menus and toolbar
@@ -511,8 +504,8 @@ TSharedRef<SDockTab> FMontageGraphEditor::SpawnTab_Details(const FSpawnTabArgs& 
 	const auto* IconBrush = FAppStyle::GetBrush(TEXT("GenericEditor.Tabs.Properties"));
 
 	TSharedRef<SDockTab> NewTab = SNew(SDockTab)
-	.Label(LOCTEXT("CharacterDetailsTitle",
-	               "Character Details"))
+	.Label(LOCTEXT("MontageGraphDetailsTitle",
+	               "Details"))
 	.TabColorScale(GetTabColorScale())
 	[
 
@@ -566,7 +559,7 @@ void FMontageGraphEditor::DebuggerUpdateGraph(bool bIsPIEActive)
 
 TSharedRef<SDockTab> FMontageGraphEditor::SpawnTab_GraphViewport(const FSpawnTabArgs& SpawnTabArgs)
 {
-	check(SpawnTabArgs.GetTabId() == FMontageGraphEditor::MontageGraphTabID);
+	check(SpawnTabArgs.GetTabId() == FMontageGraphEditor::GraphViewportTabID);
 
 	TSharedRef<SDockTab> SpawnedTab = SNew(SDockTab)
 		.Label(LOCTEXT("MontageGraphViewportTab_Title", "Viewport"));
@@ -589,7 +582,7 @@ void FMontageGraphEditor::RegisterTabSpawners(const TSharedRef<FTabManager>& InT
 		ToSharedRef();
 	FAssetEditorToolkit::RegisterTabSpawners(InTabManager);
 
-	InTabManager->RegisterTabSpawner(FMontageGraphEditor::MontageGraphTabID,
+	InTabManager->RegisterTabSpawner(FMontageGraphEditor::GraphViewportTabID,
 	                                 FOnSpawnTab::CreateSP(this, &FMontageGraphEditor::SpawnTab_GraphViewport))
 	            .SetDisplayName(LOCTEXT("MontageGraphViewportTab", "GraphViewport"))
 	            .SetGroup(WorkspaceMenuCategoryRef)
@@ -1076,6 +1069,9 @@ void FMontageGraphEditor::OnGraphSelectionChanged(const TSet<UObject*>& NewSelec
 	if (SelectedNodes.Num() > 0)
 	{
 		DetailsView->SetObjects(SelectedNodes);
+	} else
+	{
+		DetailsView->SetObject(GraphBeingEdited);
 	}
 }
 
