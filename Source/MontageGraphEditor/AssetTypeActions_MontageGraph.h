@@ -17,7 +17,7 @@ public:
 
 
 	/** Returns the color associated with this type */
-	virtual FColor GetTypeColor() const override { return FColor(80,123,72); }
+	virtual FColor GetTypeColor() const override { return FColor(80,80,220); }
 	virtual void OpenAssetEditor(const TArray<UObject*>& InObjects,
 	                             TSharedPtr<class IToolkitHost> EditWithinLevelEditor =
 		                             TSharedPtr<

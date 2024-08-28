@@ -6,10 +6,10 @@
 #include "GameplayTagContainer.h"
 #include "SGraphPin.h"
 
-class SHBMontageGraphConduitOutputPin : public SGraphPin
+class SHBMontageGraphSelectorOutputPin : public SGraphPin
 {
 public:
-	SLATE_BEGIN_ARGS(SHBMontageGraphConduitOutputPin){}
+	SLATE_BEGIN_ARGS(SHBMontageGraphSelectorOutputPin){}
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs, UEdGraphPin* InPin);
@@ -17,7 +17,7 @@ public:
 	virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override;
 
 	
-	FGameplayTag ConduitTag;
+	FGameplayTag SelectorTag;
 	int32 TagIndex;
 protected:
 	// Begin SGraphPin interface

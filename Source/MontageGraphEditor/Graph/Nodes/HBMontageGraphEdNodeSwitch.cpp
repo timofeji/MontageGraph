@@ -37,7 +37,7 @@ FText UMontageGraphEdNodeSwitch::GetNodeTitle(ENodeTitleType::Type TitleType) co
 
 FText UMontageGraphEdNodeSwitch::GetTooltipText() const
 {
-	return LOCTEXT("Switch", "This is a conduit, which allows branching out beginning of Montage Graph based on an initial Transition Input");
+	return LOCTEXT("Switch", "This is a Selector, which allows branching out beginning of Montage Graph based on an initial Transition Input");
 }
 
 void UMontageGraphEdNodeSwitch::ValidateNodeDuringCompilation(FCompilerResultsLog& MessageLog) const

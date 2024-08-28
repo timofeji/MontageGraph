@@ -8,7 +8,7 @@
 class UMontageGraph;
 class FMontageGraphDebugger;
 class UMontageGraphEdNode;
-class UMontageGraphEdNodeConduit;
+class UMontageGraphEdNodeSelector;
 class UMontageGraphNode;
 class UHBMontageGraphNodeAnim;
 class UHBMontageGraphAbility;
@@ -39,7 +39,7 @@ public:
 	virtual void RebuildGraph();
 
 	UMontageGraph* GetHBMontageGraphModel() const;
-	void            RebuildGraphForConduit(UMontageGraph* HbMontageGraph, UMontageGraphEdNodeConduit* ConduitNode);
+	void            RebuildGraphForSelector(UMontageGraph* HbMontageGraph, UMontageGraphEdNodeSelector* SelectorNode);
 	void            RebuildGraphForEdge(UMontageGraph* OwningGraph, UMontageGraphEdNodeEdge* EdGraphEdge);
 	void            RebuildGraphForNode(UMontageGraph* OwningGraph, UMontageGraphEdNode* Node);
 	void            RebuildGraphForEntry(UMontageGraph* OwningGraph, UMontageGraphEdNodeEntry* NodeEntry);

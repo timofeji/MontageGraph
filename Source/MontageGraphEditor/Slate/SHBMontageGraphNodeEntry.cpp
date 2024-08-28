@@ -28,7 +28,7 @@ void SHBMontageGraphNodeEntry::GetNodeInfoPopups(FNodeInfoContext* Context,
 
 FSlateColor SHBMontageGraphNodeEntry::GetBorderBackgroundColor() const
 {
-	constexpr FLinearColor InactiveStateColor(1.f, 1.f, 1.f, 0.67f);
+	constexpr FLinearColor InactiveStateColor(1.f, 1.f, 1.f, 0.07f);
 	return InactiveStateColor;
 }
 

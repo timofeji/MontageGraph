@@ -4,21 +4,24 @@
 
 #include "CoreMinimal.h"
 #include "MontageGraphNode.h"
-#include "MontageGraphNode_Action.generated.h"
+#include "MontageGraphNode_Animation.generated.h"
 
 
 /**
- *  Base Class for Combo Graph nodes acting based on an Anim Sequence asset.
+ *  Base Class for MG Animation nodes acting based on an Anim Montage or Sequence asset.
  *
  *  Holds runtime properties for animation and effects / cues containers.
  */
 UCLASS(Blueprintable)
-class MONTAGEGRAPH_API UMontageGraphNode_Action : public UMontageGraphNode
+class MONTAGEGRAPH_API UMontageGraphNode_Animation : public UMontageGraphNode
 {
 	GENERATED_BODY()
 
 public:
-	UMontageGraphNode_Action();
+	UMontageGraphNode_Animation();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	TArray<UAnimMontage*> ActionMontages;
 
 	virtual bool SupportsAssetClass(UClass* AssetClass);
 	virtual FText GetNodeTitle() const override;

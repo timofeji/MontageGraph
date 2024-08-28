@@ -7,10 +7,10 @@
 #include "MontageGraph/MontageGraph.h"
 #include "MontageGraph/MontageGraphEdge.h"
 #include "MontageGraph/MontageGraphNode_Entry.h"
-#include "MontageGraph/MontageGraphNode_Conduit.h"
+#include "MontageGraph/MontageGraphNode_Selector.h"
 #include "Nodes/MontageGraphEdNode.h"
 
-#include "Nodes/HBMontageGraphEdNodeConduit.h"
+#include "Nodes/HBMontageGraphEdNodeSelector.h"
 #include "Nodes/HBMontageGraphEdNodeEdge.h"
 #include "Nodes/HBMontageGraphEdNodeEntry.h"
 
@@ -19,22 +19,22 @@ UMontageGraph* UHBMontageGraphEdGraph::GetHBMontageGraphModel() const
 	return CastChecked<UMontageGraph>(GetOuter());
 }
 
-void UHBMontageGraphEdGraph::RebuildGraphForConduit(UMontageGraph*              OwningGraph,
-                                                   UMontageGraphEdNodeConduit* ConduitNode)
+void UHBMontageGraphEdGraph::RebuildGraphForSelector(UMontageGraph*              OwningGraph,
+                                                   UMontageGraphEdNodeSelector* SelectorNode)
 {
-	UMontageGraphEdNode*      Node        = Cast<UMontageGraphEdNode>(ConduitNode);
-	UMontageGraphNode_Conduit* RuntimeNode = Cast<UMontageGraphNode_Conduit>(ConduitNode->RuntimeNode);
+	UMontageGraphEdNode*      Node        = Cast<UMontageGraphEdNode>(SelectorNode);
+	UMontageGraphNode_Selector* RuntimeNode = Cast<UMontageGraphNode_Selector>(SelectorNode->RuntimeNode);
 
 	if (!RuntimeNode)
 	{
 		return;
 	}
 
-	NodeMap.Add(RuntimeNode, ConduitNode);
+	NodeMap.Add(RuntimeNode, SelectorNode);
 
 	OwningGraph->AllNodes.Add(RuntimeNode);
 
-	for (UEdGraphPin* Pin : ConduitNode->Pins)
+	for (UEdGraphPin* Pin : SelectorNode->Pins)
 	{
 		if (Pin->Direction != EGPD_Output)
 		{
@@ -92,9 +92,9 @@ void UHBMontageGraphEdGraph::RebuildGraph()
 		{
 			RebuildGraphForEdge(HBMontageGraph, GraphEdge);
 		}
-		else if (UMontageGraphEdNodeConduit* ConduitNode = Cast<UMontageGraphEdNodeConduit>(CurrentNode))
+		else if (UMontageGraphEdNodeSelector* SelectorNode = Cast<UMontageGraphEdNodeSelector>(CurrentNode))
 		{
-			RebuildGraphForConduit(HBMontageGraph, ConduitNode);
+			RebuildGraphForSelector(HBMontageGraph, SelectorNode);
 		}
 		else if (UMontageGraphEdNode* GraphNode = Cast<UMontageGraphEdNode>(CurrentNode))
 		{
@@ -143,9 +143,9 @@ void UHBMontageGraphEdGraph::RebuildGraphForEdge(UMontageGraph* OwningGraph, UMo
 	{
 		Edge->StartNode = Node->RuntimeNode;
 	}
-	else if (const UMontageGraphEdNodeConduit* NodeConduit = Cast<UMontageGraphEdNodeConduit>(StartNode))
+	else if (const UMontageGraphEdNodeSelector* NodeSelector = Cast<UMontageGraphEdNodeSelector>(StartNode))
 	{
-		Edge->StartNode = NodeConduit->RuntimeNode;
+		Edge->StartNode = NodeSelector->RuntimeNode;
 	}
 
 	Edge->EndNode = EndNode->RuntimeNode;
@@ -159,12 +159,12 @@ void UHBMontageGraphEdGraph::RebuildGraphForEdge(UMontageGraph* OwningGraph, UMo
 void UHBMontageGraphEdGraph::RebuildGraphForNode(UMontageGraph* OwningGraph, UMontageGraphEdNode* NodeBase)
 {
 	UMontageGraphEdNode*        Node    = Cast<UMontageGraphEdNode>(NodeBase);
-	UMontageGraphEdNodeConduit* Conduit = Cast<UMontageGraphEdNodeConduit>(NodeBase);
+	UMontageGraphEdNodeSelector* Selector = Cast<UMontageGraphEdNodeSelector>(NodeBase);
 
 	UMontageGraphNode* RuntimeNode = Node
 		                                  ? Node->RuntimeNode
-		                                  : Conduit
-		                                  ? Conduit->RuntimeNode
+		                                  : Selector
+		                                  ? Selector->RuntimeNode
 		                                  : nullptr;
 
 	if (!RuntimeNode)
@@ -219,12 +219,12 @@ void UHBMontageGraphEdGraph::RebuildGraphForEntry(UMontageGraph* OwningGraph, UM
 	check(OwningGraph);
 
 	UMontageGraphEdNode*        ConnectedToNode = Cast<UMontageGraphEdNode>(NodeEntry->GetOutputNode());
-	UMontageGraphEdNodeConduit* Conduit         = Cast<UMontageGraphEdNodeConduit>(NodeEntry->GetOutputNode());
+	UMontageGraphEdNodeSelector* Selector         = Cast<UMontageGraphEdNodeSelector>(NodeEntry->GetOutputNode());
 
 	MontageGraph_LOG(Verbose, TEXT("UHBMontageGraphEdGraph::RebuildGraphForEntry ... Node: %s"),
 				  ConnectedToNode ? *ConnectedToNode->GetName() : TEXT("NONE"))
-	MontageGraph_LOG(Verbose, TEXT("UHBMontageGraphEdGraph::RebuildGraphForEntry ... Conduit: %s"),
-				  Conduit ? *Conduit->GetName() : TEXT("NONE"))
+	MontageGraph_LOG(Verbose, TEXT("UHBMontageGraphEdGraph::RebuildGraphForEntry ... Selector: %s"),
+				  Selector ? *Selector->GetName() : TEXT("NONE"))
 
 	if (ConnectedToNode)
 	{

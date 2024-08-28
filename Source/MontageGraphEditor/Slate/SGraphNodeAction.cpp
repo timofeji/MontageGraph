@@ -1,4 +1,4 @@
-#include "SHBGraphNodeAction.h"
+#include "SGraphNodeAction.h"
 
 #include "Slate/SHBMontageGraphNodeRow.h"
 #include "SCommentBubble.h"
@@ -16,10 +16,10 @@
 
 //////////////////////////////////////////////////////////////////////////
 ///
-class SHBMontageGraphPin : public SGraphPin
+class SMontageGraphPin : public SGraphPin
 {
 public:
-	SLATE_BEGIN_ARGS(SHBMontageGraphPin) {}
+	SLATE_BEGIN_ARGS(SMontageGraphPin) {}
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs, UEdGraphPin* InPin)
@@ -35,10 +35,10 @@ public:
 		check(Schema);
 
 		SBorder::Construct(SBorder::FArguments()
-			.BorderImage(this, &SHBMontageGraphPin::GetPinBorder)
-			.BorderBackgroundColor(this, &SHBMontageGraphPin::GetPinColor)
-			.OnMouseButtonDown(this, &SHBMontageGraphPin::OnPinMouseDown)
-			.Cursor(this, &SHBMontageGraphPin::GetPinCursor)
+			.BorderImage(this, &SMontageGraphPin::GetPinBorder)
+			.BorderBackgroundColor(this, &SMontageGraphPin::GetPinColor)
+			.OnMouseButtonDown(this, &SMontageGraphPin::OnPinMouseDown)
+			.Cursor(this, &SMontageGraphPin::GetPinCursor)
 			.VAlign(VAlign_Fill)
 			.HAlign(HAlign_Fill)
 			
@@ -86,7 +86,7 @@ protected:
 
 
 //////////////////////////////////////////////////////////////////////////
-void SHBGraphNodeAction::Construct(const FArguments& InArgs, UMontageGraphEdNode* InNode)
+void SGraphNodeAction::Construct(const FArguments& InArgs, UMontageGraphEdNode* InNode)
 {
 	check(InNode)
 	GraphNode = InNode;
@@ -102,7 +102,7 @@ void SHBGraphNodeAction::Construct(const FArguments& InArgs, UMontageGraphEdNode
 	InNode->SlateNode = this;
 }
 
-void SHBGraphNodeAction::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
+void SGraphNodeAction::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
 {
 	SGraphNode::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
 
@@ -112,7 +112,7 @@ void SHBGraphNodeAction::Tick(const FGeometry& AllottedGeometry, const double In
 	}
 }
 
-void SHBGraphNodeAction::UpdateGraphNode()
+void SGraphNodeAction::UpdateGraphNode()
 {
 	InputPins.Empty();
 	OutputPins.Empty();
@@ -136,7 +136,7 @@ void SHBGraphNodeAction::UpdateGraphNode()
 			SNew(SBorder)
 			.BorderImage(FAppStyle::GetBrush("Graph.StateNode.Body"))
 			.Padding(0)
-			.BorderBackgroundColor( this, &SHBGraphNodeAction::GetBorderBackgroundColor )
+			.BorderBackgroundColor( this, &SGraphNodeAction::GetBorderBackgroundColor )
 			[
 				SNew(SOverlay)
 
@@ -167,8 +167,8 @@ void SHBGraphNodeAction::UpdateGraphNode()
 						[
 							// POPUP ERROR MESSAGE
 							SAssignNew(ErrorText, SErrorText )
-							.BackgroundColor( this, &SHBGraphNodeAction::GetErrorColor )
-							.ToolTipText( this, &SHBGraphNodeAction::GetErrorMsgToolTip )
+							.BackgroundColor( this, &SGraphNodeAction::GetErrorColor )
+							.ToolTipText( this, &SGraphNodeAction::GetErrorMsgToolTip )
 						]
 						+SHorizontalBox::Slot()
 						.AutoWidth()
@@ -187,10 +187,10 @@ void SHBGraphNodeAction::UpdateGraphNode()
 								SAssignNew(InlineEditableText, SInlineEditableTextBlock)
 								.Style( FAppStyle::Get(), "Graph.StateNode.NodeTitleInlineEditableText" )
 								.Text( NodeTitle.Get(), &SNodeTitle::GetHeadTitle )
-								.OnVerifyTextChanged(this, &SHBGraphNodeAction::OnVerifyNameTextChanged)
-								.OnTextCommitted(this, &SHBGraphNodeAction::OnNameTextCommited)
-								.IsReadOnly( this, &SHBGraphNodeAction::IsNameReadOnly )
-								.IsSelected(this, &SHBGraphNodeAction::IsSelectedExclusively)
+								.OnVerifyTextChanged(this, &SGraphNodeAction::OnVerifyNameTextChanged)
+								.OnTextCommitted(this, &SGraphNodeAction::OnNameTextCommited)
+								.IsReadOnly( this, &SGraphNodeAction::IsNameReadOnly )
+								.IsSelected(this, &SGraphNodeAction::IsSelectedExclusively)
 							]
 							+SVerticalBox::Slot()
 								.AutoHeight()
@@ -234,20 +234,20 @@ void SHBGraphNodeAction::UpdateGraphNode()
 	CreatePinWidgets();
 }
 
-void SHBGraphNodeAction::CreatePinWidgets()
+void SGraphNodeAction::CreatePinWidgets()
 {
 	UMontageGraphEdNode* StateNode = CastChecked<UMontageGraphEdNode>(GraphNode);
 	
 	UEdGraphPin* CurPin = StateNode->GetOutputPin();
 	if (!CurPin->bHidden)
 	{
-		TSharedPtr<SGraphPin> NewPin = SNew(SHBMontageGraphPin, CurPin);
+		TSharedPtr<SGraphPin> NewPin = SNew(SMontageGraphPin, CurPin);
 
 		AddPin(NewPin.ToSharedRef());
 	}
 }
 
-void SHBGraphNodeAction::AddPin(const TSharedRef<SGraphPin>& PinToAdd)
+void SGraphNodeAction::AddPin(const TSharedRef<SGraphPin>& PinToAdd)
 {
 	PinToAdd->SetOwner(SharedThis(this));
 
@@ -271,7 +271,7 @@ void SHBGraphNodeAction::AddPin(const TSharedRef<SGraphPin>& PinToAdd)
 	
 }
 
-bool SHBGraphNodeAction::IsNameReadOnly() const
+bool SGraphNodeAction::IsNameReadOnly() const
 {
 	UMontageGraphEdNode* EdNode_Node = Cast<UMontageGraphEdNode>(GraphNode);
 	check(EdNode_Node != nullptr);
@@ -279,7 +279,7 @@ bool SHBGraphNodeAction::IsNameReadOnly() const
 	return (!EdNode_Node->RuntimeNode->IsNameEditable()) || SGraphNode::IsNameReadOnly();
 }
 
-void SHBGraphNodeAction::OnNameTextCommited(const FText& InText, const ETextCommit::Type CommitInfo)
+void SGraphNodeAction::OnNameTextCommited(const FText& InText, const ETextCommit::Type CommitInfo)
 {
 	SGraphNode::OnNameTextCommited(InText, CommitInfo);
 
@@ -296,23 +296,23 @@ void SHBGraphNodeAction::OnNameTextCommited(const FText& InText, const ETextComm
 	
 }
 
-FSlateColor SHBGraphNodeAction::GetBorderBackgroundColor() const
+FSlateColor SGraphNodeAction::GetBorderBackgroundColor() const
 {
 	const UMontageGraphEdNode* MyNode = CastChecked<UMontageGraphEdNode>(GraphNode);
 	return MyNode->GetBackgroundColor();
 }
 
-EVisibility SHBGraphNodeAction::GetDragOverMarkerVisibility() const
+EVisibility SGraphNodeAction::GetDragOverMarkerVisibility() const
 {
 	return EVisibility::Visible;
 }
 
-const FSlateBrush* SHBGraphNodeAction::GetNameIcon() const
+const FSlateBrush* SGraphNodeAction::GetNameIcon() const
 {
 	return FMontageGraphEditorStyles::Get().GetBrush(TEXT("HBEditor.Character.WeaponAction"));
 }
 
-void SHBGraphNodeAction::GetNodeInfoPopups(FNodeInfoContext* Context, TArray<FGraphInformationPopupInfo>& Popups) const
+void SGraphNodeAction::GetNodeInfoPopups(FNodeInfoContext* Context, TArray<FGraphInformationPopupInfo>& Popups) const
 {
 	if (!CachedGraphNode)
 	{
@@ -342,7 +342,7 @@ void SHBGraphNodeAction::GetNodeInfoPopups(FNodeInfoContext* Context, TArray<FGr
 }
 
 // ReSharper disable once CppMemberFunctionMayBeConst
-void SHBGraphNodeAction::SetErrorText(const FText InErrorText)
+void SGraphNodeAction::SetErrorText(const FText InErrorText)
 {
 	if (ErrorReporting)
 	{
@@ -350,7 +350,7 @@ void SHBGraphNodeAction::SetErrorText(const FText InErrorText)
 	}
 }
 
-FText SHBGraphNodeAction::GetMontageText()
+FText SGraphNodeAction::GetMontageText()
 {
 	if (!CachedGraphNode || !CachedGraphNode->RuntimeNode)
 	{
@@ -360,7 +360,7 @@ FText SHBGraphNodeAction::GetMontageText()
 	return CachedGraphNode->RuntimeNode->GetNodeTitle();
 }
 
-TSharedPtr<SVerticalBox> SHBGraphNodeAction::CreateNodeContent()
+TSharedPtr<SVerticalBox> SGraphNodeAction::CreateNodeContent()
 {
 	TSharedPtr<SVerticalBox> Content = SNew(SVerticalBox);
 	const TSharedPtr<SNodeTitle> NodeTitle = SNew(SNodeTitle, GraphNode);
@@ -372,10 +372,10 @@ TSharedPtr<SVerticalBox> SHBGraphNodeAction::CreateNodeContent()
 		SAssignNew(InlineEditableText, SInlineEditableTextBlock)
 		.Style(FAppStyle::Get(), "Graph.StateNode.NodeTitleInlineEditableText")
 		.Text(NodeTitle.Get(), &SNodeTitle::GetHeadTitle)
-		.OnVerifyTextChanged(this, &SHBGraphNodeAction::OnVerifyNameTextChanged)
-		.OnTextCommitted(this, &SHBGraphNodeAction::OnNameTextCommited)
-		.IsReadOnly(this, &SHBGraphNodeAction::IsNameReadOnly)
-		.IsSelected(this, &SHBGraphNodeAction::IsSelectedExclusively)
+		.OnVerifyTextChanged(this, &SGraphNodeAction::OnVerifyNameTextChanged)
+		.OnTextCommitted(this, &SGraphNodeAction::OnNameTextCommited)
+		.IsReadOnly(this, &SGraphNodeAction::IsNameReadOnly)
+		.IsSelected(this, &SGraphNodeAction::IsSelectedExclusively)
 		.Justification(ETextJustify::Center)
 	];
 
@@ -403,7 +403,7 @@ TSharedPtr<SVerticalBox> SHBGraphNodeAction::CreateNodeContent()
 		// .LabelText(CachedGraphNode->RuntimeNode->GetAnimAssetLabel())
 		// .LabelTooltipText(CachedGraphNode->RuntimeNode->GetAnimAssetLabelTooltip())
 		// .ValueTooltipText(CachedGraphNode->RuntimeNode->GetAnimAssetLabelTooltip())
-		.OnGetValueText(FACEOnGetValueText::CreateSP(this, &SHBGraphNodeAction::GetMontageText))
+		.OnGetValueText(FACEOnGetValueText::CreateSP(this, &SGraphNodeAction::GetMontageText))
 	];
 
 	/*
@@ -486,13 +486,13 @@ TSharedPtr<SVerticalBox> SHBGraphNodeAction::CreateNodeContent()
 // }
 
 
-FText SHBGraphNodeAction::GetMontageStartSectionName() const
+FText SGraphNodeAction::GetMontageStartSectionName() const
 {
 	FName StartSectionName = NAME_None;
 	return FText::FromName(StartSectionName);
 }
 
-EVisibility SHBGraphNodeAction::GetMontageStartSectionNameVisibility() const
+EVisibility SGraphNodeAction::GetMontageStartSectionNameVisibility() const
 {
 	if (!CachedGraphNode || !CachedGraphNode->RuntimeNode)
 	{
@@ -503,7 +503,7 @@ EVisibility SHBGraphNodeAction::GetMontageStartSectionNameVisibility() const
 	return StartSectionName != NAME_None ? EVisibility::Visible : EVisibility::Collapsed;
 }
 
-FText SHBGraphNodeAction::GetErrorText() const
+FText SGraphNodeAction::GetErrorText() const
 {
 	return LOCTEXT("ErrorText", "Test Error Yo");
 }

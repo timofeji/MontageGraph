@@ -4,14 +4,14 @@
 #include "CoreMinimal.h"
 #include "SGraphNode.h"
 
-class UMontageGraphNode_Action;
+class UMontageGraphNode_Animation;
 class UHBMontageGraphNodeBase;
 class UMontageGraphEdNode;
 
-class MONTAGEGRAPHEDITOR_API SHBGraphNodeAction : public SGraphNode
+class MONTAGEGRAPHEDITOR_API SGraphNodeAction : public SGraphNode
 {
 public:
-	SLATE_BEGIN_ARGS(SHBGraphNodeAction) {}
+	SLATE_BEGIN_ARGS(SGraphNodeAction) {}
 	SLATE_ARGUMENT(FMargin, ContentPadding)
 	SLATE_ARGUMENT(FMargin, ContentInternalPadding)
 	SLATE_ARGUMENT(float, PinSize)

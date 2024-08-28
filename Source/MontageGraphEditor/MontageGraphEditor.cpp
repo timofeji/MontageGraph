@@ -16,7 +16,7 @@
 #include "PersonaModule.h"
 #include "Framework/Commands/GenericCommands.h"
 #include "Graph/HBMontageGraphEdGraph.h"
-#include "Graph/HBMontageGraphSchema.h"
+#include "Graph/MontageGraphSchema.h"
 #include "Graph/Nodes/MontageGraphEdNode.h"
 #include "Graph/Nodes/HBMontageGraphEdNodeEdge.h"
 #include "Kismet2/BlueprintEditorUtils.h"
@@ -706,7 +706,7 @@ void FMontageGraphEditor::CreateEditorGraph()
 			GraphBeingEdited,
 			FName("ActionEdGraph"),
 			UHBMontageGraphEdGraph::StaticClass(),
-			UHBMontageGraphSchema::StaticClass()
+			UMontageGraphSchema::StaticClass()
 		);
 		GraphBeingEdited->EditorGraph->bAllowRenaming = false;
 		GraphBeingEdited->EditorGraph->bAllowDeletion = false;

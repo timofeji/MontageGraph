@@ -1,10 +1,10 @@
 
 
-#include "HBMontageGraphSchema.h"
+#include "MontageGraphSchema.h"
 
 #include "ConnectionDrawingPolicy.h"
 #include "EdGraphNode_Comment.h"
-#include "HBMontageGraphConnectionDrawingPolicy.h"
+#include "MontageGraphConnectionDrawingPolicy.h"
 #include "HBMontageGraphEdGraph.h"
 #include "..\MontageGraphEditorLog.h"
 #include "MontageGraphEditorTypes.h"
@@ -12,21 +12,21 @@
 #include "Animation/AnimMontage.h"
 #include "MontageGraph/MontageGraph.h"
 #include "MontageGraph/MontageGraphEdge.h"
-#include "MontageGraph/MontageGraphNode_Conduit.h"
+#include "MontageGraph/MontageGraphNode_Selector.h"
 #include "MontageGraph/MontageGraphNode_Entry.h"
-#include "MontageGraph/MontageGraphNode_Action.h"
-#include "Slate/SHBGraphNodeAction.h"
+#include "MontageGraph/MontageGraphNode_Animation.h"
+#include "Slate/SGraphNodeAction.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 
 #include "Nodes/MontageGraphEdNode.h"
-#include "Nodes/HBMontageGraphEdNodeConduit.h"
+#include "Nodes/HBMontageGraphEdNodeSelector.h"
 #include "Nodes/HBMontageGraphEdNodeEdge.h"
 #include "Nodes/HBMontageGraphEdNodeEntry.h"
 #include "Nodes/HBMontageGraphEdNodeMontage.h"
 
 #define LOCTEXT_NAMESPACE "HBMontageGraphSchema"
 
-int32 UHBMontageGraphSchema::CurrentCacheRefreshID = 0;
+int32 UMontageGraphSchema::CurrentCacheRefreshID = 0;
 
 class FACENodeVisitorCycleChecker
 {
@@ -75,9 +75,9 @@ private:
 };
 
 /////////////////////////////////////////////////////
-// FHBMontageGraphSchemaAction_AddComment
+// FMontageGraphSchemaAction_AddComment
 
-UEdGraphNode* FHBMontageGraphSchemaAction_AddComment::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
+UEdGraphNode* FMontageGraphSchemaAction_AddComment::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
 {
 	UEdGraphNode_Comment* const CommentTemplate = NewObject<UEdGraphNode_Comment>();
 
@@ -98,9 +98,9 @@ UEdGraphNode* FHBMontageGraphSchemaAction_AddComment::PerformAction(UEdGraph* Pa
 }
 
 /////////////////////////////////////////////////////
-// FHBMontageGraphSchemaAction_NewNode
+// FMontageGraphSchemaAction_NewNode
 
-UEdGraphNode* FHBMontageGraphSchemaAction_NewNode::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, const bool bSelectNewNode)
+UEdGraphNode* FMontageGraphSchemaAction_NewNode::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, const bool bSelectNewNode)
 {
 	UEdGraphNode* ResultNode = nullptr;
 
@@ -133,16 +133,16 @@ UEdGraphNode* FHBMontageGraphSchemaAction_NewNode::PerformAction(UEdGraph* Paren
 	return ResultNode;
 }
 
-void FHBMontageGraphSchemaAction_NewNode::AddReferencedObjects(FReferenceCollector& Collector)
+void FMontageGraphSchemaAction_NewNode::AddReferencedObjects(FReferenceCollector& Collector)
 {
 	FEdGraphSchemaAction::AddReferencedObjects(Collector);
 	Collector.AddReferencedObject(NodeTemplate);
 }
 
 /////////////////////////////////////////////////////
-// FHBMontageGraphSchemaAction_NewEdge
+// FMontageGraphSchemaAction_NewEdge
 
-UEdGraphNode* FHBMontageGraphSchemaAction_NewEdge::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
+UEdGraphNode* FMontageGraphSchemaAction_NewEdge::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
 {
 	UEdGraphNode* ResultNode = nullptr;
 
@@ -175,7 +175,7 @@ UEdGraphNode* FHBMontageGraphSchemaAction_NewEdge::PerformAction(UEdGraph* Paren
 	return ResultNode;
 }
 
-void FHBMontageGraphSchemaAction_NewEdge::AddReferencedObjects(FReferenceCollector& Collector)
+void FMontageGraphSchemaAction_NewEdge::AddReferencedObjects(FReferenceCollector& Collector)
 {
 	FEdGraphSchemaAction::AddReferencedObjects(Collector);
 	Collector.AddReferencedObject(NodeTemplate);
@@ -230,7 +230,7 @@ void FHBMontageGraphSchemaAction_NewNodeAction::AddReferencedObjects(FReferenceC
 // FHBMontageGraphSchemaAction_NewNodeEntry
 
 
-UEdGraphNode* FHBMontageGraphSchemaAction_NewEntryNode::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin,
+UEdGraphNode* FMontageGraphSchemaAction_NewEntryNode::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin,
 	const FVector2D Location, bool bSelectNewNode)
 {
 	UEdGraphNode* ResultNode = nullptr;
@@ -265,23 +265,23 @@ UEdGraphNode* FHBMontageGraphSchemaAction_NewEntryNode::PerformAction(UEdGraph* 
 }
 
 
-void FHBMontageGraphSchemaAction_NewEntryNode::AddReferencedObjects(FReferenceCollector& Collector)
+void FMontageGraphSchemaAction_NewEntryNode::AddReferencedObjects(FReferenceCollector& Collector)
 {
 	FEdGraphSchemaAction::AddReferencedObjects(Collector);
 	Collector.AddReferencedObject(NodeTemplate);
 }
 
 /////////////////////////////////////////////////////
-// FHBMontageGraphSchemaAction_NewNodeConduit
+// FMontageGraphSchemaAction_NewNodeSelector
 
-UEdGraphNode* FHBMontageGraphSchemaAction_NewNodeConduit::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
+UEdGraphNode* FMontageGraphSchemaAction_NewNodeSelector::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
 {
 	UEdGraphNode* ResultNode = nullptr;
 
 	// If there is a template, we actually use it
 	if (NodeTemplate != nullptr)
 	{
-		const FScopedTransaction Transaction(LOCTEXT("CombatGraphEditorNewConduit", "Montage Graph Editor: New Selector"));
+		const FScopedTransaction Transaction(LOCTEXT("CombatGraphEditorNewSelector", "Montage Graph Editor: New Selector"));
 		ParentGraph->Modify();
 		if (FromPin)
 		{
@@ -308,7 +308,7 @@ UEdGraphNode* FHBMontageGraphSchemaAction_NewNodeConduit::PerformAction(UEdGraph
 	return ResultNode;
 }
 
-void FHBMontageGraphSchemaAction_NewNodeConduit::AddReferencedObjects(FReferenceCollector& Collector)
+void FMontageGraphSchemaAction_NewNodeSelector::AddReferencedObjects(FReferenceCollector& Collector)
 {
 	FEdGraphSchemaAction::AddReferencedObjects(Collector);
 	Collector.AddReferencedObject(NodeTemplate);
@@ -317,14 +317,14 @@ void FHBMontageGraphSchemaAction_NewNodeConduit::AddReferencedObjects(FReference
 
 
 /////////////////////////////////////////////////////
-// FHBMontageGraphSchemaAction_AutoArrangeVertical
+// FMontageGraphSchemaAction_AutoArrangeVertical
 
-UEdGraphNode* FHBMontageGraphSchemaAction_AutoArrangeVertical::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
+UEdGraphNode* FMontageGraphSchemaAction_AutoArrangeVertical::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
 {
 	UHBMontageGraphEdGraph* Graph = Cast<UHBMontageGraphEdGraph>(ParentGraph);
 	if (Graph)
 	{
-		MontageGraph_LOG(Verbose, TEXT("FHBMontageGraphSchemaAction_AutoArrangeVertical::PerformAction"))
+		MontageGraph_LOG(Verbose, TEXT("FMontageGraphSchemaAction_AutoArrangeVertical::PerformAction"))
 		Graph->AutoArrange(true);
 	}
 
@@ -332,14 +332,14 @@ UEdGraphNode* FHBMontageGraphSchemaAction_AutoArrangeVertical::PerformAction(UEd
 }
 
 /////////////////////////////////////////////////////
-// FHBMontageGraphSchemaAction_AutoArrangeHorizontal
+// FMontageGraphSchemaAction_AutoArrangeHorizontal
 
-UEdGraphNode* FHBMontageGraphSchemaAction_AutoArrangeHorizontal::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
+UEdGraphNode* FMontageGraphSchemaAction_AutoArrangeHorizontal::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
 {
 	UHBMontageGraphEdGraph* Graph = Cast<UHBMontageGraphEdGraph>(ParentGraph);
 	if (Graph)
 	{
-		MontageGraph_LOG(Verbose, TEXT("FHBMontageGraphSchemaAction_AutoArrangeVertical::PerformAction Horizontal"))
+		MontageGraph_LOG(Verbose, TEXT("FMontageGraphSchemaAction_AutoArrangeVertical::PerformAction Horizontal"))
 		Graph->AutoArrange(false);
 	}
 
@@ -348,9 +348,9 @@ UEdGraphNode* FHBMontageGraphSchemaAction_AutoArrangeHorizontal::PerformAction(U
 
 
 /////////////////////////////////////////////////////
-// UHBMontageGraphSchema
+// UMontageGraphSchema
 
-void UHBMontageGraphSchema::CreateDefaultNodesForGraph(UEdGraph& Graph) const
+void UMontageGraphSchema::CreateDefaultNodesForGraph(UEdGraph& Graph) const
 {
 	UMontageGraph* HBMontageGraph = Cast<UMontageGraph>(Graph.GetOuter());
 	MontageGraph_LOG(Verbose, TEXT("CreateDefaultNodesForGraph - Graph, Outer HBMontageGraph: %s"), *GetNameSafe(HBMontageGraph))
@@ -370,12 +370,12 @@ void UHBMontageGraphSchema::CreateDefaultNodesForGraph(UEdGraph& Graph) const
 	}
 }
 
-EGraphType UHBMontageGraphSchema::GetGraphType(const UEdGraph* TestEdGraph) const
+EGraphType UMontageGraphSchema::GetGraphType(const UEdGraph* TestEdGraph) const
 {
 	return GT_StateMachine;
 }
 
-void UHBMontageGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
+void UMontageGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
 {
 	Super::GetGraphContextActions(ContextMenuBuilder);
 	const bool bHasNoParent = (ContextMenuBuilder.FromPin == nullptr);
@@ -383,20 +383,20 @@ void UHBMontageGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Con
 	// First build up non anim related actions
 	if (bHasNoParent)
 	{
-		const TSharedPtr<FHBMontageGraphSchemaAction_AddComment> Action_AddComment(
-			new FHBMontageGraphSchemaAction_AddComment(
+		const TSharedPtr<FMontageGraphSchemaAction_AddComment> Action_AddComment(
+			new FMontageGraphSchemaAction_AddComment(
 			LOCTEXT("AddComent", "Add Comment"),
 			LOCTEXT("AddComent_ToolTip", "Adds comment")
 		));
 		
-		const TSharedPtr<FHBMontageGraphSchemaAction_AutoArrangeVertical> ActionAutoArrangeVertical(new FHBMontageGraphSchemaAction_AutoArrangeVertical(
+		const TSharedPtr<FMontageGraphSchemaAction_AutoArrangeVertical> ActionAutoArrangeVertical(new FMontageGraphSchemaAction_AutoArrangeVertical(
 			LOCTEXT("AutoArrangeNodeCategory", "Auto Arrange"),
 			LOCTEXT("AutoArrangeVertical", "Auto Arrange (Vertically)"),
 			LOCTEXT("AutoArrangeVertically_ToolTip", "Re-arrange graph layout vertically (from top to bottom). Similar to Behavior Trees."),
 			0
 		));
 
-		const TSharedPtr<FHBMontageGraphSchemaAction_AutoArrangeHorizontal> ActionAutoArrangeHorizontal(new FHBMontageGraphSchemaAction_AutoArrangeHorizontal(
+		const TSharedPtr<FMontageGraphSchemaAction_AutoArrangeHorizontal> ActionAutoArrangeHorizontal(new FMontageGraphSchemaAction_AutoArrangeHorizontal(
 			LOCTEXT("AutoArrangeNodeCategory", "Auto Arrange"),
 			LOCTEXT("AutoArrangeHorizontal", "Auto Arrange (Horizontally)"),
 			LOCTEXT("AutoArrangeHorizontally_ToolTip", "Re-arrange graph layout horizontally (from left to right). This is far from perfect, but still handy. Will be revisited and improved upon in a future update."),
@@ -408,7 +408,7 @@ void UHBMontageGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Con
 		ContextMenuBuilder.AddAction(ActionAutoArrangeHorizontal);
 	}
 
-	const TSharedPtr<FHBMontageGraphSchemaAction_NewEntryNode> EntryAction(new FHBMontageGraphSchemaAction_NewEntryNode(
+	const TSharedPtr<FMontageGraphSchemaAction_NewEntryNode> EntryAction(new FMontageGraphSchemaAction_NewEntryNode(
 		LOCTEXT("MontageGraphNode", "Montage Graph Node"),
 		LOCTEXT("AddEntry", "Add Entry..."),
 		LOCTEXT("AddEntry",
@@ -419,16 +419,16 @@ void UHBMontageGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Con
 	EntryAction->NodeTemplate->RuntimeNode = NewObject<UMontageGraphNode_Entry>(EntryAction->NodeTemplate);
 	ContextMenuBuilder.AddAction(EntryAction);
 
-	const TSharedPtr<FHBMontageGraphSchemaAction_NewNodeConduit> ConduitAction(new FHBMontageGraphSchemaAction_NewNodeConduit(
+	const TSharedPtr<FMontageGraphSchemaAction_NewNodeSelector> SelectorAction(new FMontageGraphSchemaAction_NewNodeSelector(
 		LOCTEXT("MontageGraphNode", "Montage Graph Node"),
-		LOCTEXT("AddConduit", "Add Conduit..."),
-		LOCTEXT("AddConduit",
-		        "A new conduit state (suitable to use to branch out HBActions after entry point based on an initial Transition Input)"),
+		LOCTEXT("AddSelector", "Add Selector..."),
+		LOCTEXT("AddSelector",
+		        "A new Selector state (suitable to use to branch out HBActions after entry point based on an initial Transition Input)"),
 		1
 	));
-	ConduitAction->NodeTemplate = NewObject<UMontageGraphEdNodeConduit>(ContextMenuBuilder.OwnerOfTemporaries);
-	ConduitAction->NodeTemplate->RuntimeNode = NewObject<UMontageGraphNode_Conduit>(ConduitAction->NodeTemplate);
-	ContextMenuBuilder.AddAction(ConduitAction);
+	SelectorAction->NodeTemplate = NewObject<UMontageGraphEdNodeSelector>(ContextMenuBuilder.OwnerOfTemporaries);
+	SelectorAction->NodeTemplate->RuntimeNode = NewObject<UMontageGraphNode_Selector>(SelectorAction->NodeTemplate);
+	ContextMenuBuilder.AddAction(SelectorAction);
 
 	
 	const TSharedPtr<FHBMontageGraphSchemaAction_NewNodeAction> ActionNodeAction(
@@ -440,7 +440,7 @@ void UHBMontageGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Con
 			1
 		));
 	ActionNodeAction->NodeTemplate = NewObject<UMontageGraphEdNodeMontage>(ContextMenuBuilder.OwnerOfTemporaries);
-	ActionNodeAction->NodeTemplate->RuntimeNode = NewObject<UMontageGraphNode_Action>(ActionNodeAction->NodeTemplate);
+	ActionNodeAction->NodeTemplate->RuntimeNode = NewObject<UMontageGraphNode_Animation>(ActionNodeAction->NodeTemplate);
 	ContextMenuBuilder.AddAction(ActionNodeAction);
 
 
@@ -474,19 +474,19 @@ void UHBMontageGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Con
 	}
 }
 
-void UHBMontageGraphSchema::GetContextMenuActions(UToolMenu* Menu, UGraphNodeContextMenuContext* Context) const
+void UMontageGraphSchema::GetContextMenuActions(UToolMenu* Menu, UGraphNodeContextMenuContext* Context) const
 {
 	Super::GetContextMenuActions(Menu, Context);
 }
 
-FLinearColor UHBMontageGraphSchema::GetPinTypeColor(const FEdGraphPinType& PinType) const
+FLinearColor UMontageGraphSchema::GetPinTypeColor(const FEdGraphPinType& PinType) const
 {
 	// light grey
 	return FLinearColor(1.f, 0.101961f, 0.101961f, 1.0f);
 }
 
 // ReSharper disable once CppConstValueFunctionReturnType
-const FPinConnectionResponse UHBMontageGraphSchema::CanCreateConnection(const UEdGraphPin* PinA, const UEdGraphPin* PinB) const
+const FPinConnectionResponse UMontageGraphSchema::CanCreateConnection(const UEdGraphPin* PinA, const UEdGraphPin* PinB) const
 {
 	// Either one or the other is invalid
 	if (!PinA || !PinB)
@@ -519,16 +519,16 @@ const FPinConnectionResponse UHBMontageGraphSchema::CanCreateConnection(const UE
 	}
 
 
-	// Allow wiring from Entry node to Conduit Node
-	if (OwningNodeA->IsA(UMontageGraphEdNodeEntry::StaticClass()) && OwningNodeB->IsA(UMontageGraphEdNodeConduit::StaticClass()))
+	// Allow wiring from Entry node to Selector Node
+	if (OwningNodeA->IsA(UMontageGraphEdNodeEntry::StaticClass()) && OwningNodeB->IsA(UMontageGraphEdNodeSelector::StaticClass()))
 	{
-		return FPinConnectionResponse(CONNECT_RESPONSE_BREAK_OTHERS_A, LOCTEXT("PinConnectEntryToConduit", "Connect entry node to conduit."));
+		return FPinConnectionResponse(CONNECT_RESPONSE_BREAK_OTHERS_A, LOCTEXT("PinConnectEntryToSelector", "Connect entry node to Selector."));
 	}
 
-	// Allow wiring from Conduit node to HBAction nodes
-	if (OwningNodeA->IsA(UMontageGraphEdNodeConduit::StaticClass()) && HBMontageGraphNodeOut)
+	// Allow wiring from Selector node to HBAction nodes
+	if (OwningNodeA->IsA(UMontageGraphEdNodeSelector::StaticClass()) && HBMontageGraphNodeOut)
 	{
-		return FPinConnectionResponse(CONNECT_RESPONSE_MAKE, LOCTEXT("PinConnectEntryToConduit", "Connect conduit node to HBAction node"));
+		return FPinConnectionResponse(CONNECT_RESPONSE_MAKE, LOCTEXT("PinConnectEntryToSelector", "Connect Selector node to HBAction node"));
 	}
 
 	// Disallow wiring onto an entry node
@@ -564,7 +564,7 @@ const FPinConnectionResponse UHBMontageGraphSchema::CanCreateConnection(const UE
 
 }
 
-bool UHBMontageGraphSchema::TryCreateConnection(UEdGraphPin* A, UEdGraphPin* B) const
+bool UMontageGraphSchema::TryCreateConnection(UEdGraphPin* A, UEdGraphPin* B) const
 {
 	// return Super::TryCreateConnection(A, B);
 
@@ -596,18 +596,18 @@ bool UHBMontageGraphSchema::TryCreateConnection(UEdGraphPin* A, UEdGraphPin* B) 
 	return false;
 }
 
-bool UHBMontageGraphSchema::CreateAutomaticConversionNodeAndConnections(UEdGraphPin* A, UEdGraphPin* B) const
+bool UMontageGraphSchema::CreateAutomaticConversionNodeAndConnections(UEdGraphPin* A, UEdGraphPin* B) const
 {
 	UMontageGraphEdNode* NodeA = Cast<UMontageGraphEdNode>(A->GetOwningNode());
 	UMontageGraphEdNode* NodeB = Cast<UMontageGraphEdNode>(B->GetOwningNode());
 
-	// Handle conversion from conduit to HBMontageGraph Nodes
-	if (const UMontageGraphEdNodeConduit* ConduitNode = Cast<UMontageGraphEdNodeConduit>(A->GetOwningNode()))
+	// Handle conversion from Selector to HBMontageGraph Nodes
+	if (const UMontageGraphEdNodeSelector* SelectorNode = Cast<UMontageGraphEdNodeSelector>(A->GetOwningNode()))
 	{
 		if (NodeB && NodeB->GetInputPin())
 		{
-			MontageGraph_LOG(Verbose, TEXT("CreateAutomaticConversionNodeAndConnections for conduit"));
-			CreateEdgeConnection(A, B, ConduitNode, NodeB);
+			MontageGraph_LOG(Verbose, TEXT("CreateAutomaticConversionNodeAndConnections for Selector"));
+			CreateEdgeConnection(A, B, SelectorNode, NodeB);
 			return true;
 		}
 	}
@@ -625,12 +625,12 @@ bool UHBMontageGraphSchema::CreateAutomaticConversionNodeAndConnections(UEdGraph
 	return true;
 }
 
-FConnectionDrawingPolicy* UHBMontageGraphSchema::CreateConnectionDrawingPolicy(const int32 InBackLayerID, const int32 InFrontLayerID, const float InZoomFactor, const FSlateRect& InClippingRect, FSlateWindowElementList& InDrawElements, UEdGraph* InGraphObj) const
+FConnectionDrawingPolicy* UMontageGraphSchema::CreateConnectionDrawingPolicy(const int32 InBackLayerID, const int32 InFrontLayerID, const float InZoomFactor, const FSlateRect& InClippingRect, FSlateWindowElementList& InDrawElements, UEdGraph* InGraphObj) const
 {
-	return new FHBMontageGraphConnectionDrawingPolicy(InBackLayerID, InFrontLayerID, InZoomFactor, InClippingRect, InDrawElements, InGraphObj);
+	return new FMontageGraphConnectionDrawingPolicy(InBackLayerID, InFrontLayerID, InZoomFactor, InClippingRect, InDrawElements, InGraphObj);
 }
 
-void UHBMontageGraphSchema::BreakNodeLinks(UEdGraphNode& TargetNode) const
+void UMontageGraphSchema::BreakNodeLinks(UEdGraphNode& TargetNode) const
 {
 	const FScopedTransaction Transaction(NSLOCTEXT("UnrealEd", "GraphEd_BreakNodeLinks", "Break Node Links"));
 	Super::BreakNodeLinks(TargetNode);
@@ -639,7 +639,7 @@ void UHBMontageGraphSchema::BreakNodeLinks(UEdGraphNode& TargetNode) const
 	// FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
 }
 
-void UHBMontageGraphSchema::BreakPinLinks(UEdGraphPin& TargetPin, const bool bSendsNodeNotification) const
+void UMontageGraphSchema::BreakPinLinks(UEdGraphPin& TargetPin, const bool bSendsNodeNotification) const
 {
 	const FScopedTransaction Transaction(NSLOCTEXT("UnrealEd", "GraphEd_BreakPinLinks", "Break Pin Links"));
 	Super::BreakPinLinks(TargetPin, bSendsNodeNotification);
@@ -647,7 +647,7 @@ void UHBMontageGraphSchema::BreakPinLinks(UEdGraphPin& TargetPin, const bool bSe
 	// FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
 }
 
-void UHBMontageGraphSchema::BreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const
+void UMontageGraphSchema::BreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const
 {
 	const FScopedTransaction Transaction(NSLOCTEXT("UnrealEd", "GraphEd_BreakSinglePinLink", "Break Pin Link"));
 	Super::BreakSinglePinLink(SourcePin, TargetPin);
@@ -656,7 +656,7 @@ void UHBMontageGraphSchema::BreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraphP
 	// FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
 }
 
-UEdGraphPin* UHBMontageGraphSchema::DropPinOnNode(UEdGraphNode* InTargetNode, const FName& InSourcePinName, const FEdGraphPinType& InSourcePin, EEdGraphPinDirection InSourcePinDirection) const
+UEdGraphPin* UMontageGraphSchema::DropPinOnNode(UEdGraphNode* InTargetNode, const FName& InSourcePinName, const FEdGraphPinType& InSourcePin, EEdGraphPinDirection InSourcePinDirection) const
 {
 	const UMontageGraphEdNode* EdGraphNode = Cast<UMontageGraphEdNode>(InTargetNode);
 	switch (InSourcePinDirection)
@@ -670,33 +670,33 @@ UEdGraphPin* UHBMontageGraphSchema::DropPinOnNode(UEdGraphNode* InTargetNode, co
 	}
 }
 
-bool UHBMontageGraphSchema::SupportsDropPinOnNode(UEdGraphNode* InTargetNode, const FEdGraphPinType& InSourcePinType, EEdGraphPinDirection InSourcePinDirection, FText& OutErrorMessage) const
+bool UMontageGraphSchema::SupportsDropPinOnNode(UEdGraphNode* InTargetNode, const FEdGraphPinType& InSourcePinType, EEdGraphPinDirection InSourcePinDirection, FText& OutErrorMessage) const
 {
 	return Cast<UMontageGraphEdNode>(InTargetNode) != nullptr;
 }
 
-bool UHBMontageGraphSchema::IsCacheVisualizationOutOfDate(const int32 InVisualizationCacheID) const
+bool UMontageGraphSchema::IsCacheVisualizationOutOfDate(const int32 InVisualizationCacheID) const
 {
 	return CurrentCacheRefreshID != InVisualizationCacheID;
 }
 
-int32 UHBMontageGraphSchema::GetCurrentVisualizationCacheID() const
+int32 UMontageGraphSchema::GetCurrentVisualizationCacheID() const
 {
 	return CurrentCacheRefreshID;
 }
 
-void UHBMontageGraphSchema::ForceVisualizationCacheClear() const
+void UMontageGraphSchema::ForceVisualizationCacheClear() const
 {
 	++CurrentCacheRefreshID;
 }
 
-void UHBMontageGraphSchema::GetGraphDisplayInformation(const UEdGraph& Graph, FGraphDisplayInfo& DisplayInfo) const
+void UMontageGraphSchema::GetGraphDisplayInformation(const UEdGraph& Graph, FGraphDisplayInfo& DisplayInfo) const
 {
 	Super::GetGraphDisplayInformation(Graph, DisplayInfo);
 	DisplayInfo.Tooltip = LOCTEXT("DisplayInfo_Tooltip", "HBMontageGraph");
 }
 
-void UHBMontageGraphSchema::DroppedAssetsOnGraph(const TArray<FAssetData>& Assets, const FVector2D& GraphPosition, UEdGraph* Graph) const
+void UMontageGraphSchema::DroppedAssetsOnGraph(const TArray<FAssetData>& Assets, const FVector2D& GraphPosition, UEdGraph* Graph) const
 {
 	Super::DroppedAssetsOnGraph(Assets, GraphPosition, Graph);
 	if (Graph != nullptr)
@@ -708,7 +708,7 @@ void UHBMontageGraphSchema::DroppedAssetsOnGraph(const TArray<FAssetData>& Asset
 	}
 }
 
-void UHBMontageGraphSchema::DroppedAssetsOnNode(const TArray<FAssetData>& Assets, const FVector2D& GraphPosition, UEdGraphNode* Node) const
+void UMontageGraphSchema::DroppedAssetsOnNode(const TArray<FAssetData>& Assets, const FVector2D& GraphPosition, UEdGraphNode* Node) const
 {
 	Super::DroppedAssetsOnNode(Assets, GraphPosition, Node);
 
@@ -724,7 +724,7 @@ void UHBMontageGraphSchema::DroppedAssetsOnNode(const TArray<FAssetData>& Assets
 	}
 }
 
-void UHBMontageGraphSchema::DroppedAssetsOnPin(const TArray<FAssetData>& Assets, const FVector2D& GraphPosition, UEdGraphPin* Pin) const
+void UMontageGraphSchema::DroppedAssetsOnPin(const TArray<FAssetData>& Assets, const FVector2D& GraphPosition, UEdGraphPin* Pin) const
 {
 	UAnimationAsset* Asset = FAssetData::GetFirstAsset<UAnimationAsset>(Assets);
 
@@ -745,7 +745,7 @@ void UHBMontageGraphSchema::DroppedAssetsOnPin(const TArray<FAssetData>& Assets,
 	}
 }
 
-void UHBMontageGraphSchema::GetAssetsGraphHoverMessage(const TArray<FAssetData>& Assets, const UEdGraph* HoverGraph, FString& OutTooltipText, bool& bOutOkIcon) const
+void UMontageGraphSchema::GetAssetsGraphHoverMessage(const TArray<FAssetData>& Assets, const UEdGraph* HoverGraph, FString& OutTooltipText, bool& bOutOkIcon) const
 {
 	Super::GetAssetsGraphHoverMessage(Assets, HoverGraph, OutTooltipText, bOutOkIcon);
 
@@ -765,7 +765,7 @@ void UHBMontageGraphSchema::GetAssetsGraphHoverMessage(const TArray<FAssetData>&
 	}
 }
 
-void UHBMontageGraphSchema::GetAssetsPinHoverMessage(const TArray<FAssetData>& Assets, const UEdGraphPin* HoverPin, FString& OutTooltipText, bool& bOutOkIcon) const
+void UMontageGraphSchema::GetAssetsPinHoverMessage(const TArray<FAssetData>& Assets, const UEdGraphPin* HoverPin, FString& OutTooltipText, bool& bOutOkIcon) const
 {
 	Super::GetAssetsPinHoverMessage(Assets, HoverPin, OutTooltipText, bOutOkIcon);
 
@@ -807,7 +807,7 @@ void UHBMontageGraphSchema::GetAssetsPinHoverMessage(const TArray<FAssetData>& A
 	}
 }
 
-void UHBMontageGraphSchema::GetAssetsNodeHoverMessage(const TArray<FAssetData>& Assets, const UEdGraphNode* HoverNode, FString& OutTooltipText, bool& bOutOkIcon) const
+void UMontageGraphSchema::GetAssetsNodeHoverMessage(const TArray<FAssetData>& Assets, const UEdGraphNode* HoverNode, FString& OutTooltipText, bool& bOutOkIcon) const
 {
 	Super::GetAssetsNodeHoverMessage(Assets, HoverNode, OutTooltipText, bOutOkIcon);
 
@@ -832,12 +832,12 @@ void UHBMontageGraphSchema::GetAssetsNodeHoverMessage(const TArray<FAssetData>& 
 	}
 }
 
-bool UHBMontageGraphSchema::CanDuplicateGraph(UEdGraph* InSourceGraph) const
+bool UMontageGraphSchema::CanDuplicateGraph(UEdGraph* InSourceGraph) const
 {
 	return false;
 }
 
-int32 UHBMontageGraphSchema::GetNodeSelectionCount(const UEdGraph* Graph) const
+int32 UMontageGraphSchema::GetNodeSelectionCount(const UEdGraph* Graph) const
 {
 	if (Graph)
 	{
@@ -851,15 +851,15 @@ int32 UHBMontageGraphSchema::GetNodeSelectionCount(const UEdGraph* Graph) const
 	return 0;
 }
 
-TSharedPtr<FEdGraphSchemaAction> UHBMontageGraphSchema::GetCreateCommentAction() const
+TSharedPtr<FEdGraphSchemaAction> UMontageGraphSchema::GetCreateCommentAction() const
 {
-	return TSharedPtr<FEdGraphSchemaAction>(static_cast<FEdGraphSchemaAction*>(new FHBMontageGraphSchemaAction_AddComment));
+	return TSharedPtr<FEdGraphSchemaAction>(static_cast<FEdGraphSchemaAction*>(new FMontageGraphSchemaAction_AddComment));
 }
 
-void UHBMontageGraphSchema::SpawnNodeFromAsset(UAnimationAsset* Asset, const FVector2D& GraphPosition, UEdGraph* Graph, UEdGraphPin* PinIfAvailable)
+void UMontageGraphSchema::SpawnNodeFromAsset(UAnimationAsset* Asset, const FVector2D& GraphPosition, UEdGraph* Graph, UEdGraphPin* PinIfAvailable)
 {
 	check(Graph);
-	check(Graph->GetSchema()->IsA(UHBMontageGraphSchema::StaticClass()));
+	check(Graph->GetSchema()->IsA(UMontageGraphSchema::StaticClass()));
 	check(Asset);
 
 	const bool bDirectionMatch = (PinIfAvailable == nullptr) || IsHoverPinMatching(PinIfAvailable);
@@ -874,14 +874,14 @@ void UHBMontageGraphSchema::SpawnNodeFromAsset(UAnimationAsset* Asset, const FVe
 			NewNode->RuntimeNode = NewObject<UMontageGraphNode>(NewNode, NewRuntimeClass);
 			// NewNode->RuntimeNode->SetAnimationAsset(Asset);
 
-			FHBMontageGraphSchemaAction_NewNode Action;
+			FMontageGraphSchemaAction_NewNode Action;
 			Action.NodeTemplate = NewNode;
 			Action.PerformAction(Graph, PinIfAvailable, GraphPosition);
 		}
 	}
 }
 
-UClass* UHBMontageGraphSchema::GetNodeClassForAnimAsset(const UAnimationAsset* Asset, const UEdGraph* Graph)
+UClass* UMontageGraphSchema::GetNodeClassForAnimAsset(const UAnimationAsset* Asset, const UEdGraph* Graph)
 {
 	if (Asset->GetClass()->IsChildOf(UAnimMontage::StaticClass()))
 	{
@@ -896,7 +896,7 @@ UClass* UHBMontageGraphSchema::GetNodeClassForAnimAsset(const UAnimationAsset* A
 	return nullptr;
 }
 
-UClass* UHBMontageGraphSchema::GetRuntimeClassForAnimAsset(const UAnimationAsset* Asset, const UEdGraph* Graph)
+UClass* UMontageGraphSchema::GetRuntimeClassForAnimAsset(const UAnimationAsset* Asset, const UEdGraph* Graph)
 {
 	UMontageGraph* HBMontageGraph = Cast<UMontageGraph>(Graph->GetOuter());
 	//
@@ -913,7 +913,7 @@ UClass* UHBMontageGraphSchema::GetRuntimeClassForAnimAsset(const UAnimationAsset
 	return nullptr;
 }
 
-bool UHBMontageGraphSchema::SupportNodeClassForAsset(UClass* AssetClass, const UEdGraphNode* InGraphNode)
+bool UMontageGraphSchema::SupportNodeClassForAsset(UClass* AssetClass, const UEdGraphNode* InGraphNode)
 {
 	const UMontageGraphEdNode* GraphNode = Cast<UMontageGraphEdNode>(InGraphNode);
 	if (GraphNode && GraphNode->RuntimeNode)
@@ -925,7 +925,7 @@ bool UHBMontageGraphSchema::SupportNodeClassForAsset(UClass* AssetClass, const U
 	return false;
 }
 
-void UHBMontageGraphSchema::CreateEdgeConnection(UEdGraphPin* PinA, UEdGraphPin* PinB, const UMontageGraphEdNode* OwningNodeA, const UMontageGraphEdNode* OwningNodeB) const
+void UMontageGraphSchema::CreateEdgeConnection(UEdGraphPin* PinA, UEdGraphPin* PinB, const UMontageGraphEdNode* OwningNodeA, const UMontageGraphEdNode* OwningNodeB) const
 {
 	const FVector2D InitPos((OwningNodeA->NodePosX + OwningNodeB->NodePosX) / 2, (OwningNodeA->NodePosY + OwningNodeB->NodePosY) / 2);
 
@@ -938,7 +938,7 @@ void UHBMontageGraphSchema::CreateEdgeConnection(UEdGraphPin* PinA, UEdGraphPin*
 	// 	}
 	// }
 
-	FHBMontageGraphSchemaAction_NewEdge Action;
+	FMontageGraphSchemaAction_NewEdge Action;
 	Action.NodeTemplate = NewObject<UMontageGraphEdNodeEdge>(OwningNodeA->GetGraph());
 
 	UMontageGraphEdge* RuntimeEdge = NewObject<UMontageGraphEdge>(Action.NodeTemplate, UMontageGraphEdge::StaticClass());
@@ -951,7 +951,7 @@ void UHBMontageGraphSchema::CreateEdgeConnection(UEdGraphPin* PinA, UEdGraphPin*
 	
 }
 
-void UHBMontageGraphSchema::CreateAndAddActionToContextMenu(FGraphContextMenuBuilder& ContextMenuBuilder, const TSubclassOf<UMontageGraphNode> NodeType) const
+void UMontageGraphSchema::CreateAndAddActionToContextMenu(FGraphContextMenuBuilder& ContextMenuBuilder, const TSubclassOf<UMontageGraphNode> NodeType) const
 {
 	if (!NodeType)
 	{
@@ -995,13 +995,13 @@ void UHBMontageGraphSchema::CreateAndAddActionToContextMenu(FGraphContextMenuBui
 		Description = FText::FromString(FString::Printf(TEXT("%s (%s)"), *Description.ToString(), *NodeName));
 	}
 
-	const TSharedPtr<FHBMontageGraphSchemaAction_NewNode> Action(new FHBMontageGraphSchemaAction_NewNode(Category, Description, AddToolTip, 1));
+	const TSharedPtr<FMontageGraphSchemaAction_NewNode> Action(new FMontageGraphSchemaAction_NewNode(Category, Description, AddToolTip, 1));
 	Action->NodeTemplate = NewObject<UMontageGraphEdNode>(ContextMenuBuilder.OwnerOfTemporaries, "Template");
 	Action->NodeTemplate->RuntimeNode = NewObject<UMontageGraphNode>(Action->NodeTemplate, NodeType);
 	ContextMenuBuilder.AddAction(Action);
 }
 
-bool UHBMontageGraphSchema::IsHoverPinMatching(const UEdGraphPin* InHoverPin)
+bool UMontageGraphSchema::IsHoverPinMatching(const UEdGraphPin* InHoverPin)
 {
 	check(InHoverPin);
 
@@ -1011,7 +1011,7 @@ bool UHBMontageGraphSchema::IsHoverPinMatching(const UEdGraphPin* InHoverPin)
 	return (InHoverPin->Direction == EGPD_Input || InHoverPin->Direction == EGPD_Output) && bIsValidName;
 }
 
-FVector2D UHBMontageGraphSchema::GetFixedOffsetFromPin(const UEdGraphPin* InHoverPin)
+FVector2D UMontageGraphSchema::GetFixedOffsetFromPin(const UEdGraphPin* InHoverPin)
 {
 	// If don't have access to bounding information for node, using fixed offset that should work for most cases.
 	// Start at 450.f, and is further refined based on SlateNode bounding info is available

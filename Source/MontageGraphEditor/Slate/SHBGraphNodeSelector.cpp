@@ -1,19 +1,19 @@
 ﻿// Created by Timofej Jermolaev, All rights reserved . 
 
 
-#include "SHBGraphNodeConduit.h"
+#include "SHBGraphNodeSelector.h"
 #include "GraphEditorSettings.h"
 #include "MontageGraphEditorStyles.h"
 #include "IDocumentation.h"
 #include "SCommentBubble.h"
 #include "SGraphPin.h"
-#include "Graph/Nodes/HBMontageGraphEdNodeConduit.h"
-#include "SHBMontageGraphConduitOutputPin.h"
+#include "Graph/Nodes/HBMontageGraphEdNodeSelector.h"
+#include "SHBMontageGraphSelectorOutputPin.h"
 #include "Widgets/Layout/SScaleBox.h"
 
-#define LOCTEXT_NAMESPACE "SHBMontageGraphNodeConduit"
+#define LOCTEXT_NAMESPACE "SHBMontageGraphNodeSelector"
 
-void SHBGraphNodeConduit::Construct(const FArguments& InArgs, UMontageGraphEdNodeConduit* InNode)
+void SHBGraphNodeSelector::Construct(const FArguments& InArgs, UMontageGraphEdNodeSelector* InNode)
 {
 	GraphNode = InNode;
 	CachedGraphNode = InNode;
@@ -21,16 +21,16 @@ void SHBGraphNodeConduit::Construct(const FArguments& InArgs, UMontageGraphEdNod
 	UpdateGraphNode();
 }
 
-void SHBGraphNodeConduit::RefreshOutputPins()
+void SHBGraphNodeSelector::RefreshOutputPins()
 {
 	bool bShouldUpdate = true;
-	UMontageGraphEdNodeConduit* StateNode = CastChecked<UMontageGraphEdNodeConduit>(GraphNode);
+	UMontageGraphEdNodeSelector* StateNode = CastChecked<UMontageGraphEdNodeSelector>(GraphNode);
 
 	if (bShouldUpdate) { CreatePinWidgets(); }
 }
 
 
-void SHBGraphNodeConduit::UpdateGraphNode()
+void SHBGraphNodeSelector::UpdateGraphNode()
 {
 	// Reset variables that are going to be exposed, in case we are refreshing an already setup node.
 	const FSlateBrush* NodeTypeIcon = GetNameIcon();
@@ -47,7 +47,7 @@ void SHBGraphNodeConduit::UpdateGraphNode()
 	[
 		SNew(SBorder)
 		.BorderImage(FMontageGraphEditorStyles::Get().GetBrush("HBEditor.MontageGraph.Node.BackgroundLight"))
-		.BorderBackgroundColor(this, &SHBGraphNodeConduit::GetBorderBackgroundColor)
+		.BorderBackgroundColor(this, &SHBGraphNodeSelector::GetBorderBackgroundColor)
 		.Padding(5.f)
 		[
 			SNew(SBox)
@@ -74,8 +74,8 @@ void SHBGraphNodeConduit::UpdateGraphNode()
 			// 		[
 			// 			// POPUP ERROR MESSAGE @todo ~Tim: Add error text on validation 
 			// 			SAssignNew(ErrorText, SErrorText)
-			// 			.BackgroundColor(this, &SHBMontageGraphNodeConduit::GetErrorColor)
-			// 			.ToolTipText(this, &SHBMontageGraphNodeConduit::GetErrorMsgToolTip)
+			// 			.BackgroundColor(this, &SHBMontageGraphNodeSelector::GetErrorColor)
+			// 			.ToolTipText(this, &SHBMontageGraphNodeSelector::GetErrorMsgToolTip)
 			// 		]
 			// 	]
 			// ]
@@ -115,7 +115,7 @@ void SHBGraphNodeConduit::UpdateGraphNode()
 	CreatePinWidgets();
 }
 
-void SHBGraphNodeConduit::CreatePinWidgets()
+void SHBGraphNodeSelector::CreatePinWidgets()
 {
 	OutNodeBox->ClearChildren();
 	UMontageGraphEdNode* StateNode = CastChecked<UMontageGraphEdNode>(CachedGraphNode);
@@ -125,7 +125,7 @@ void SHBGraphNodeConduit::CreatePinWidgets()
 		UEdGraphPin* MyPin = StateNode->Pins[PinIdx];
 		if (!MyPin->bHidden && MyPin->Direction == EGPD_Output)
 		{
-			TSharedPtr<SGraphPin> NewPin = SNew(SHBMontageGraphConduitOutputPin, MyPin);
+			TSharedPtr<SGraphPin> NewPin = SNew(SHBMontageGraphSelectorOutputPin, MyPin);
 			NewPin->SetOwner(SharedThis(this));
 			OutNodeBox->AddSlot()
 			          .HAlign(HAlign_Fill)
@@ -152,7 +152,7 @@ void SHBGraphNodeConduit::CreatePinWidgets()
 	}
 }
 
-void SHBGraphNodeConduit::AddPin(const TSharedRef<SGraphPin>& PinToAdd)
+void SHBGraphNodeSelector::AddPin(const TSharedRef<SGraphPin>& PinToAdd)
 {
 	PinToAdd->SetOwner(SharedThis(this));
 	RightNodeBox->AddSlot()
@@ -165,9 +165,9 @@ void SHBGraphNodeConduit::AddPin(const TSharedRef<SGraphPin>& PinToAdd)
 	OutputPins.Add(PinToAdd);
 }
 
-TSharedPtr<SToolTip> SHBGraphNodeConduit::GetComplexTooltip()
+TSharedPtr<SToolTip> SHBGraphNodeSelector::GetComplexTooltip()
 {
-	UMontageGraphEdNodeConduit* StateNode = CastChecked<UMontageGraphEdNodeConduit>(GraphNode);
+	UMontageGraphEdNodeSelector* StateNode = CastChecked<UMontageGraphEdNodeSelector>(GraphNode);
 
 	return SNew(SToolTip)
 	[
@@ -182,7 +182,7 @@ TSharedPtr<SToolTip> SHBGraphNodeConduit::GetComplexTooltip()
 		// 	// Create the tooltip preview, ensure to disable state overlays to stop
 		// 	// PIE and read-only borders obscuring the graph
 		// 	SNew(SGraphPreviewer, StateNode->GetBoundGraph())
-		// 	.CornerOverlayText(this, &SHBMontageGraphNodeConduit::GetPreviewCornerText)
+		// 	.CornerOverlayText(this, &SHBMontageGraphNodeSelector::GetPreviewCornerText)
 		// 	.ShowGraphStateOverlay(false)
 		// ]
 
@@ -198,7 +198,7 @@ TSharedPtr<SToolTip> SHBGraphNodeConduit::GetComplexTooltip()
 	];
 }
 
-FSlateColor SHBGraphNodeConduit::GetBorderBackgroundColor() const
+FSlateColor SHBGraphNodeSelector::GetBorderBackgroundColor() const
 {
 	// Intentionally basic (might consider adding debug states here)
 	constexpr FLinearColor InactiveStateColor(0.08f, 0.08f, 0.08f);
@@ -208,9 +208,9 @@ FSlateColor SHBGraphNodeConduit::GetBorderBackgroundColor() const
 	return InactiveStateColor;
 }
 
-const FSlateBrush* SHBGraphNodeConduit::GetNameIcon() const
+const FSlateBrush* SHBGraphNodeSelector::GetNameIcon() const
 {
-	return FAppStyle::GetBrush(TEXT("Graph.ConduitNode.Icon"));
+	return FAppStyle::GetBrush(TEXT("Graph.SelectorNode.Icon"));
 }
 
 #undef LOCTEXT_NAMESPACE

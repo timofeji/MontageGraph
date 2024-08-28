@@ -4,7 +4,7 @@
 #include "ConnectionDrawingPolicy.h"
 #include "HBMontageGraphEdGraph.h"
 
-class MONTAGEGRAPHEDITOR_API FHBMontageGraphConnectionDrawingPolicy : public FConnectionDrawingPolicy
+class MONTAGEGRAPHEDITOR_API FMontageGraphConnectionDrawingPolicy : public FConnectionDrawingPolicy
 {
 protected:
 	UEdGraph* GraphObj;
@@ -12,7 +12,7 @@ protected:
 	UHBMontageGraphEdGraph* HBActionEdGraph;
 
 public:
-	FHBMontageGraphConnectionDrawingPolicy(int32 InBackLayerID, int32 InFrontLayerID, float ZoomFactor, const FSlateRect& InClippingRect, FSlateWindowElementList& InDrawElements, UEdGraph* InGraphObj);
+	FMontageGraphConnectionDrawingPolicy(int32 InBackLayerID, int32 InFrontLayerID, float ZoomFactor, const FSlateRect& InClippingRect, FSlateWindowElementList& InDrawElements, UEdGraph* InGraphObj);
 
 	// FConnectionDrawingPolicy interface
 	virtual void DetermineWiringStyle(UEdGraphPin* OutputPin, UEdGraphPin* InputPin, /*inout*/ FConnectionParams& Params) override;

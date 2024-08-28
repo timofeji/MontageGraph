@@ -5,7 +5,7 @@
 #include "MontageGraphEdNode.generated.h"
 
 class UMontageGraphNode;
-class SHBGraphNodeAction;
+class SGraphNodeAction;
 
 
 /** Shared Base class for all Editor Graph nodes */
@@ -39,7 +39,7 @@ public:
 	UPROPERTY(VisibleAnywhere, Instanced, Category = "HBMontageGraph")
 	UMontageGraphNode* RuntimeNode;
 
-	SHBGraphNodeAction* SlateNode;
+	SGraphNodeAction* SlateNode;
 
 	virtual FLinearColor GetBackgroundColor() const;
 

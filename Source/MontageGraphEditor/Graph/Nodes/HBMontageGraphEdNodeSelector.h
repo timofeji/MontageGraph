@@ -4,18 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "MontageGraphEdNode.h"
-#include "HBMontageGraphEdNodeConduit.generated.h"
+#include "HBMontageGraphEdNodeSelector.generated.h"
 
 
 
-/** Editor Graph Node for conduit nodes in Montage Graphs. Based off UAnimStateConduitNode for state machine graphs in Anim BP. */
+/** Editor Graph Node for Selector nodes in Montage Graphs. Based off UAnimStateSelectorNode for state machine graphs in Anim BP. */
 UCLASS(MinimalAPI)
-class UMontageGraphEdNodeConduit : public UMontageGraphEdNode
+class UMontageGraphEdNodeSelector : public UMontageGraphEdNode
 {
 	GENERATED_BODY()
 
 public:
-	UMontageGraphEdNodeConduit();
+	UMontageGraphEdNodeSelector();
 
 	//~ Begin UEdGraphNode Interface
 	

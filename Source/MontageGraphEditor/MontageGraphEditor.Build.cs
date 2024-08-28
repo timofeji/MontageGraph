@@ -23,6 +23,7 @@ public class MontageGraphEditor: ModuleRules
 		
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
+			"Projects",
 			"EditorStyle",
 			"GraphEditor",
 			"ToolWidgets",

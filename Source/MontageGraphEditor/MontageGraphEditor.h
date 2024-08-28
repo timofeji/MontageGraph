@@ -6,7 +6,7 @@
 #include "IMontageGraphEditor.h"
 
 class UMontageGraph;
-class UMontageGraphNode_Action;
+class UMontageGraphNode_Animation;
 class IPersonaPreviewScene;
 class IPersonaToolkit;
 class IPersonaViewport;

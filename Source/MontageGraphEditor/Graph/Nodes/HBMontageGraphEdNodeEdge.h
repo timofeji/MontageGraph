@@ -7,7 +7,7 @@
 #include "HBMontageGraphEdNodeEdge.generated.h"
 
 class UMontageGraph;
-class UMontageGraphEdNodeConduit;
+class UMontageGraphEdNodeSelector;
 class UMontageGraphEdge;
 class UMontageGraphEdNode;
 
@@ -30,7 +30,7 @@ public:
 
 	UMontageGraphEdNode* GetStartNodeAsBase() const;
 	UMontageGraphEdNode* GetStartNodeAsGraphNode() const;
-	UMontageGraphEdNodeConduit* GetStartNodeAsConduit() const;
+	UMontageGraphEdNodeSelector* GetStartNodeAsSelector() const;
 	UMontageGraphEdNode* GetEndNode() const;
 
 	//~ UEdGraphNode interface

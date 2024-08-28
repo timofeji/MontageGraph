@@ -4,23 +4,23 @@
 
 #include "CoreMinimal.h"
 #include "EdGraph/EdGraphSchema.h"
-#include "HBMontageGraphSchema.generated.h"
+#include "MontageGraphSchema.generated.h"
 
 class UMontageGraphEdNodeEntry;
 class UMontageGraphNode;
 class UMontageGraphEdNode;
-class UMontageGraphEdNodeConduit;
+class UMontageGraphEdNodeSelector;
 class UMontageGraphEdNodeEdge;
 class UMontageGraphEdNodeMontage;
 
 /** Action to add a comment to the graph */
 USTRUCT()
-struct FHBMontageGraphSchemaAction_AddComment : public FEdGraphSchemaAction
+struct FMontageGraphSchemaAction_AddComment : public FEdGraphSchemaAction
 {
 	GENERATED_BODY()
 
-	FHBMontageGraphSchemaAction_AddComment() : FEdGraphSchemaAction() {}
-	FHBMontageGraphSchemaAction_AddComment(FText InDescription, FText InToolTip)
+	FMontageGraphSchemaAction_AddComment() : FEdGraphSchemaAction() {}
+	FMontageGraphSchemaAction_AddComment(FText InDescription, FText InToolTip)
 		: FEdGraphSchemaAction(FText(), MoveTemp(InDescription), MoveTemp(InToolTip), 0)
 	{
 	}
@@ -32,13 +32,13 @@ struct FHBMontageGraphSchemaAction_AddComment : public FEdGraphSchemaAction
 
 /** Action to add a node to the graph */
 USTRUCT()
-struct MONTAGEGRAPHEDITOR_API FHBMontageGraphSchemaAction_NewNode : public FEdGraphSchemaAction
+struct MONTAGEGRAPHEDITOR_API FMontageGraphSchemaAction_NewNode : public FEdGraphSchemaAction
 {
 	GENERATED_USTRUCT_BODY();
 
-	FHBMontageGraphSchemaAction_NewNode(): NodeTemplate(nullptr) {}
+	FMontageGraphSchemaAction_NewNode(): NodeTemplate(nullptr) {}
 
-	FHBMontageGraphSchemaAction_NewNode(const FText& InNodeCategory, const FText& InMenuDesc, const FText& InToolTip, const int32 InGrouping)
+	FMontageGraphSchemaAction_NewNode(const FText& InNodeCategory, const FText& InMenuDesc, const FText& InToolTip, const int32 InGrouping)
 		: FEdGraphSchemaAction(InNodeCategory, InMenuDesc, InToolTip, InGrouping), NodeTemplate(nullptr) {}
 
 	virtual UEdGraphNode* PerformAction(class UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode = true) override;
@@ -50,13 +50,13 @@ struct MONTAGEGRAPHEDITOR_API FHBMontageGraphSchemaAction_NewNode : public FEdGr
 
 /** Action to add transition edge to the graph */
 USTRUCT()
-struct MONTAGEGRAPHEDITOR_API FHBMontageGraphSchemaAction_NewEdge : public FEdGraphSchemaAction
+struct MONTAGEGRAPHEDITOR_API FMontageGraphSchemaAction_NewEdge : public FEdGraphSchemaAction
 {
 	GENERATED_USTRUCT_BODY();
 
-	FHBMontageGraphSchemaAction_NewEdge(): NodeTemplate(nullptr){}
+	FMontageGraphSchemaAction_NewEdge(): NodeTemplate(nullptr){}
 
-	FHBMontageGraphSchemaAction_NewEdge(const FText& InNodeCategory, const FText& InMenuDesc, const FText& InToolTip, const int32 InGrouping)
+	FMontageGraphSchemaAction_NewEdge(const FText& InNodeCategory, const FText& InMenuDesc, const FText& InToolTip, const int32 InGrouping)
 		: FEdGraphSchemaAction(InNodeCategory, InMenuDesc, InToolTip, InGrouping), NodeTemplate(nullptr) {}
 
 	virtual UEdGraphNode* PerformAction(class UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode = true) override;
@@ -85,33 +85,33 @@ struct MONTAGEGRAPHEDITOR_API FHBMontageGraphSchemaAction_NewNodeAction : public
 	UMontageGraphEdNodeMontage* NodeTemplate;
 };
 
-/** Action to add a node conduit to the graph */
+/** Action to add a node Selector to the graph */
 USTRUCT()
-struct MONTAGEGRAPHEDITOR_API FHBMontageGraphSchemaAction_NewNodeConduit : public FEdGraphSchemaAction
+struct MONTAGEGRAPHEDITOR_API FMontageGraphSchemaAction_NewNodeSelector : public FEdGraphSchemaAction
 {
 	GENERATED_USTRUCT_BODY();
 
-	FHBMontageGraphSchemaAction_NewNodeConduit(): NodeTemplate(nullptr) {}
+	FMontageGraphSchemaAction_NewNodeSelector(): NodeTemplate(nullptr) {}
 
-	FHBMontageGraphSchemaAction_NewNodeConduit(const FText& InNodeCategory, const FText& InMenuDesc, const FText& InToolTip, const int32 InGrouping)
+	FMontageGraphSchemaAction_NewNodeSelector(const FText& InNodeCategory, const FText& InMenuDesc, const FText& InToolTip, const int32 InGrouping)
 		: FEdGraphSchemaAction(InNodeCategory, InMenuDesc, InToolTip, InGrouping), NodeTemplate(nullptr) {}
 
 	virtual UEdGraphNode* PerformAction(class UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode = true) override;
 	virtual void AddReferencedObjects(FReferenceCollector& Collector) override;
 
 	UPROPERTY()
-	UMontageGraphEdNodeConduit* NodeTemplate;
+	UMontageGraphEdNodeSelector* NodeTemplate;
 };
 
-/** Action to add a node conduit to the graph */
+/** Action to add a node Selector to the graph */
 USTRUCT()
-struct MONTAGEGRAPHEDITOR_API FHBMontageGraphSchemaAction_NewEntryNode : public FEdGraphSchemaAction
+struct MONTAGEGRAPHEDITOR_API FMontageGraphSchemaAction_NewEntryNode : public FEdGraphSchemaAction
 {
 	GENERATED_USTRUCT_BODY();
 
-	FHBMontageGraphSchemaAction_NewEntryNode(): NodeTemplate(nullptr) {}
+	FMontageGraphSchemaAction_NewEntryNode(): NodeTemplate(nullptr) {}
 
-	FHBMontageGraphSchemaAction_NewEntryNode(const FText& InNodeCategory, const FText& InMenuDesc, const FText& InToolTip, const int32 InGrouping)
+	FMontageGraphSchemaAction_NewEntryNode(const FText& InNodeCategory, const FText& InMenuDesc, const FText& InToolTip, const int32 InGrouping)
 		: FEdGraphSchemaAction(InNodeCategory, InMenuDesc, InToolTip, InGrouping), NodeTemplate(nullptr) {}
 
 	virtual UEdGraphNode* PerformAction(class UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode = true) override;
@@ -123,14 +123,14 @@ struct MONTAGEGRAPHEDITOR_API FHBMontageGraphSchemaAction_NewEntryNode : public 
 
 /** Action to auto arrange the graph (based off BehaviorTree one) */
 USTRUCT()
-struct FHBMontageGraphSchemaAction_AutoArrangeVertical : public FEdGraphSchemaAction
+struct FMontageGraphSchemaAction_AutoArrangeVertical : public FEdGraphSchemaAction
 {
 	GENERATED_USTRUCT_BODY();
 
-	FHBMontageGraphSchemaAction_AutoArrangeVertical()
+	FMontageGraphSchemaAction_AutoArrangeVertical()
 		: FEdGraphSchemaAction() {}
 
-	FHBMontageGraphSchemaAction_AutoArrangeVertical(FText InNodeCategory, FText InMenuDesc, FText InToolTip, const int32 InGrouping)
+	FMontageGraphSchemaAction_AutoArrangeVertical(FText InNodeCategory, FText InMenuDesc, FText InToolTip, const int32 InGrouping)
 		: FEdGraphSchemaAction(MoveTemp(InNodeCategory), MoveTemp(InMenuDesc), MoveTemp(InToolTip), InGrouping)
 	{}
 
@@ -141,14 +141,14 @@ struct FHBMontageGraphSchemaAction_AutoArrangeVertical : public FEdGraphSchemaAc
 
 /** Action to auto arrange the graph (based off BehaviorTree one). This ones tries to layout the graph from left to right */
 USTRUCT()
-struct FHBMontageGraphSchemaAction_AutoArrangeHorizontal : public FEdGraphSchemaAction
+struct FMontageGraphSchemaAction_AutoArrangeHorizontal : public FEdGraphSchemaAction
 {
 	GENERATED_USTRUCT_BODY();
 
-	FHBMontageGraphSchemaAction_AutoArrangeHorizontal()
+	FMontageGraphSchemaAction_AutoArrangeHorizontal()
 		: FEdGraphSchemaAction() {}
 
-	FHBMontageGraphSchemaAction_AutoArrangeHorizontal(FText InNodeCategory, FText InMenuDesc, FText InToolTip, const int32 InGrouping)
+	FMontageGraphSchemaAction_AutoArrangeHorizontal(FText InNodeCategory, FText InMenuDesc, FText InToolTip, const int32 InGrouping)
 		: FEdGraphSchemaAction(MoveTemp(InNodeCategory), MoveTemp(InMenuDesc), MoveTemp(InToolTip), InGrouping)
 	{}
 
@@ -158,7 +158,7 @@ struct FHBMontageGraphSchemaAction_AutoArrangeHorizontal : public FEdGraphSchema
 };
 
 UCLASS(MinimalAPI)
-class UHBMontageGraphSchema : public UEdGraphSchema
+class UMontageGraphSchema : public UEdGraphSchema
 {
 	GENERATED_BODY()
 

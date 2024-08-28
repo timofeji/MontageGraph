@@ -8,7 +8,7 @@
 /**
  * 
  */
-struct FHBMontageGraphNodePanelFactory : public FGraphPanelNodeFactory
+struct FMontageGraphNodePanelFactory : public FGraphPanelNodeFactory
 {
 public:
 	virtual TSharedPtr<SGraphNode> CreateNode(UEdGraphNode* Node) const override;

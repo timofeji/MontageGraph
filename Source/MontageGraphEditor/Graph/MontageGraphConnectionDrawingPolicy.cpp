@@ -1,20 +1,20 @@
-#include "HBMontageGraphConnectionDrawingPolicy.h"
+#include "MontageGraphConnectionDrawingPolicy.h"
 
 #include "HBMontageGraphEdGraph.h"
 #include "..\MontageGraphEditorLog.h"
 #include "MontageGraphEditorStyles.h"
 #include "MontageGraphDebugger.h"
-#include "Slate/SHBMontageGraphConduitOutputPin.h"
+#include "Slate/SHBMontageGraphSelectorOutputPin.h"
 #include "Nodes/HBMontageGraphEdNodeEdge.h"
 #include "Nodes/MontageGraphEdNode.h"
-#include "Nodes/HBMontageGraphEdNodeConduit.h"
+#include "Nodes/HBMontageGraphEdNodeSelector.h"
 #include "Nodes/HBMontageGraphEdNodeEntry.h"
 #include "Nodes/HBMontageGraphEdNodeMontage.h"
 
-#include "MontageGraph/MontageGraphNode_Conduit.h"
+#include "MontageGraph/MontageGraphNode_Selector.h"
 
 
-FHBMontageGraphConnectionDrawingPolicy::FHBMontageGraphConnectionDrawingPolicy(
+FMontageGraphConnectionDrawingPolicy::FMontageGraphConnectionDrawingPolicy(
 	const int32 InBackLayerID, const int32 InFrontLayerID, const float ZoomFactor, const FSlateRect& InClippingRect,
 	FSlateWindowElementList& InDrawElements, UEdGraph* InGraphObj)
 	: FConnectionDrawingPolicy(InBackLayerID, InFrontLayerID, ZoomFactor, InClippingRect, InDrawElements)
@@ -23,7 +23,7 @@ FHBMontageGraphConnectionDrawingPolicy::FHBMontageGraphConnectionDrawingPolicy(
 	HBActionEdGraph = Cast<UHBMontageGraphEdGraph>(GraphObj);
 }
 
-void FHBMontageGraphConnectionDrawingPolicy::DetermineWiringStyle(UEdGraphPin* OutputPin, UEdGraphPin* InputPin,
+void FMontageGraphConnectionDrawingPolicy::DetermineWiringStyle(UEdGraphPin* OutputPin, UEdGraphPin* InputPin,
                                                                  FConnectionParams& Params)
 {
 	Params.AssociatedPin1 = OutputPin;
@@ -49,7 +49,7 @@ void FHBMontageGraphConnectionDrawingPolicy::DetermineWiringStyle(UEdGraphPin* O
 	}
 }
 
-void FHBMontageGraphConnectionDrawingPolicy::Draw(TMap<TSharedRef<SWidget>, FArrangedWidget>& InPinGeometries,
+void FMontageGraphConnectionDrawingPolicy::Draw(TMap<TSharedRef<SWidget>, FArrangedWidget>& InPinGeometries,
                                                  FArrangedChildren& ArrangedNodes)
 {
 	// Build an acceleration structure to quickly find geometry for the nodes
@@ -65,7 +65,7 @@ void FHBMontageGraphConnectionDrawingPolicy::Draw(TMap<TSharedRef<SWidget>, FArr
 	FConnectionDrawingPolicy::Draw(InPinGeometries, ArrangedNodes);
 }
 
-void FHBMontageGraphConnectionDrawingPolicy::DrawPreviewConnector(const FGeometry& PinGeometry,
+void FMontageGraphConnectionDrawingPolicy::DrawPreviewConnector(const FGeometry& PinGeometry,
                                                                  const FVector2D& StartPoint, const FVector2D& EndPoint,
                                                                  UEdGraphPin* Pin)
 {
@@ -83,7 +83,7 @@ void FHBMontageGraphConnectionDrawingPolicy::DrawPreviewConnector(const FGeometr
 	}
 }
 
-void FHBMontageGraphConnectionDrawingPolicy::DrawSplineWithArrow(const FVector2D& StartPoint, const FVector2D& EndPoint,
+void FMontageGraphConnectionDrawingPolicy::DrawSplineWithArrow(const FVector2D& StartPoint, const FVector2D& EndPoint,
                                                                 const FConnectionParams& Params)
 {
 	// bUserFlag1 indicates that we need to reverse the direction of connection (used by debugger)
@@ -93,7 +93,7 @@ void FHBMontageGraphConnectionDrawingPolicy::DrawSplineWithArrow(const FVector2D
 	Internal_DrawLineWithArrow(P0, P1, Params);
 }
 
-void FHBMontageGraphConnectionDrawingPolicy::Internal_DrawLineWithArrow(const FVector2D& StartAnchorPoint,
+void FMontageGraphConnectionDrawingPolicy::Internal_DrawLineWithArrow(const FVector2D& StartAnchorPoint,
                                                                        const FVector2D& EndAnchorPoint,
                                                                        const FConnectionParams& Params)
 {
@@ -137,7 +137,7 @@ void FHBMontageGraphConnectionDrawingPolicy::Internal_DrawLineWithArrow(const FV
 	FSlateDrawElement::MakeText(
 		DrawElementsList,
 		ArrowLayerID,
-		FPaintGeometry(P3, FVector2D(50.f, 50.f) * ZoomFactor, ZoomFactor*0.5f),
+		FPaintGeometry(StartPoint + ((P3 - P2) * .5f), FVector2D(50.f, 50.f) * ZoomFactor, ZoomFactor * 0.5f),
 		Params.AssociatedPin1->PinName.ToString(),
 		FontInfo,
 		ESlateDrawEffect::None,
@@ -161,22 +161,22 @@ void FHBMontageGraphConnectionDrawingPolicy::Internal_DrawLineWithArrow(const FV
 	);
 }
 
-void FHBMontageGraphConnectionDrawingPolicy::DrawSplineWithArrow(const FGeometry& StartGeom, const FGeometry& EndGeom,
+void FMontageGraphConnectionDrawingPolicy::DrawSplineWithArrow(const FGeometry& StartGeom, const FGeometry& EndGeom,
                                                                 const FConnectionParams& Params)
 {
 	// Get a reasonable seed point (halfway between the boxes)
 	const FVector2D StartCenter = FGeometryHelper::CenterOf(StartGeom);
 	const FVector2D EndCenter = FGeometryHelper::CenterOf(EndGeom);
-	const FVector2D SeedPoint = (StartCenter + EndCenter) * 0.5f;
+	const FVector2D SeedPoint = (StartCenter + EndCenter);
 
 	// Find the (approximate) closest points between the two boxes
 	const FVector2D StartAnchorPoint = FGeometryHelper::FindClosestPointOnGeom(StartGeom, SeedPoint);
 	const FVector2D EndAnchorPoint = FGeometryHelper::FindClosestPointOnGeom(EndGeom, SeedPoint);
 
-	DrawSplineWithArrow(StartAnchorPoint, EndAnchorPoint, Params);
+	DrawSplineWithArrow(StartCenter, EndCenter, Params);
 }
 
-FVector2D FHBMontageGraphConnectionDrawingPolicy::ComputeSplineTangent(const FVector2D& Start,
+FVector2D FMontageGraphConnectionDrawingPolicy::ComputeSplineTangent(const FVector2D& Start,
                                                                       const FVector2D& End) const
 {
 	const FVector2D Delta = End - Start;
@@ -185,7 +185,7 @@ FVector2D FHBMontageGraphConnectionDrawingPolicy::ComputeSplineTangent(const FVe
 	return NormDelta;
 }
 
-void FHBMontageGraphConnectionDrawingPolicy::DetermineLinkGeometry(FArrangedChildren& ArrangedNodes,
+void FMontageGraphConnectionDrawingPolicy::DetermineLinkGeometry(FArrangedChildren& ArrangedNodes,
                                                                   TSharedRef<SWidget>& OutputPinWidget,
                                                                   UEdGraphPin* OutputPin, UEdGraphPin* InputPin,
                                                                   FArrangedWidget*& StartWidgetGeometry,
@@ -219,7 +219,7 @@ void FHBMontageGraphConnectionDrawingPolicy::DetermineLinkGeometry(FArrangedChil
 	// 		}
 	// 	}
 	// }
-	// else if (UMontageGraphEdNodeConduit* ConduitNode = Cast<UMontageGraphEdNodeConduit>(OutputPin->GetOwningNode()))
+	// else if (UMontageGraphEdNodeSelector* SelectorNode = Cast<UMontageGraphEdNodeSelector>(OutputPin->GetOwningNode()))
 	// {
 	// 	StartWidgetGeometry = PinGeometries->Find(OutputPinWidget);
 	//

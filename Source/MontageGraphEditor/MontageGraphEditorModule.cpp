@@ -3,10 +3,14 @@
 #include "MontageGraphEditorModule.h"
 
 #include "AssetToolsModule.h"
-#include "AssetTypeActions_MontageGraph.h"
+#include "EdGraphUtilities.h"
 #include "IAssetTools.h"
 
+#include "AssetTypeActions_MontageGraph.h"
+#include "Graph/MontageGraphNodePanelFactory.h"
+
 #define LOCTEXT_NAMESPACE "FMontageGraphEditorModule"
+
 
 void FMontageGraphEditorModule::StartupModule()
 {
@@ -25,6 +29,10 @@ void FMontageGraphEditorModule::StartupModule()
 		FAssetTypeActions_MontageGraph(GameplayAssetCategory));
 
 	AssetTools.RegisterAssetTypeActions(MontageGraphType.ToSharedRef());
+
+	
+	GraphNodeFactory = MakeShareable(new FMontageGraphNodePanelFactory());
+	FEdGraphUtilities::RegisterVisualNodeFactory(GraphNodeFactory);
 }
 
 void FMontageGraphEditorModule::ShutdownModule()
@@ -34,5 +42,5 @@ void FMontageGraphEditorModule::ShutdownModule()
 
 #undef LOCTEXT_NAMESPACE
 
-IMPLEMENT_MODULE(FMontageGraphEditorModule,
-                 MontageGraphEditor)
+IMPLEMENT_MODULE(FMontageGraphEditorModule,MontageGraphEditor)
+

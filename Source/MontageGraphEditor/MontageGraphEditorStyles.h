@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "Interfaces/IPluginManager.h"
 #include "Styling/SlateStyle.h"
 #include "Styling/SlateStyleRegistry.h"
 
@@ -28,9 +29,12 @@ public:
 		
 		const FVector2D Icon256x256(256.f,
 		                            256.f);
-
-
-		SetContentRoot(FPaths::ProjectDir() / TEXT("Resources"));
+		
+		TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("MontageGraph"));
+		if (ensure(Plugin.IsValid()))
+		{
+			SetContentRoot(FPaths::Combine(Plugin->GetBaseDir(), TEXT("Resources")));
+		}
 
 		/** Gets the style name. */
 

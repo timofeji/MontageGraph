@@ -4,19 +4,19 @@
 
 #include "CoreMinimal.h"
 #include "SGraphNode.h"
-#include "SHBGraphNodeAction.h"
+#include "SGraphNodeAction.h"
 
-class UMontageGraphEdNodeConduit;
+class UMontageGraphEdNodeSelector;
 class UMontageGraphEdNode;
 class SHorizontalBox;
 
-class SHBGraphNodeConduit : public SHBGraphNodeAction
+class SHBGraphNodeSelector : public SGraphNodeAction
 {
 public:
-	SLATE_BEGIN_ARGS(SHBGraphNodeConduit){}
+	SLATE_BEGIN_ARGS(SHBGraphNodeSelector){}
 	SLATE_END_ARGS()
 
-	void Construct(const FArguments& InArgs, UMontageGraphEdNodeConduit* InNode);
+	void Construct(const FArguments& InArgs, UMontageGraphEdNodeSelector* InNode);
 	void RefreshOutputPins();
 
 	// SNodePanel::SNode interface

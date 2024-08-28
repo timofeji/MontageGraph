@@ -8,7 +8,7 @@
 
 
 
-/** Editor Graph Node for conduit nodes in Montage Graphs. Based off UAnimStateMontageNode for state machine graphs in Anim BP. */
+/** Editor Graph Node for Selector nodes in Montage Graphs. Based off UAnimStateMontageNode for state machine graphs in Anim BP. */
 UCLASS(MinimalAPI)
 class UMontageGraphEdNodeMontage : public UMontageGraphEdNode
 {

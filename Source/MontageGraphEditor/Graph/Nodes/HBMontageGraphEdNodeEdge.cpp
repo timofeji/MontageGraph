@@ -6,7 +6,7 @@
 
 #include "MontageGraph/MontageGraphEdge.h"
 #include "MontageGraphEdNode.h"
-#include "HBMontageGraphEdNodeConduit.h"
+#include "HBMontageGraphEdNodeSelector.h"
 #include "..\..\MontageGraphEditorLog.h"
 
 UMontageGraphEdNodeEdge::UMontageGraphEdNodeEdge()
@@ -66,11 +66,11 @@ UMontageGraphEdNode* UMontageGraphEdNodeEdge::GetStartNodeAsGraphNode() const
 	return nullptr;
 }
 
-UMontageGraphEdNodeConduit* UMontageGraphEdNodeEdge::GetStartNodeAsConduit() const
+UMontageGraphEdNodeSelector* UMontageGraphEdNodeEdge::GetStartNodeAsSelector() const
 {
 	if (Pins[0]->LinkedTo.Num() > 0)
 	{
-		return Cast<UMontageGraphEdNodeConduit>(Pins[0]->LinkedTo[0]->GetOwningNode());
+		return Cast<UMontageGraphEdNodeSelector>(Pins[0]->LinkedTo[0]->GetOwningNode());
 	}
 
 	return nullptr;

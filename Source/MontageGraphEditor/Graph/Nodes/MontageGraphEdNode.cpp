@@ -5,7 +5,7 @@
 #include "MontageGraph/MontageGraphNode.h"
 #include "MontageGraphDebugger.h"
 #include "Graph/HBMontageGraphEdGraph.h"
-#include "Slate/SHBGraphNodeAction.h"
+#include "Slate/SGraphNodeAction.h"
 
 UMontageGraphEdNode::UMontageGraphEdNode()
 {

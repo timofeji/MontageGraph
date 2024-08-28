@@ -20,18 +20,18 @@ void FAssetTypeActions_MontageGraph::OpenAssetEditor(const TArray<UObject*>& InO
 	for (UObject* Object : InObjects)
 	{
 		// Only handle dialogues
-		if (UMontageGraph* Character = Cast<UMontageGraph>(Object))
+		if (UMontageGraph* GraphToEdit = Cast<UMontageGraph>(Object))
 		{
 			MontageGraph_LOG(
 				Warning,
 				TEXT("Tried to create a Character = `%s`"),
-				*Character->GetPathName());
+				*GraphToEdit->GetPathName());
 
 			const TSharedRef<FMontageGraphEditor> NewCharacterEditor(new
 				FMontageGraphEditor());
 			NewCharacterEditor->InitCharacterEditor(Mode,
 			                                        EditWithinLevelEditor,
-			                                        Character);
+			                                        GraphToEdit);
 		}
 	}
 }
