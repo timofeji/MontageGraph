@@ -15,7 +15,7 @@ public:
 	TSharedPtr<FUICommandInfo> AutoArrange;
 	TSharedPtr<FUICommandInfo> AutoArrangeVertical;
 	TSharedPtr<FUICommandInfo> AutoArrangeHorizontal;
-	TSharedPtr<FUICommandInfo> RegenerateActionTracers;
+	TSharedPtr<FUICommandInfo> EditClassDefaults;
 
 
 	// TCommands<> interface

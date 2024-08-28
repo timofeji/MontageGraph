@@ -119,19 +119,19 @@ void FMontageGraphEditor::ExtendToolbar()
 
 	const auto HBCharacterCommands = FMontageGraphEditorCommands::Get();
 
-	FToolMenuSection& HBCharacterSection = ToolMenu->AddSection("HBCharacter Commands",
+	FToolMenuSection& MontageGraphTabSection = ToolMenu->AddSection("HBCharacter Commands",
 	                                                            TAttribute<FText>(), SectionInsertLocation);
 
 	FToolMenuEntry RegenerateTracersEntry = FToolMenuEntry::InitToolBarButton(
-		HBCharacterCommands.RegenerateActionTracers,
-		LOCTEXT("RegenerateActionTracers", ""),
-		LOCTEXT("RegenerateActionTracersButtonTooltip", "Regenerates all Action Tracers for this character"),
+		HBCharacterCommands.EditClassDefaults,
+		LOCTEXT("Edit Class Defaults", ""),
+		LOCTEXT("EditClassDefaultsTooltip", "Edit default values of this Montage Graph"),
 		FSlateIcon(FMontageGraphEditorStyles::Get().GetStyleSetName(), "HBEditor.Character.WeaponAction")
 	);
-
+	
 	RegenerateTracersEntry.StyleNameOverride = FName("Toolbar.BackplateLeftPlay");
-
-	HBCharacterSection.AddEntry(RegenerateTracersEntry);
+	
+	MontageGraphTabSection.AddEntry(RegenerateTracersEntry);
 
 
 	ToolMenu->AddDynamicSection("Persona", FNewToolMenuDelegate::CreateLambda([](UToolMenu* InToolMenu)
@@ -306,16 +306,16 @@ void FMontageGraphEditor::BindToolkitCommands()
 	// Auto Arrange commands
 	// ToolkitCommands->MapAction(
 	// 	FHBMontageGraphBlueprintEditorCommands::Get().AutoArrange,
-	// 	FExecuteAction::CreateSP(this, &FHBCharacterAssetEditor::HandleAutoArrange),
-	// 	FCanExecuteAction::CreateSP(this, &FHBCharacterAssetEditor::CanAutoArrange)
+	// 	FExecuteAction::CreateSP(this, &FMontageGraphEditor::HandleAutoArrange),
+	// 	FCanExecuteAction::CreateSP(this, &FMontageGraphEditor::CanAutoArrange)
 	// );
 	//
 	// ToolkitCommands->MapAction(
 	// 	FHBMontageGraphBlueprintEditorCommands::Get().AutoArrangeVertical,
-	// 	FExecuteAction::CreateSP(this, &FHBCharacterAssetEditor::SetAndHandleAutoArrange, EHBActioGraphAutoArrangeStrategy::Vertical),
-	// 	FCanExecuteAction::CreateSP(this, &FHBCharacterAssetEditor::CanAutoArrange)
+	// 	FExecuteAction::CreateSP(this, &FMontageGraphEditor::SetAndHandleAutoArrange, EHBActioGraphAutoArrangeStrategy::Vertical),
+	// 	FCanExecuteAction::CreateSP(this, &FMontageGraphEditor::CanAutoArrange)
 	// );
-	//
+	
 
 }
 

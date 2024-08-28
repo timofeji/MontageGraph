@@ -29,7 +29,7 @@ void UMontageGraphEdNodeMontage::AutowireNewNode(UEdGraphPin* FromPin)
 
 FText UMontageGraphEdNodeMontage::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
-	return LOCTEXT("Action Montage", "Action");
+	return LOCTEXT("Action Montage", "Montage");
 }
 
 FText UMontageGraphEdNodeMontage::GetTooltipText() const

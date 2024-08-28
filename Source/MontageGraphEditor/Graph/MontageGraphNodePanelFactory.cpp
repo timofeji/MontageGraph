@@ -10,6 +10,7 @@
 #include "Slate/SHBMontageGraphNodeEntry.h"
 #include "Nodes/HBMontageGraphEdNodeEdge.h"
 #include "Nodes/HBMontageGraphEdNodeEntry.h"
+#include "Nodes/HBMontageGraphEdNodeMontage.h"
 
 TSharedPtr<SGraphNode> FMontageGraphNodePanelFactory::CreateNode(UEdGraphNode* Node) const
 {
@@ -29,21 +30,21 @@ TSharedPtr<SGraphNode> FMontageGraphNodePanelFactory::CreateNode(UEdGraphNode* N
 	// 	return SNew(SHBGraphNodeSelector, SelectorNode);
 	// }
 
-	// if (UMontageGraphEdNode* GraphNode = Cast<UMontageGraphEdNodeAction>(Node))
-	// {
-	// 	const UMontageGraphEditorSettings* Settings = GetDefault<UMontageGraphEditorSettings>();
-	//
-	// 	// const bool bDrawVerticalPins = Settings->DrawPinTypes == EComboGraphDrawPinTypes::Both || Settings->DrawPinTypes == EComboGraphDrawPinTypes::Vertical;
-	// 	// const bool bDrawHorizontalPins = Settings->DrawPinTypes == EComboGraphDrawPinTypes::Both || Settings->DrawPinTypes == EComboGraphDrawPinTypes::Horizontal;
-	//
-	// 	return SNew(SGraphNodeAction, GraphNode)
-	// 		.PinSize(Settings->PinSize)
-	// 		.PinPadding(Settings->PinPadding)
-	// 		.DrawVerticalPins(true)
-	// 		.DrawHorizontalPins(true)
-	// 		.ContentPadding(Settings->ContentMargin)
-	// 		.ContentInternalPadding(Settings->ContentInternalPadding);
-	// }
+	if (UMontageGraphEdNodeMontage* GraphNode = Cast<UMontageGraphEdNodeMontage>(Node))
+	{
+		const UMontageGraphEditorSettings* Settings = GetDefault<UMontageGraphEditorSettings>();
+	
+		// const bool bDrawVerticalPins = Settings->DrawPinTypes == EComboGraphDrawPinTypes::Both || Settings->DrawPinTypes == EComboGraphDrawPinTypes::Vertical;
+		// const bool bDrawHorizontalPins = Settings->DrawPinTypes == EComboGraphDrawPinTypes::Both || Settings->DrawPinTypes == EComboGraphDrawPinTypes::Horizontal;
+	
+		return SNew(SGraphNodeAction, GraphNode)
+			.PinSize(Settings->PinSize)
+			.PinPadding(Settings->PinPadding)
+			.DrawVerticalPins(true)
+			.DrawHorizontalPins(true)
+			.ContentPadding(Settings->ContentMargin)
+			.ContentInternalPadding(Settings->ContentInternalPadding);
+	}
 
 	return nullptr;
 }

@@ -48,10 +48,10 @@ public:
 protected:
 	virtual FSlateColor GetPinColor() const override
 	{
-		constexpr FLinearColor Default(0.02f, 0.02f, 0.02f);
+		constexpr FLinearColor Default(0.02f, 0.02f, 0.2f);
 		// return Default;
 
-		return FSlateColor(IsHovered() ? FLinearColor::Yellow : Default);
+		return FSlateColor(IsHovered() ? FLinearColor::Blue : Default);
 	}
 
 	virtual TSharedRef<SWidget>	GetDefaultValueWidget() override
