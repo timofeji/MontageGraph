@@ -1,11 +1,19 @@
-﻿#include "HBMontageGraphEdNodeMontage.h"
+﻿#include "MontageGraphEdNodeMontage.h"
 #include "MontageGraphEditorTypes.h"
 
-#define LOCTEXT_NAMESPACE "HBMontageGraphEdNodeMontage"
+#define LOCTEXT_NAMESPACE "MontageGraphEdNodeMontage"
 
 UMontageGraphEdNodeMontage::UMontageGraphEdNodeMontage()
 {
-	bCanRenameNode = false;
+	bCanRenameNode = true;
+}
+
+
+void UMontageGraphEdNodeMontage::OnRenameNode(const FString& NewName)
+{
+	NodeName = NewName;
+	
+	// FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(GetBlueprint());
 }
 
 void UMontageGraphEdNodeMontage::AllocateDefaultPins()
@@ -29,7 +37,7 @@ void UMontageGraphEdNodeMontage::AutowireNewNode(UEdGraphPin* FromPin)
 
 FText UMontageGraphEdNodeMontage::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
-	return LOCTEXT("Action Montage", "Montage");
+	return NodeName.IsEmpty() ?  LOCTEXT("Action Montage", "Montage") : FText::FromString(NodeName);
 }
 
 FText UMontageGraphEdNodeMontage::GetTooltipText() const

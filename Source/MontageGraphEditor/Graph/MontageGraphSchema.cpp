@@ -22,7 +22,7 @@
 #include "Nodes/HBMontageGraphEdNodeSelector.h"
 #include "Nodes/HBMontageGraphEdNodeEdge.h"
 #include "Nodes/HBMontageGraphEdNodeEntry.h"
-#include "Nodes/HBMontageGraphEdNodeMontage.h"
+#include "Nodes/MontageGraphEdNodeMontage.h"
 
 #define LOCTEXT_NAMESPACE "HBMontageGraphSchema"
 

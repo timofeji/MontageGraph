@@ -10,7 +10,7 @@
 #include "Slate/SHBMontageGraphNodeEntry.h"
 #include "Nodes/HBMontageGraphEdNodeEdge.h"
 #include "Nodes/HBMontageGraphEdNodeEntry.h"
-#include "Nodes/HBMontageGraphEdNodeMontage.h"
+#include "Nodes/MontageGraphEdNodeMontage.h"
 
 TSharedPtr<SGraphNode> FMontageGraphNodePanelFactory::CreateNode(UEdGraphNode* Node) const
 {

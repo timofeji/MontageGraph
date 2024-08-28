@@ -20,6 +20,7 @@ public class MontageGraph : ModuleRules
 			}
 			);
 			
+		PrivateDependencyModuleNames.AddRange(new string[] { "ControlRig" });
 		
 		PublicDependencyModuleNames.AddRange(
 			new string[]

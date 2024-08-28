@@ -18,6 +18,8 @@ public:
 
 	/** Returns the color associated with this type */
 	virtual FColor GetTypeColor() const override { return FColor(80,80,220); }
+	bool ReplaceMissingSkeleton(TArray<TObjectPtr<UObject>> Array) const;
+	
 	virtual void OpenAssetEditor(const TArray<UObject*>& InObjects,
 	                             TSharedPtr<class IToolkitHost> EditWithinLevelEditor =
 		                             TSharedPtr<

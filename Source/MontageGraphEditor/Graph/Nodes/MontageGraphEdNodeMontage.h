@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "MontageGraphEdNode.h"
-#include "HBMontageGraphEdNodeMontage.generated.h"
+#include "MontageGraphEdNodeMontage.generated.h"
 
 
 
@@ -16,6 +16,9 @@ class UMontageGraphEdNodeMontage : public UMontageGraphEdNode
 
 public:
 	UMontageGraphEdNodeMontage();
+	
+	UPROPERTY(EditAnywhere, Category=CachedPose)
+	FString NodeName;
 
 	//~ Begin UEdGraphNode Interface
 	virtual void AllocateDefaultPins() override;
@@ -26,5 +29,7 @@ public:
 	virtual void ValidateNodeDuringCompilation(class FCompilerResultsLog& MessageLog) const override;
 	virtual FString GetDocumentationExcerptName() const override;
 	virtual FString GetDocumentationLink() const override;
+
+	virtual void OnRenameNode(const FString& NewName) override;
 	//~ End UEdGraphNode Interface
 };

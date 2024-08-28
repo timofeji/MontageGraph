@@ -1,18 +1,11 @@
 #include "MontageGraphConnectionDrawingPolicy.h"
 
 #include "HBMontageGraphEdGraph.h"
-#include "..\MontageGraphEditorLog.h"
 #include "MontageGraphEditorStyles.h"
 #include "MontageGraphDebugger.h"
 #include "Slate/SHBMontageGraphSelectorOutputPin.h"
-#include "Nodes/HBMontageGraphEdNodeEdge.h"
 #include "Nodes/MontageGraphEdNode.h"
-#include "Nodes/HBMontageGraphEdNodeSelector.h"
 #include "Nodes/HBMontageGraphEdNodeEntry.h"
-#include "Nodes/HBMontageGraphEdNodeMontage.h"
-
-#include "MontageGraph/MontageGraphNode_Selector.h"
-
 
 FMontageGraphConnectionDrawingPolicy::FMontageGraphConnectionDrawingPolicy(
 	const int32 InBackLayerID, const int32 InFrontLayerID, const float ZoomFactor, const FSlateRect& InClippingRect,
