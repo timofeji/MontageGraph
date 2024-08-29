@@ -6,14 +6,19 @@
 #include "ControlRigObjectBinding.h"
 #include "DetailLayoutBuilder.h"
 #include "DetailWidgetRow.h"
+#include "EditorModeManager.h"
+#include "FileHelpers.h"
 #include "LevelSequenceEditor/Public/ILevelSequenceEditorToolkit.h"
 #include "Editor/Sequencer/Public/ISequencer.h"
 #include "LevelEditorViewport.h"
 #include "LevelSequence.h"
+#include "LevelSequenceAnimSequenceLink.h"
 #include "MontageGraphEditorLog.h"
 #include "MovieScene.h"
 #include "Animation/SkeletalMeshActor.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "ControlRigEditor/Public/EditMode/ControlRigEditMode.h"
+#include "Editor/Sequencer/Private/Sequencer.h"
 #include "Graph/MontageGraphEdGraph.h"
 #include "MontageGraph/MontageGraph.h"
 #include "MontageGraph/MontageGraphNode_Animation.h"
@@ -70,15 +75,6 @@ void FMontageGraphDetails::CreateLinkedControlRigMontageForNode(UMontageGraphEdN
 
 	if (WeakSequencer.IsValid())
 	{
-		ASkeletalMeshActor* MeshActor = World->SpawnActor<ASkeletalMeshActor>(
-			ASkeletalMeshActor::StaticClass(), FTransform::Identity);
-		MeshActor->SetActorLabel(SequenceName);
-
-		FString StringName = MeshActor->GetActorLabel();
-		FString AnimName = AnimNode->AnimationName;
-		StringName = StringName + FString(TEXT(" --> ")) + AnimName;
-		MeshActor->SetActorLabel(StringName);
-
 		USkeletalMesh* SkelMesh = nullptr;
 		if (IInterface_PreviewMeshProvider* PreviewMeshInterface = Cast<IInterface_PreviewMeshProvider>(
 			GraphBeingEdited->ControlRigClass->ClassGeneratedBy))
@@ -86,12 +82,13 @@ void FMontageGraphDetails::CreateLinkedControlRigMontageForNode(UMontageGraphEdN
 			SkelMesh = PreviewMeshInterface->GetPreviewMesh();
 		}
 
-
-		if (SkelMesh != nullptr)
+		ASkeletalMeshActor* MeshActor = World->SpawnActor<ASkeletalMeshActor>(
+			ASkeletalMeshActor::StaticClass(), FTransform::Identity);
+		MeshActor->SetActorLabel(SequenceName);
+		if (SkelMesh)
 		{
 			MeshActor->GetSkeletalMeshComponent()->SetSkeletalMesh(SkelMesh);
 		}
-		
 		MeshActor->RegisterAllComponents();
 		TArray<TWeakObjectPtr<AActor>> ActorsToAdd;
 		ActorsToAdd.Add(MeshActor);
@@ -176,6 +173,62 @@ void FMontageGraphDetails::CreateLinkedControlRigMontageForNode(UMontageGraphEdN
 
 			WeakSequencer.Pin()->SelectTrack(Track);
 			GCurrentLevelEditingViewportClient->FocusViewportOnBox(MeshActor->GetComponentsBoundingBox());
+
+			WeakSequencer.Pin()->EmptySelection();
+			WeakSequencer.Pin()->SelectSection(ParamSection);
+			WeakSequencer.Pin()->ThrobSectionSelection();
+			WeakSequencer.Pin()->ObjectImplicitlyAdded(ControlRig);
+			WeakSequencer.Pin()->NotifyMovieSceneDataChanged(EMovieSceneDataChangeType::MovieSceneStructureItemAdded);
+			// FControlRigEditMode* ControlRigEditMode = static_cast<FControlRigEditMode*>(GLevelEditorModeTools().
+			// 	GetActiveMode(FControlRigEditMode::ModeName));
+			// if (!ControlRigEditMode)
+			// {
+			// 	GLevelEditorModeTools().ActivateMode(FControlRigEditMode::ModeName);
+			// 	ControlRigEditMode = static_cast<FControlRigEditMode*>(GLevelEditorModeTools().GetActiveMode(
+			// 		FControlRigEditMode::ModeName));
+			// }
+			// if (ControlRigEditMode)
+			// {
+			// 	ControlRigEditMode->AddControlRigObject(ControlRig, WeakSequencer.Pin());
+			// }
+
+			//create soft links to each other
+			if (IInterface_AssetUserData* AssetUserDataInterface = Cast<IInterface_AssetUserData>(LevelSequence))
+			{
+				ULevelSequenceAnimSequenceLink* LevelAnimLink = NewObject<ULevelSequenceAnimSequenceLink>(
+					LevelSequence, NAME_None, RF_Public | RF_Transactional);
+				FLevelSequenceAnimSequenceLinkItem LevelAnimLinkItem;
+				LevelAnimLinkItem.SkelTrackGuid = ActorTrackGuid;
+				// LevelAnimLinkItem.PathToAnimSequence = FSoftObjectPath(AnimSequence);
+				LevelAnimLinkItem.bExportMorphTargets = true;
+				LevelAnimLinkItem.bExportAttributeCurves = true;
+				LevelAnimLinkItem.Interpolation = EAnimInterpolationType::Linear;
+				LevelAnimLinkItem.CurveInterpolation = ERichCurveInterpMode::RCIM_Linear;
+				LevelAnimLinkItem.bExportMaterialCurves = true;
+				LevelAnimLinkItem.bExportTransforms = true;
+				LevelAnimLinkItem.bRecordInWorldSpace = false;
+				LevelAnimLinkItem.bEvaluateAllSkeletalMeshComponents = true;
+				LevelAnimLink->AnimSequenceLinks.Add(LevelAnimLinkItem);
+				AssetUserDataInterface->AddAssetUserData(LevelAnimLink);
+			}
+			// if (IInterface_AssetUserData* AnimAssetUserData = Cast<IInterface_AssetUserData>(AnimSequence))
+			// {
+			// 	UAnimSequenceLevelSequenceLink* AnimLevelLink = AnimAssetUserData->GetAssetUserData<
+			// 		UAnimSequenceLevelSequenceLink>();
+			// 	if (!AnimLevelLink)
+			// 	{
+			// 		AnimLevelLink = NewObject<UAnimSequenceLevelSequenceLink>(
+			// 			AnimSequence, NAME_None, RF_Public | RF_Transactional);
+			// 		AnimAssetUserData->AddAssetUserData(AnimLevelLink);
+			// 	}
+			// 	AnimLevelLink->SetLevelSequence(LevelSequence);
+			// 	AnimLevelLink->SkelTrackGuid = ActorTrackGuid;
+			// }
+
+			//Instantly Save
+			TArray<UPackage*> PackagesToSave;
+			PackagesToSave.Add(Package);
+			FEditorFileUtils::PromptForCheckoutAndSave(PackagesToSave, true, false);
 		}
 	}
 }
@@ -249,7 +302,7 @@ void FMontageGraphDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 					  .VAlign(VAlign_Center)
 					[
 						SNew(SImage)
-						.Image(FCoreStyle::Get().GetBrush("Sequencer.AllowSequencerEditsOnly.Small"))
+						.Image(FCoreStyle::Get().GetBrush("Sequencer.AllowSequencerEditsOnly"))
 					]
 
 					+ SHorizontalBox::Slot()
@@ -268,12 +321,13 @@ void FMontageGraphDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 	}
 	else
 	{
-		FSimpleDelegate OnClickDelegate = FSimpleDelegate::CreateLambda([this, MontageEdNode]()
+		FSimpleDelegate OnClickDelegate = FSimpleDelegate::CreateLambda([this, MontageEdNode, &DetailBuilder]()
 		{
 			CreateLinkedControlRigMontageForNode(MontageEdNode);
 
 			MontageEdNode->bHasLinkedAnimation = true;
 			MontageEdNode->Modify(true);
+			DetailBuilder.ForceRefreshDetails();
 		});
 
 		Category.AddCustomRow(FText::FromString("MontageGraphFooter"))

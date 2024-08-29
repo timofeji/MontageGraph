@@ -38,6 +38,7 @@ public class MontageGraphEditor: ModuleRules
 			"AnimationCore",
 			"MovieScene",
 			"ControlRig",
+			"ControlRigEditor",
 			"Persona",
 			"Core",
 			"AssetTools",
