@@ -4,7 +4,7 @@
 #include "MontageGraphEditorTypes.h"
 #include "MontageGraph/MontageGraphNode.h"
 #include "MontageGraphDebugger.h"
-#include "Graph/HBMontageGraphEdGraph.h"
+#include "Graph/MontageGraphEdGraph.h"
 #include "Slate/SGraphNodeAction.h"
 
 UMontageGraphEdNode::UMontageGraphEdNode()
@@ -244,7 +244,7 @@ void UMontageGraphEdNode::UpdateTimeCurrentNode(const float DeltaTime, const flo
 
 const UMontageGraphNode* UMontageGraphEdNode::GetDebuggedNode() const
 {
-	UHBMontageGraphEdGraph* HBMontageGraph = Cast<UHBMontageGraphEdGraph>(GetOuter());
+	UMontageGraphEdGraph* HBMontageGraph = Cast<UMontageGraphEdGraph>(GetOuter());
 
 	if (HBMontageGraph && HBMontageGraph->Debugger.IsValid())
 	{

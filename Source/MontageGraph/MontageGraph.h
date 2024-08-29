@@ -50,6 +50,12 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Montage Graph Defaults")
 	TSubclassOf<UControlRig> ControlRigClass;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWriteCategory = "Montage Graph Defaults", meta = (RelativePath))
+	FDirectoryPath GraphOutputBaseDir;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWriteCategory = "Montage Graph Defaults")
+	FString GraphOutputPrefix;
+
 private:
 	/** The default skeletal mesh to use when previewing this asset */
 	UPROPERTY(duplicatetransient, AssetRegistrySearchable)

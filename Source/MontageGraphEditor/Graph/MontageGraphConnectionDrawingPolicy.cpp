@@ -1,6 +1,6 @@
 #include "MontageGraphConnectionDrawingPolicy.h"
 
-#include "HBMontageGraphEdGraph.h"
+#include "MontageGraphEdGraph.h"
 #include "MontageGraphEditorStyles.h"
 #include "MontageGraphDebugger.h"
 #include "Slate/SHBMontageGraphSelectorOutputPin.h"
@@ -13,7 +13,7 @@ FMontageGraphConnectionDrawingPolicy::FMontageGraphConnectionDrawingPolicy(
 	: FConnectionDrawingPolicy(InBackLayerID, InFrontLayerID, ZoomFactor, InClippingRect, InDrawElements)
 	  , GraphObj(InGraphObj)
 {
-	HBActionEdGraph = Cast<UHBMontageGraphEdGraph>(GraphObj);
+	HBActionEdGraph = Cast<UMontageGraphEdGraph>(GraphObj);
 }
 
 void FMontageGraphConnectionDrawingPolicy::DetermineWiringStyle(UEdGraphPin* OutputPin, UEdGraphPin* InputPin,

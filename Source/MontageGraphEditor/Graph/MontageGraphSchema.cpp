@@ -5,18 +5,15 @@
 #include "ConnectionDrawingPolicy.h"
 #include "EdGraphNode_Comment.h"
 #include "MontageGraphConnectionDrawingPolicy.h"
-#include "HBMontageGraphEdGraph.h"
-#include "..\MontageGraphEditorLog.h"
+#include "MontageGraphEditorLog.h"
 #include "MontageGraphEditorTypes.h"
 #include "MontageGraph/MontageGraphNode_Entry.h"
 #include "Animation/AnimMontage.h"
 #include "MontageGraph/MontageGraph.h"
 #include "MontageGraph/MontageGraphEdge.h"
 #include "MontageGraph/MontageGraphNode_Selector.h"
-#include "MontageGraph/MontageGraphNode_Entry.h"
 #include "MontageGraph/MontageGraphNode_Animation.h"
 #include "Slate/SGraphNodeAction.h"
-#include "Kismet2/BlueprintEditorUtils.h"
 
 #include "Nodes/MontageGraphEdNode.h"
 #include "Nodes/HBMontageGraphEdNodeSelector.h"
@@ -321,10 +318,10 @@ void FMontageGraphSchemaAction_NewNodeSelector::AddReferencedObjects(FReferenceC
 
 UEdGraphNode* FMontageGraphSchemaAction_AutoArrangeVertical::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
 {
-	UHBMontageGraphEdGraph* Graph = Cast<UHBMontageGraphEdGraph>(ParentGraph);
+	UMontageGraphEdGraph* Graph = Cast<UMontageGraphEdGraph>(ParentGraph);
 	if (Graph)
 	{
-		MontageGraph_LOG(Verbose, TEXT("FMontageGraphSchemaAction_AutoArrangeVertical::PerformAction"))
+		MG_ERROR(Verbose, TEXT("FMontageGraphSchemaAction_AutoArrangeVertical::PerformAction"))
 		Graph->AutoArrange(true);
 	}
 
@@ -336,10 +333,10 @@ UEdGraphNode* FMontageGraphSchemaAction_AutoArrangeVertical::PerformAction(UEdGr
 
 UEdGraphNode* FMontageGraphSchemaAction_AutoArrangeHorizontal::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
 {
-	UHBMontageGraphEdGraph* Graph = Cast<UHBMontageGraphEdGraph>(ParentGraph);
+	UMontageGraphEdGraph* Graph = Cast<UMontageGraphEdGraph>(ParentGraph);
 	if (Graph)
 	{
-		MontageGraph_LOG(Verbose, TEXT("FMontageGraphSchemaAction_AutoArrangeVertical::PerformAction Horizontal"))
+		MG_ERROR(Verbose, TEXT("FMontageGraphSchemaAction_AutoArrangeVertical::PerformAction Horizontal"))
 		Graph->AutoArrange(false);
 	}
 
@@ -353,7 +350,7 @@ UEdGraphNode* FMontageGraphSchemaAction_AutoArrangeHorizontal::PerformAction(UEd
 void UMontageGraphSchema::CreateDefaultNodesForGraph(UEdGraph& Graph) const
 {
 	UMontageGraph* HBMontageGraph = Cast<UMontageGraph>(Graph.GetOuter());
-	MontageGraph_LOG(Verbose, TEXT("CreateDefaultNodesForGraph - Graph, Outer HBMontageGraph: %s"), *GetNameSafe(HBMontageGraph))
+	MG_ERROR(Verbose, TEXT("CreateDefaultNodesForGraph - Graph, Outer HBMontageGraph: %s"), *GetNameSafe(HBMontageGraph))
 
 	// Create the entry/exit tunnels
 	FGraphNodeCreator<UMontageGraphEdNodeEntry> NodeCreator(Graph);
@@ -364,7 +361,7 @@ void UMontageGraphSchema::CreateDefaultNodesForGraph(UEdGraph& Graph) const
 	// // Create runtime node for this editor node. Entry nodes gets a bare bone anim base one as well with blank anim related info.
 	EntryNode->RuntimeNode = NewObject<UMontageGraphNode_Entry>(HBMontageGraph, UMontageGraphNode_Entry::StaticClass());
 	
-	if (UHBMontageGraphEdGraph* EdHBMontageGraph = CastChecked<UHBMontageGraphEdGraph>(&Graph))
+	if (UMontageGraphEdGraph* EdHBMontageGraph = CastChecked<UMontageGraphEdGraph>(&Graph))
 	{
 		EdHBMontageGraph->EntryNodes.Add(EntryNode);
 	}
@@ -467,7 +464,7 @@ void UMontageGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Conte
 				continue;
 			}
 
-			MontageGraph_LOG(Verbose, TEXT("GetGraphContextActions - Create action from %s"), *NodeType->GetName())
+			MG_ERROR(Verbose, TEXT("GetGraphContextActions - Create action from %s"), *NodeType->GetName())
 			CreateAndAddActionToContextMenu(ContextMenuBuilder, NodeType);
 			Visited.Add(NodeType);
 		}
@@ -606,7 +603,7 @@ bool UMontageGraphSchema::CreateAutomaticConversionNodeAndConnections(UEdGraphPi
 	{
 		if (NodeB && NodeB->GetInputPin())
 		{
-			MontageGraph_LOG(Verbose, TEXT("CreateAutomaticConversionNodeAndConnections for Selector"));
+			MG_ERROR(Verbose, TEXT("CreateAutomaticConversionNodeAndConnections for Selector"));
 			CreateEdgeConnection(A, B, SelectorNode, NodeB);
 			return true;
 		}
@@ -615,11 +612,11 @@ bool UMontageGraphSchema::CreateAutomaticConversionNodeAndConnections(UEdGraphPi
 	// Are nodes and pins all valid?
 	if (!NodeA || !NodeA->GetOutputPin() || !NodeB || !NodeB->GetInputPin())
 	{
-		MontageGraph_LOG(Verbose, TEXT("CreateAutomaticConversionNodeAndConnections failed"));
+		MG_ERROR(Verbose, TEXT("CreateAutomaticConversionNodeAndConnections failed"));
 		return false;
 	}
 
-	MontageGraph_LOG(Verbose, TEXT("CreateAutomaticConversionNodeAndConnections ok"));
+	MG_ERROR(Verbose, TEXT("CreateAutomaticConversionNodeAndConnections ok"));
 	CreateEdgeConnection(A, B, NodeA, NodeB);
 
 	return true;
@@ -869,7 +866,7 @@ void UMontageGraphSchema::SpawnNodeFromAsset(UAnimationAsset* Asset, const FVect
 		UClass* NewRuntimeClass = GetRuntimeClassForAnimAsset(Asset, Graph);
 		if (NewNodeClass && NewRuntimeClass)
 		{
-			MontageGraph_LOG(Verbose, TEXT("SpawnNodeFromAsset - NewNodeClass: %s, NewRuntimeClass: %s"), *NewNodeClass->GetName(), *NewRuntimeClass->GetName());
+			MG_ERROR(Verbose, TEXT("SpawnNodeFromAsset - NewNodeClass: %s, NewRuntimeClass: %s"), *NewNodeClass->GetName(), *NewRuntimeClass->GetName());
 			UMontageGraphEdNode* NewNode = NewObject<UMontageGraphEdNode>(Graph, NewNodeClass);
 			NewNode->RuntimeNode = NewObject<UMontageGraphNode>(NewNode, NewRuntimeClass);
 			// NewNode->RuntimeNode->SetAnimationAsset(Asset);
@@ -930,7 +927,7 @@ void UMontageGraphSchema::CreateEdgeConnection(UEdGraphPin* PinA, UEdGraphPin* P
 	const FVector2D InitPos((OwningNodeA->NodePosX + OwningNodeB->NodePosX) / 2, (OwningNodeA->NodePosY + OwningNodeB->NodePosY) / 2);
 
 	// UInputAction* DefaultInput = nullptr;
-	// if (const UHBMontageGraphEdGraph* HBMontageGraph = Cast<UHBMontageGraphEdGraph>(OwningNodeA->GetGraph()))
+	// if (const UMontageGraphEdGraph* HBMontageGraph = Cast<UMontageGraphEdGraph>(OwningNodeA->GetGraph()))
 	// {
 	// 	if (const UHBMontageGraph* HBMontageGraphModel = HBMontageGraph->GetHBMontageGraphModel())
 	// 	{

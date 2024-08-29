@@ -15,7 +15,7 @@
 #include "MontageGraphEditorLog.h"
 #include "PersonaModule.h"
 #include "Framework/Commands/GenericCommands.h"
-#include "Graph/HBMontageGraphEdGraph.h"
+#include "Graph/MontageGraphEdGraph.h"
 #include "Graph/MontageGraphSchema.h"
 #include "Graph/Nodes/MontageGraphEdNode.h"
 #include "Graph/Nodes/HBMontageGraphEdNodeEdge.h"
@@ -158,7 +158,7 @@ void FMontageGraphEditor::ExtendToolbar()
 
 void FMontageGraphEditor::FillToolbar(FToolBarBuilder& ToolBarBuilder)
 {
-	// const UHBMontageGraphEdGraph* EditorGraph = Cast<UHBMontageGraphEdGraph>(
+	// const UMontageGraphEdGraph* EditorGraph = Cast<UMontageGraphEdGraph>(
 	// 	GraphBeingEdited->EditorGraph);
 	// const TSharedRef<SWidget> SelectionBox = SNew(SComboButton)
 	//    		.OnGetMenuContent(this, &FHBCharacterAssetEditor::OnGetDebuggerActorsMenu)
@@ -182,7 +182,7 @@ void FMontageGraphEditor::FillToolbar(FToolBarBuilder& ToolBarBuilder)
 TSharedRef<SWidget> FMontageGraphEditor::OnGetDebuggerActorsMenu()
 {
 	FMenuBuilder MenuBuilder(true, nullptr);
-	const auto* EditorGraph = Cast<UHBMontageGraphEdGraph>(GraphBeingEdited->EditorGraph);
+	const auto* EditorGraph = Cast<UMontageGraphEdGraph>(GraphBeingEdited->EditorGraph);
 	if (!EditorGraph)
 	{
 		return MenuBuilder.MakeWidget();
@@ -412,7 +412,7 @@ void FMontageGraphEditor::InitCharacterEditor(EToolkitMode::Type Mode,
 	                                     bInIsToolbarFocusable);
 
 
-	UHBMontageGraphEdGraph* HBActioGraphEd = Cast<UHBMontageGraphEdGraph>(GraphBeingEdited->EditorGraph);
+	UMontageGraphEdGraph* HBActioGraphEd = Cast<UMontageGraphEdGraph>(GraphBeingEdited->EditorGraph);
 	check(HBActioGraphEd);
 
 	HBActioGraphEd->Debugger = MakeShareable(new FMontageGraphDebugger);
@@ -629,7 +629,7 @@ void FMontageGraphEditor::RebuildMontageGraph()
 		return;
 	}
 
-	if (auto Graph{CastChecked<UHBMontageGraphEdGraph>(GraphBeingEdited->EditorGraph)})
+	if (auto Graph{CastChecked<UMontageGraphEdGraph>(GraphBeingEdited->EditorGraph)})
 	{
 		Graph->RebuildGraph();
 	}
@@ -698,7 +698,7 @@ void FMontageGraphEditor::CreateEditorGraph()
 		GraphBeingEdited->EditorGraph = FBlueprintEditorUtils::CreateNewGraph(
 			GraphBeingEdited,
 			FName("ActionEdGraph"),
-			UHBMontageGraphEdGraph::StaticClass(),
+			UMontageGraphEdGraph::StaticClass(),
 			UMontageGraphSchema::StaticClass()
 		);
 		GraphBeingEdited->EditorGraph->bAllowRenaming = false;
@@ -1026,7 +1026,7 @@ bool FMontageGraphEditor::CanRenameNodes() const
 		return false;
 	}
 
-	// UHBMontageGraphEdGraph* HBActioGraphEd = Cast<UHBMontageGraphEdGraph>(GraphBeingEdited->EditorGraph);
+	// UMontageGraphEdGraph* HBActioGraphEd = Cast<UMontageGraphEdGraph>(GraphBeingEdited->EditorGraph);
 	// check(HBActioGraphEd);
 
 	return GetSelectedNodes().Num() == 1;
@@ -1052,7 +1052,7 @@ void FMontageGraphEditor::OnCreateComment() const
 // ReSharper disable once CppMemberFunctionMayBeConst
 void FMontageGraphEditor::OnGraphSelectionChanged(const TSet<UObject*>& NewSelection)
 {
-	MontageGraph_LOG(Verbose, TEXT("OnGraphSelectionChanged - %d"), NewSelection.Num())
+	MG_ERROR(Verbose, TEXT("OnGraphSelectionChanged - %d"), NewSelection.Num())
 
 	TArray<UObject*> SelectedNodes;
 	TArray<UMontageGraphEdNode*> GraphNodes;
@@ -1078,7 +1078,7 @@ void FMontageGraphEditor::OnGraphSelectionChanged(const TSet<UObject*>& NewSelec
 // ReSharper disable once CppMemberFunctionMayBeConst
 void FMontageGraphEditor::OnGraphNodeDoubleClicked(UEdGraphNode* Node)
 {
-	MontageGraph_LOG(Verbose, TEXT("OnGraphNodeDoubleClicked - %s"), *GetNameSafe(Node))
+	MG_ERROR(Verbose, TEXT("OnGraphNodeDoubleClicked - %s"), *GetNameSafe(Node))
 
 	// TODO: Handle rename of node on double click
 	// or opening of animation editor

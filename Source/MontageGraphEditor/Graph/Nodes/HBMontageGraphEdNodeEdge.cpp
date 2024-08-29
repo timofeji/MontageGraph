@@ -129,7 +129,7 @@ void UMontageGraphEdNodeEdge::UpdateCachedIcon()
 {
 	if (!RuntimeEdge)
 	{
-		MontageGraph_LOG(Error, TEXT("UMontageGraphEdNodeEdge::UpdateCachedIcon - Invalid Runtime Edge"))
+		MG_ERROR(Error, TEXT("UMontageGraphEdNodeEdge::UpdateCachedIcon - Invalid Runtime Edge"))
 		CachedIcon = nullptr;
 		return;
 	}

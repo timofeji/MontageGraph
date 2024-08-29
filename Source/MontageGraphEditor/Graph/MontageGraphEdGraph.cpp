@@ -1,4 +1,4 @@
-#include "HBMontageGraphEdGraph.h"
+#include "MontageGraphEdGraph.h"
 
 
 #include "..\MontageGraphEditorLog.h"
@@ -14,12 +14,12 @@
 #include "Nodes/HBMontageGraphEdNodeEdge.h"
 #include "Nodes/HBMontageGraphEdNodeEntry.h"
 
-UMontageGraph* UHBMontageGraphEdGraph::GetHBMontageGraphModel() const
+UMontageGraph* UMontageGraphEdGraph::GetHBMontageGraphModel() const
 {
 	return CastChecked<UMontageGraph>(GetOuter());
 }
 
-void UHBMontageGraphEdGraph::RebuildGraphForSelector(UMontageGraph*              OwningGraph,
+void UMontageGraphEdGraph::RebuildGraphForSelector(UMontageGraph*              OwningGraph,
                                                    UMontageGraphEdNodeSelector* SelectorNode)
 {
 	UMontageGraphEdNode*      Node        = Cast<UMontageGraphEdNode>(SelectorNode);
@@ -70,9 +70,9 @@ void UHBMontageGraphEdGraph::RebuildGraphForSelector(UMontageGraph*             
 	}
 }
 
-void UHBMontageGraphEdGraph::RebuildGraph()
+void UMontageGraphEdGraph::RebuildGraph()
 {
-	MontageGraph_LOG(Verbose, TEXT("UHBMontageGraphEdGraph::RebuildGraph has been called. Nodes Num: %d"), Nodes.Num())
+	MG_ERROR(Verbose, TEXT("UMontageGraphEdGraph::RebuildGraph has been called. Nodes Num: %d"), Nodes.Num())
 
 	UMontageGraph* HBMontageGraph = GetHBMontageGraphModel();
 	check(HBMontageGraph)
@@ -81,7 +81,7 @@ void UHBMontageGraphEdGraph::RebuildGraph()
 
 	for (UEdGraphNode* CurrentNode : Nodes)
 	{
-		MontageGraph_LOG(Verbose, TEXT("UHBMontageGraphEdGraph::RebuildGraph for node: %s (%s)"), *CurrentNode->GetName(),
+		MG_ERROR(Verbose, TEXT("UMontageGraphEdGraph::RebuildGraph for node: %s (%s)"), *CurrentNode->GetName(),
 		              *CurrentNode->GetClass()->GetName())
 
 		if (UMontageGraphEdNodeEntry* GraphEntryNode = Cast<UMontageGraphEdNodeEntry>(CurrentNode))
@@ -115,7 +115,7 @@ void UHBMontageGraphEdGraph::RebuildGraph()
 	}
 }
 
-void UHBMontageGraphEdGraph::RebuildGraphForEdge(UMontageGraph* OwningGraph, UMontageGraphEdNodeEdge* EdGraphEdge)
+void UMontageGraphEdGraph::RebuildGraphForEdge(UMontageGraph* OwningGraph, UMontageGraphEdNodeEdge* EdGraphEdge)
 {
 	UMontageGraphEdNode* StartNode = EdGraphEdge->GetStartNodeAsBase();
 	UMontageGraphEdNode* EndNode   = EdGraphEdge->GetEndNode();
@@ -123,9 +123,9 @@ void UHBMontageGraphEdGraph::RebuildGraphForEdge(UMontageGraph* OwningGraph, UMo
 
 	if (StartNode == nullptr || EndNode == nullptr || Edge == nullptr)
 	{
-		MontageGraph_LOG(
+		MG_ERROR(
 			Error,
-			TEXT("UHBMontageGraphEdGraph::RebuildGraph add edge failed. StartNode: %s, EndNode: %s, Edge: %s"),
+			TEXT("UMontageGraphEdGraph::RebuildGraph add edge failed. StartNode: %s, EndNode: %s, Edge: %s"),
 			StartNode ? *StartNode->GetName() : TEXT("NONE"),
 			EndNode ? *EndNode->GetName() : TEXT("NONE"),
 			Edge ? *Edge->GetName() : TEXT("NONE")
@@ -156,7 +156,7 @@ void UHBMontageGraphEdGraph::RebuildGraphForEdge(UMontageGraph* OwningGraph, UMo
 	}
 }
 
-void UHBMontageGraphEdGraph::RebuildGraphForNode(UMontageGraph* OwningGraph, UMontageGraphEdNode* NodeBase)
+void UMontageGraphEdGraph::RebuildGraphForNode(UMontageGraph* OwningGraph, UMontageGraphEdNode* NodeBase)
 {
 	UMontageGraphEdNode*        Node    = Cast<UMontageGraphEdNode>(NodeBase);
 	UMontageGraphEdNodeSelector* Selector = Cast<UMontageGraphEdNodeSelector>(NodeBase);
@@ -213,7 +213,7 @@ void UHBMontageGraphEdGraph::RebuildGraphForNode(UMontageGraph* OwningGraph, UMo
 }
 
 // ReSharper disable once CppMemberFunctionMayBeConst
-void UHBMontageGraphEdGraph::RebuildGraphForEntry(UMontageGraph* OwningGraph, UMontageGraphEdNodeEntry* NodeEntry)
+void UMontageGraphEdGraph::RebuildGraphForEntry(UMontageGraph* OwningGraph, UMontageGraphEdNodeEntry* NodeEntry)
 {
 	check(NodeEntry);
 	check(OwningGraph);
@@ -221,9 +221,9 @@ void UHBMontageGraphEdGraph::RebuildGraphForEntry(UMontageGraph* OwningGraph, UM
 	UMontageGraphEdNode*        ConnectedToNode = Cast<UMontageGraphEdNode>(NodeEntry->GetOutputNode());
 	UMontageGraphEdNodeSelector* Selector         = Cast<UMontageGraphEdNodeSelector>(NodeEntry->GetOutputNode());
 
-	MontageGraph_LOG(Verbose, TEXT("UHBMontageGraphEdGraph::RebuildGraphForEntry ... Node: %s"),
+	MG_ERROR(Verbose, TEXT("UMontageGraphEdGraph::RebuildGraphForEntry ... Node: %s"),
 				  ConnectedToNode ? *ConnectedToNode->GetName() : TEXT("NONE"))
-	MontageGraph_LOG(Verbose, TEXT("UHBMontageGraphEdGraph::RebuildGraphForEntry ... Selector: %s"),
+	MG_ERROR(Verbose, TEXT("UMontageGraphEdGraph::RebuildGraphForEntry ... Selector: %s"),
 				  Selector ? *Selector->GetName() : TEXT("NONE"))
 
 	if (ConnectedToNode)
@@ -239,7 +239,7 @@ void UHBMontageGraphEdGraph::RebuildGraphForEntry(UMontageGraph* OwningGraph, UM
 	}
 }
 
-void UHBMontageGraphEdGraph::ValidateNodes(FCompilerResultsLog* LogResults)
+void UMontageGraphEdGraph::ValidateNodes(FCompilerResultsLog* LogResults)
 {
 	for (const UEdGraphNode* Node : Nodes)
 	{
@@ -250,7 +250,7 @@ void UHBMontageGraphEdGraph::ValidateNodes(FCompilerResultsLog* LogResults)
 	}
 }
 
-bool UHBMontageGraphEdGraph::Modify(const bool bAlwaysMarkDirty)
+bool UMontageGraphEdGraph::Modify(const bool bAlwaysMarkDirty)
 {
 	const bool bWasSaved = Super::Modify(bAlwaysMarkDirty);
 
@@ -268,14 +268,14 @@ bool UHBMontageGraphEdGraph::Modify(const bool bAlwaysMarkDirty)
 	return bWasSaved;
 }
 
-void UHBMontageGraphEdGraph::PostEditUndo()
+void UMontageGraphEdGraph::PostEditUndo()
 {
 	Super::PostEditUndo();
 
 	NotifyGraphChanged();
 }
 
-TArray<UMontageGraphEdNode*> UHBMontageGraphEdGraph::GetAllNodes() const
+TArray<UMontageGraphEdNode*> UMontageGraphEdGraph::GetAllNodes() const
 {
 	TArray<UMontageGraphEdNode*> OutNodes;
 	for (UEdGraphNode* EdNode : Nodes)
@@ -418,7 +418,7 @@ namespace ACEAutoArrangeHelpers
 }
 
 
-void UHBMontageGraphEdGraph::AutoArrange(const bool bVertical)
+void UMontageGraphEdGraph::AutoArrange(const bool bVertical)
 {
 	UMontageGraphEdNode* RootNode = nullptr;
 	for (int32 Idx = 0; Idx < Nodes.Num(); Idx++)
@@ -435,7 +435,7 @@ void UHBMontageGraphEdGraph::AutoArrange(const bool bVertical)
 		return;
 	}
 
-	MontageGraph_LOG(Verbose, TEXT("UHBMontageGraphEdGraph::AutoArrange Strategy: %s"),
+	MG_ERROR(Verbose, TEXT("UMontageGraphEdGraph::AutoArrange Strategy: %s"),
 	              bVertical ? TEXT("Vertical") : TEXT("Horizontal"))
 	const FScopedTransaction Transaction(NSLOCTEXT("ACEGraph", "CombatGraphEditorAutoArrange",
 	                                               "Montage Graph Editor: Auto Arrange"));
@@ -469,7 +469,7 @@ void UHBMontageGraphEdGraph::AutoArrange(const bool bVertical)
 	RootNode->DEPRECATED_NodeWidget.Pin()->GetOwnerPanel()->ZoomToFit(/*bOnlySelection=*/ false);
 }
 
-void UHBMontageGraphEdGraph::Clear()
+void UMontageGraphEdGraph::Clear()
 {
 	UMontageGraph* HBMontageGraphModel = GetHBMontageGraphModel();
 	if (HBMontageGraphModel)
@@ -496,7 +496,7 @@ void UHBMontageGraphEdGraph::Clear()
 	}
 }
 
-void UHBMontageGraphEdGraph::SortNodes(UMontageGraphNode* RootNode)
+void UMontageGraphEdGraph::SortNodes(UMontageGraphNode* RootNode)
 {
 	TArray<UMontageGraphNode*> CurrLevelNodes = {RootNode};
 	TArray<UMontageGraphNode*> NextLevelNodes;

@@ -62,7 +62,7 @@ void FAssetTypeActions_MontageGraph::OpenAssetEditor(const TArray<UObject*>& InO
 			// }
 			//
 
-			MontageGraph_LOG(
+			MG_ERROR(
 				Warning,
 				TEXT("Tried to create a Character = `%s`"),
 				*GraphToEdit->GetPathName());

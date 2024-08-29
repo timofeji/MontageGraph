@@ -3,7 +3,7 @@
 
 #include "CoreMinimal.h"
 #include "EdGraph/EdGraph.h"
-#include "HBMontageGraphEdGraph.generated.h"
+#include "MontageGraphEdGraph.generated.h"
 
 class UMontageGraph;
 class FMontageGraphDebugger;
@@ -18,7 +18,7 @@ class UMontageGraphEdNode;
 class UMontageGraphEdNodeEntry;
 
 UCLASS()
-class MONTAGEGRAPHEDITOR_API UHBMontageGraphEdGraph : public UEdGraph
+class MONTAGEGRAPHEDITOR_API UMontageGraphEdGraph : public UEdGraph
 {
 	GENERATED_BODY()
 

@@ -1,6 +1,9 @@
 #pragma once
 #include "IDetailCustomization.h"
+#include "MontageGraph/MontageGraph.h"
 
+class UMontageGraphEdNodeMontage;
+class UControlRig;
 /**
  * 
  */
@@ -13,4 +16,8 @@ public:
 	}
 
 	virtual void CustomizeDetails(IDetailLayoutBuilder& DetailBuilder) override;
+	
+	void CreateLinkedControlRigMontageForNode(UMontageGraphEdNodeMontage* AnimNode) const;
+
+	UMontageGraph* GraphBeingEdited;
 };

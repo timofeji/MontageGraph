@@ -28,11 +28,13 @@ public class MontageGraphEditor: ModuleRules
 			"GraphEditor",
 			"ToolWidgets",
 			"GameplayTags",
-			"UnrealEd",
+			"UnrealEd", 
+			"LevelSequence"
 		});
         
 		PublicDependencyModuleNames.AddRange(new string[]
 		{
+			"ControlRig",
 			"Persona",
 			"Core",
 			"AssetTools",

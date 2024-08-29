@@ -2,14 +2,14 @@
 
 #include "CoreMinimal.h"
 #include "ConnectionDrawingPolicy.h"
-#include "HBMontageGraphEdGraph.h"
+#include "MontageGraphEdGraph.h"
 
 class MONTAGEGRAPHEDITOR_API FMontageGraphConnectionDrawingPolicy : public FConnectionDrawingPolicy
 {
 protected:
 	UEdGraph* GraphObj;
 	TMap<UEdGraphNode*, int32> NodeWidgetMap;
-	UHBMontageGraphEdGraph* HBActionEdGraph;
+	UMontageGraphEdGraph* HBActionEdGraph;
 
 public:
 	FMontageGraphConnectionDrawingPolicy(int32 InBackLayerID, int32 InFrontLayerID, float ZoomFactor, const FSlateRect& InClippingRect, FSlateWindowElementList& InDrawElements, UEdGraph* InGraphObj);

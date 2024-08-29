@@ -51,7 +51,7 @@ FMontageGraphDebugger::~FMontageGraphDebugger()
 
 void FMontageGraphDebugger::Tick(float DeltaTime)
 {
-	// MontageGraph_LOG(Verbose, TEXT("FMontageGraphDebugger Tick"))
+	// MG_ERROR(Verbose, TEXT("FMontageGraphDebugger Tick"))
 }
 
 bool FMontageGraphDebugger::IsTickable() const
@@ -143,14 +143,14 @@ void FMontageGraphDebugger::OnPausePIE(const bool bIsSimulating)
 
 void FMontageGraphDebugger::OnObjectSelected(UObject* Object)
 {
-	MontageGraph_LOG(Verbose, TEXT("FMontageGraphDebugger TestDebugger OnObjectSelected %s"), *GetNameSafe(Object))
+	MG_ERROR(Verbose, TEXT("FMontageGraphDebugger TestDebugger OnObjectSelected %s"), *GetNameSafe(Object))
 
 	if (Object && Object->IsSelected())
 	{
 		AActor* Actor = Cast<AActor>(Object);
 		if (Actor)
 		{
-			MontageGraph_LOG(
+			MG_ERROR(
 				Verbose, TEXT("FMontageGraphDebugger TestDebugger OnObjectSelected Update actor instance %s"),
 				*GetNameSafe(Actor))
 			MontageGraphComponentOwner = Actor;
@@ -163,15 +163,15 @@ void FMontageGraphDebugger::OnGraphEvaluated(const UHBActionComponent& EvaluateT
                                               const UMontageGraphNode& EvaluatedNode)
 {
 	// const bool bAssetMatches = HBMontageGraphAsset && HBMontageGraphAsset == &InHBMontageGraphAsset;
-	// MontageGraph_LOG(Verbose, TEXT("FMontageGraphDebugger TestDebugger OnHBMontageGraphStarted %s - %d (Ability: %s)"), *GetNameSafe(&InHBMontageGraphAsset), InHBMontageGraphAsset.GetUniqueID(), *GetNameSafe(&InOwnerTask))
-	// MontageGraph_LOG(Verbose, TEXT("FMontageGraphDebugger TestDebugger OnHBMontageGraphStarted bAssetMatches %s)"), bAssetMatches ? TEXT("true") : TEXT("false"))
+	// MG_ERROR(Verbose, TEXT("FMontageGraphDebugger TestDebugger OnHBMontageGraphStarted %s - %d (Ability: %s)"), *GetNameSafe(&InHBMontageGraphAsset), InHBMontageGraphAsset.GetUniqueID(), *GetNameSafe(&InOwnerTask))
+	// MG_ERROR(Verbose, TEXT("FMontageGraphDebugger TestDebugger OnHBMontageGraphStarted bAssetMatches %s)"), bAssetMatches ? TEXT("true") : TEXT("false"))
 	//
 	// // start debugging if combo graph asset matches, and no other actor was selected
 	// if (!MontageGraphComponentOwner.IsValid() && bAssetMatches)
 	// {
 	// 	AActor* Avatar = InOwnerTask.Character;
 	//
-	// 	MontageGraph_LOG(Verbose, TEXT("FMontageGraphDebugger TestDebugger OnHBMontageGraphStarted SetObjeSetActorBeingDebuggedctBeingDebugged %s"), *GetNameSafe(Avatar))
+	// 	MG_ERROR(Verbose, TEXT("FMontageGraphDebugger TestDebugger OnHBMontageGraphStarted SetObjeSetActorBeingDebuggedctBeingDebugged %s"), *GetNameSafe(Avatar))
 	// 	MontageGraphComponentOwner = MakeWeakObjectPtr(Avatar);
 	// }
 	//
@@ -343,7 +343,7 @@ FString FMontageGraphDebugger::DescribeInstance(const AActor& ActorToDescribe) c
 
 void FMontageGraphDebugger::OnInstanceSelectedInDropdown(AActor* SelectedActor)
 {
-	MontageGraph_LOG(Verbose, TEXT("FMontageGraphDebugger OnInstanceSelectedInDropdown Actor: %s"),
+	MG_ERROR(Verbose, TEXT("FMontageGraphDebugger OnInstanceSelectedInDropdown Actor: %s"),
 	              *GetNameSafe(SelectedActor))
 
 	if (SelectedActor)
