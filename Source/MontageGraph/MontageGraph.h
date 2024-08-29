@@ -49,11 +49,11 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Montage Graph Defaults")
 	TSubclassOf<UControlRig> ControlRigClass;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWriteCategory = "Montage Graph Defaults", meta = (RelativePath))
-	FDirectoryPath GraphOutputBaseDir;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWriteCategory = "Montage Graph Defaults")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage Graph Defaults")
+	FString GraphOutputBaseDir = "Animation";
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage Graph Defaults")
 	FString GraphOutputPrefix;
 
 private:
