@@ -22,7 +22,6 @@
 #include "Widgets/Text/STextBlock.h"
 
 
-
 //Largely copied from ControlRigEditorModule.cpp
 void FMontageGraphDetails::CreateLinkedControlRigMontageForNode(UMontageGraphEdNodeMontage* AnimNode) const
 {
@@ -157,6 +156,7 @@ void FMontageGraphDetails::CreateLinkedControlRigMontageForNode(UMontageGraphEdN
 			WeakSequencer.Pin()->
 			              NotifyMovieSceneDataChanged(EMovieSceneDataChangeType::MovieSceneStructureItemsChanged);
 
+
 			Track->Modify();
 			UMovieSceneSection* NewSection = Track->CreateControlRigSection(0, ControlRig, true);
 			//mz todo need to have multiple rigs with same class
@@ -164,6 +164,9 @@ void FMontageGraphDetails::CreateLinkedControlRigMontageForNode(UMontageGraphEdN
 			Track->SetDisplayName(FText::FromString(ObjectName));
 			UMovieSceneControlRigParameterSection* ParamSection = Cast<UMovieSceneControlRigParameterSection>(
 				NewSection);
+				
+				
+			WeakSequencer.Pin()->SelectTrack(Track);
 		}
 	}
 }
@@ -197,7 +200,7 @@ void FMontageGraphDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 		}
 	}
 
-	if (!bNoMontage && MontageEdNode != nullptr)
+	if (!IsValid(GraphBeingEdited->ControlRigClass) && MontageEdNode != nullptr)
 	{
 		return;
 	}
