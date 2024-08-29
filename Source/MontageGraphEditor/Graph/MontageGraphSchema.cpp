@@ -431,9 +431,9 @@ void UMontageGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Conte
 	const TSharedPtr<FHBMontageGraphSchemaAction_NewNodeAction> ActionNodeAction(
 		new FHBMontageGraphSchemaAction_NewNodeAction(
 			LOCTEXT("MontageGraphNode", "Montage Graph Node"),
-			LOCTEXT("AddAction", "Add Action..."),
-			LOCTEXT("AddAction",
-			        "A "),
+			LOCTEXT("AddAnimation", "AddAnimation..."),
+			LOCTEXT("AddAnimation",
+			        "AddAnimation"),
 			1
 		));
 	ActionNodeAction->NodeTemplate = NewObject<UMontageGraphEdNodeMontage>(ContextMenuBuilder.OwnerOfTemporaries);

@@ -30,6 +30,7 @@ public class MontageGraphEditor: ModuleRules
 			"GameplayTags",
 			"UnrealEd", 
 			"LevelSequence",
+			"MovieSceneTools"
 		});
         
 		PublicDependencyModuleNames.AddRange(new string[]

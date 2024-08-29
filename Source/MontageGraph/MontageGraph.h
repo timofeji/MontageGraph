@@ -51,7 +51,7 @@ public:
 	TSubclassOf<UControlRig> ControlRigClass;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage Graph Defaults")
-	FString GraphOutputBaseDir = "Animation";
+	FString GraphOutputBaseDir = "MontageGraphAssets";
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage Graph Defaults")
 	FString GraphOutputPrefix;
