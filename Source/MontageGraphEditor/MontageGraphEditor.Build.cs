@@ -29,18 +29,19 @@ public class MontageGraphEditor: ModuleRules
 			"ToolWidgets",
 			"GameplayTags",
 			"UnrealEd", 
-			"LevelSequence",
 			"MovieSceneTools",
+			
 		});
         
 		PublicDependencyModuleNames.AddRange(new string[]
 		{
-			"SequencerScriptingEditor",
-			"LevelSequenceEditor", "Sequencer",
 			"AnimationCore",
-			"MovieScene",
 			"ControlRig",
-			"ControlRigEditor",
+			"SequencerScriptingEditor",
+			"Sequencer",
+			"LevelSequence",
+			"LevelSequenceEditor", 
+			"MovieScene",
 			"Persona",
 			"Core",
 			"AssetTools",

@@ -3,7 +3,6 @@
 #include <Graph/Nodes/MontageGraphEdNodeMontage.h>
 
 #include "AnimationEditorUtils.h"
-#include "AnimSequenceLevelSequenceLink.h"
 #include "AssetToolsModule.h"
 #include "ControlRigObjectBinding.h"
 #include "DetailLayoutBuilder.h"
@@ -19,8 +18,6 @@
 #include "SequencerTools.h"
 #include "Animation/SkeletalMeshActor.h"
 #include "AssetRegistry/AssetRegistryModule.h"
-#include "ControlRigEditor/Private/ControlRigEditorModule.h"
-#include "ControlRigEditor/Public/EditMode/ControlRigEditMode.h"
 #include "Exporters/AnimSeqExportOption.h"
 #include "Factories/AnimMontageFactory.h"
 #include "Factories/AnimSequenceFactory.h"
@@ -113,9 +110,7 @@ void FMontageGraphDetails::CreateLinkedControlRigAnimationForNode(UMontageGraphE
 		{
 			ActorTrackGuid = SpawnableGuids[0];
 
-			UObject* SpawnedMesh = Sequencer->FindSpawnedObjectOrTemplate(ActorTrackGuid);
-
-			if (SpawnedMesh)
+			if (UObject* SpawnedMesh = Sequencer->FindSpawnedObjectOrTemplate(ActorTrackGuid))
 			{
 				GCurrentLevelEditingViewportClient->GetWorld()->EditorDestroyActor(MeshActor, true);
 				MeshActor = Cast<ASkeletalMeshActor>(SpawnedMesh);
@@ -291,26 +286,6 @@ void FMontageGraphDetails::CreateLinkedControlRigAnimationForNode(UMontageGraphE
 	}
 }
 
-
-void FMontageGraphDetails::OpenLinkedAnimation(UMontageGraphEdNodeMontage* MontageEdNode)
-{
-	UMontageGraphNode_Animation* AnimNode = Cast<UMontageGraphNode_Animation>(MontageEdNode->RuntimeNode);
-	if (AnimNode && AnimNode->AnimationMontage != nullptr)
-	{
-		TArray<UAnimationAsset*> AnimSequences;
-		AnimNode->AnimationMontage->GetAllAnimationSequencesReferred(AnimSequences);
-
-		if (!AnimSequences.Num())
-		{
-			return;
-		}
-
-		auto SequenceToOpen = Cast<UAnimSequence>(AnimSequences[0]);
-		FControlRigEditorModule::OpenLevelSequence(SequenceToOpen);
-	}
-}
-
-
 void FMontageGraphDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 {
 	IDetailCategoryBuilder& Category = DetailBuilder.EditCategory("Animation",
@@ -345,6 +320,8 @@ void FMontageGraphDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 		return;
 	}
 
+
+
 	//If Not add option to create a linked montage using control rig
 	TArray<TSharedRef<IPropertyHandle>> AllProperties;
 	Category.GetDefaultProperties(AllProperties);
@@ -354,11 +331,11 @@ void FMontageGraphDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 		Category.AddProperty(Property); // Copy existing properties so our btn is at the bottom
 	}
 
-	if (MontageEdNode->bHasLinkedAnimation)
+	if (MontageEdNode->HasLinkedMontage())
 	{
 		FSimpleDelegate OnClickDelegate = FSimpleDelegate::CreateLambda([this, MontageEdNode]()
 		{
-			OpenLinkedAnimation(MontageEdNode);
+			MontageEdNode->OpenLinkedAnimation();
 		});
 		Category.AddCustomRow(FText::FromString("MontageGraphFooter"))
 		        .WholeRowWidget
@@ -404,7 +381,6 @@ void FMontageGraphDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 		{
 			CreateLinkedControlRigAnimationForNode(MontageEdNode);
 
-			MontageEdNode->bHasLinkedAnimation = true;
 			MontageEdNode->Modify(true);
 			DetailBuilder.ForceRefreshDetails();
 		});

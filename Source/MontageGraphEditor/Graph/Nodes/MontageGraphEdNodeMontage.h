@@ -20,7 +20,6 @@ public:
 	UPROPERTY(EditAnywhere, Category=Animation, meta=(DisplayPriority=-1))
 	FString AnimationName;
 
-	bool bHasLinkedAnimation = false;
 
 	//~ Begin UEdGraphNode Interface
 	virtual void AllocateDefaultPins() override;
@@ -33,5 +32,10 @@ public:
 	virtual FString GetDocumentationLink() const override;
 
 	virtual void OnRenameNode(const FString& NewName) override;
+	
+	
+	bool HasLinkedMontage() const;
+	void OpenLinkedAnimation() const;
+	UAnimSequence* GetLinkedAnimation() const;
 	//~ End UEdGraphNode Interface
 };

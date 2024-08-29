@@ -21,12 +21,9 @@ public:
 
 	virtual void CustomizeDetails(IDetailLayoutBuilder& DetailBuilder) override;
 
-
 	void CreateLinkedControlRigAnimationForNode(UMontageGraphEdNodeMontage* AnimNode) const;
-	void OpenLinkedAnimation(UMontageGraphEdNodeMontage* MontageEdNode);
 
 	UMontageGraph* GraphBeingEdited;
-
 private:
 	TObjectPtr<UAnimSeqExportOption> AnimSeqExportOption;
 
