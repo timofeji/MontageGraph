@@ -13,21 +13,18 @@
 #include "Editor/Sequencer/Public/ISequencer.h"
 #include "LevelEditorViewport.h"
 #include "LevelSequence.h"
-#include "LevelSequenceAnimSequenceLink.h"
 #include "MontageGraphEditorLog.h"
 #include "MovieScene.h"
-#include "MovieSceneToolHelpers.h"
 #include "SequencerChannelTraits.h"
+#include "SequencerTools.h"
 #include "Animation/SkeletalMeshActor.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "ControlRigEditor/Public/EditMode/ControlRigEditMode.h"
-#include "Editor/Sequencer/Private/Sequencer.h"
 #include "Exporters/AnimSeqExportOption.h"
 #include "Factories/AnimMontageFactory.h"
 #include "Factories/AnimSequenceFactory.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "Graph/MontageGraphEdGraph.h"
-#include "Interfaces/IMainFrameModule.h"
 #include "MontageGraph/MontageGraph.h"
 #include "MontageGraph/MontageGraphNode_Animation.h"
 #include "Sequencer/MovieSceneControlRigParameterTrack.h"
@@ -189,300 +186,114 @@ void FMontageGraphDetails::CreateLinkedControlRigAnimationForNode(UMontageGraphE
 			Sequencer->ThrobSectionSelection();
 			Sequencer->ObjectImplicitlyAdded(ControlRig);
 			Sequencer->NotifyMovieSceneDataChanged(EMovieSceneDataChangeType::MovieSceneStructureItemAdded);
-			// FControlRigEditMode* ControlRigEditMode = static_cast<FControlRigEditMode*>(GLevelEditorModeTools().
-			// 	GetActiveMode(FControlRigEditMode::ModeName));
-			// if (!ControlRigEditMode)
-			// {
-			// 	GLevelEditorModeTools().ActivateMode(FControlRigEditMode::ModeName);
-			// 	ControlRigEditMode = static_cast<FControlRigEditMode*>(GLevelEditorModeTools().GetActiveMode(
-			// 		FControlRigEditMode::ModeName));
-			// }
-			// if (ControlRigEditMode)
-			// {
-			// 	ControlRigEditMode->AddControlRigObject(ControlRig, Sequencer);
-			// }
 
-			//create soft links to each other
-			// if (IInterface_AssetUserData* AssetUserDataInterface = Cast<IInterface_AssetUserData>(LevelSequence))
-			// {
-			// 	ULevelSequenceAnimSequenceLink* LevelAnimLink = NewObject<ULevelSequenceAnimSequenceLink>(
-			// 		LevelSequence, NAME_None, RF_Public | RF_Transactional);
-			// 	FLevelSequenceAnimSequenceLinkItem LevelAnimLinkItem;
-			// 	LevelAnimLinkItem.SkelTrackGuid = ActorTrackGuid;
-			// 	// LevelAnimLinkItem.PathToAnimSequence = FSoftObjectPath(AnimSequence);
-			// 	LevelAnimLinkItem.bExportMorphTargets = true;
-			// 	LevelAnimLinkItem.bExportAttributeCurves = true;
-			// 	LevelAnimLinkItem.Interpolation = EAnimInterpolationType::Linear;
-			// 	LevelAnimLinkItem.CurveInterpolation = ERichCurveInterpMode::RCIM_Linear;
-			// 	LevelAnimLinkItem.bExportMaterialCurves = true;
-			// 	LevelAnimLinkItem.bExportTransforms = true;
-			// 	LevelAnimLinkItem.bRecordInWorldSpace = false;
-			// 	LevelAnimLinkItem.bEvaluateAllSkeletalMeshComponents = true;
-			// 	LevelAnimLink->AnimSequenceLinks.Add(LevelAnimLinkItem);
-			// 	AssetUserDataInterface->AddAssetUserData(LevelAnimLink);
-			// }
-			// if (IInterface_AssetUserData* AnimAssetUserData = Cast<IInterface_AssetUserData>(AnimSequence))
-			// {
-			// 	UAnimSequenceLevelSequenceLink* AnimLevelLink = AnimAssetUserData->GetAssetUserData<
-			// 		UAnimSequenceLevelSequenceLink>();
-			// 	if (!AnimLevelLink)
-			// 	{
-			// 		AnimLevelLink = NewObject<UAnimSequenceLevelSequenceLink>(
-			// 			AnimSequence, NAME_None, RF_Public | RF_Transactional);
-			// 		AnimAssetUserData->AddAssetUserData(AnimLevelLink);
-			// 	}
-			// 	AnimLevelLink->SetLevelSequence(LevelSequence);
-			// 	AnimLevelLink->SkelTrackGuid = ActorTrackGuid;
-			// }
+			TArray<UPackage*> PackagesToSave;
+			if (SkeletalMesh)
+			{
+				const FString AnimSeqPrefixStr = GraphBeingEdited->GraphOutputPrefix.IsEmpty()
+					                                 ? TEXT("Seq")
+					                                 : FString::Printf(
+						                                 TEXT("Seq_%s"), *GraphBeingEdited->GraphOutputPrefix);
 
-			CreateLinkedAnimationAssets(AnimNode, AssetToolsModule, SkeletalMesh);
+				const FString AnimSequenceName = FString::Printf(TEXT("%s_%s"),
+				                                                 *AnimSeqPrefixStr,
+				                                                 *AnimNode->AnimationName);
+
+				const FString AnimSeqPackagePath = GraphBeingEdited->GetOutermost()->GetName() / "Sequences";
+
+				FString AnimSeqUniquePackageName;
+				FString AnimSeqUniqueAssetName;
+				AssetToolsModule.Get().CreateUniqueAssetName(AnimSeqPackagePath / AnimSequenceName, TEXT(""),
+				                                             AnimSeqUniquePackageName,
+				                                             AnimSeqUniqueAssetName);
+
+
+				UAnimSequenceFactory* SeqFactory = NewObject<UAnimSequenceFactory>();
+				SeqFactory->TargetSkeleton = SkeletalMesh->GetSkeleton();
+				SeqFactory->PreviewSkeletalMesh = SkeletalMesh;
+
+				UAnimSequence* NewAnimSequence = CastChecked<UAnimSequence>(
+					AssetToolsModule.Get().CreateAsset(AnimSeqUniqueAssetName,
+					                                   FPackageName::GetLongPackagePath(AnimSeqUniquePackageName),
+					                                   UAnimSequence::StaticClass(), SeqFactory));
+
+				if (NewAnimSequence == nullptr)
+				{
+					return;
+				}
+
+
+				FMovieSceneBindingProxy Binding(ActorTrackGuid, LevelSequence);
+				UAnimSeqExportOption* ExportOptions = NewObject<UAnimSeqExportOption>();
+				USequencerToolsFunctionLibrary::LinkAnimSequence(LevelSequence, NewAnimSequence, ExportOptions,
+				                                                 Binding);
+
+				const FString AnimMontagePrefixStr = GraphBeingEdited->GraphOutputPrefix.IsEmpty()
+					                                     ? TEXT("Montage")
+					                                     : FString::Printf(
+						                                     TEXT("Montage_%s"), *GraphBeingEdited->GraphOutputPrefix);
+
+				const FString AnimMontageName = FString::Printf(TEXT("%s_%s"),
+				                                                *AnimMontagePrefixStr,
+				                                                *AnimNode->AnimationName);
+
+				const FString AnimMontagePackagePath = GraphBeingEdited->GetOutermost()->GetName() / "Montages";
+
+				FString AnimMontageUniquePackageName;
+				FString AnimMontageUniqueAssetName;
+				AssetToolsModule.Get().CreateUniqueAssetName(AnimMontagePackagePath / AnimMontageName, TEXT(""),
+				                                             AnimMontageUniquePackageName,
+				                                             AnimMontageUniqueAssetName);
+
+
+				UAnimMontageFactory* MontageFactory = NewObject<UAnimMontageFactory>();
+				MontageFactory->TargetSkeleton = SkeletalMesh->GetSkeleton();
+				MontageFactory->SourceAnimation = NewAnimSequence;
+				MontageFactory->PreviewSkeletalMesh = SkeletalMesh;
+
+				UAnimMontage* NewAnimMontage = CastChecked<UAnimMontage>(
+					AssetToolsModule.Get().CreateAsset(AnimMontageUniqueAssetName,
+					                                   FPackageName::GetLongPackagePath(AnimMontageUniquePackageName),
+					                                   UAnimMontage::StaticClass(), MontageFactory));
+
+				UMontageGraphNode_Animation* MontageNode = Cast<UMontageGraphNode_Animation>(AnimNode->RuntimeNode);
+				if (NewAnimMontage == nullptr || MontageNode == nullptr)
+				{
+					return;
+				}
+
+				MontageNode->AnimationMontage = NewAnimMontage;
+
+				FFormatNamedArguments Args;
+				Args.Add(TEXT("AnimSequenceName"), FText::FromString(NewAnimSequence->GetName()));
+				Args.Add(TEXT("AnimMontageName"), FText::FromString(NewAnimMontage->GetName()));
+				FNotificationInfo Info(FText::Format(LOCTEXT("LinkedAnimCreatedNotification",
+				                                             "Sequence: \"{AnimSequenceName}\" linked to Montage:  \"{AnimMontageName}\""), Args));
+				Info.ExpireDuration = 3.0f;
+				Info.bUseLargeFont = false;
+				TSharedPtr<SNotificationItem> Notification = FSlateNotificationManager::Get().AddNotification(Info);
+				if (Notification.IsValid())
+				{
+					Notification->SetCompletionState(SNotificationItem::CS_Success);
+				}
+				
+				
+				PackagesToSave.Add(NewAnimSequence->GetPackage());
+				PackagesToSave.Add(NewAnimMontage->GetPackage());
+			}
+
 
 			//Instantly Save
-			TArray<UPackage*> PackagesToSave;
 			PackagesToSave.Add(LevelSequencePackage);
-			FEditorFileUtils::PromptForCheckoutAndSave(PackagesToSave, true, false);
+			FEditorFileUtils::PromptForCheckoutAndSave(PackagesToSave, true, true);
 		}
 	}
-}
-
-void FMontageGraphDetails::CreateLinkedAnimationAssets(UMontageGraphEdNodeMontage* AnimNode,
-                                                       FAssetToolsModule& AssetToolsModule,
-                                                       USkeletalMesh* SkeletalMesh) const
-{
-	if (SkeletalMesh)
-	{
-		const FString AnimSeqPrefixStr = GraphBeingEdited->GraphOutputPrefix.IsEmpty()
-			                                 ? TEXT("Seq")
-			                                 : FString::Printf(
-				                                 TEXT("Seq_%s"), *GraphBeingEdited->GraphOutputPrefix);
-
-		const FString AnimSequenceName = FString::Printf(TEXT("%s_%s"),
-		                                                 *AnimSeqPrefixStr,
-		                                                 *AnimNode->AnimationName);
-
-		const FString AnimSeqPackagePath = GraphBeingEdited->GetOutermost()->GetName() / "Sequences";
-
-		FString AnimSeqUniquePackageName;
-		FString AnimSeqUniqueAssetName;
-		AssetToolsModule.Get().CreateUniqueAssetName(AnimSeqPackagePath / AnimSequenceName, TEXT(""),
-		                                             AnimSeqUniquePackageName,
-		                                             AnimSeqUniqueAssetName);
-
-
-		FAssetToolsModule& AssetToolsModule = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools");
-
-
-		UAnimSequenceFactory* SeqFactory = NewObject<UAnimSequenceFactory>();
-		SeqFactory->TargetSkeleton = SkeletalMesh->GetSkeleton();
-		SeqFactory->PreviewSkeletalMesh = SkeletalMesh;
-
-		UAnimSequence* NewAnimSequence = CastChecked<UAnimSequence>(
-			AssetToolsModule.Get().CreateAsset(AnimSeqUniqueAssetName,
-			                                   FPackageName::GetLongPackagePath(AnimSeqUniquePackageName),
-			                                   UAnimSequence::StaticClass(), SeqFactory));
-
-		if (NewAnimSequence == nullptr)
-		{
-			return;
-		}
-
-		const FString AnimMontagePrefixStr = GraphBeingEdited->GraphOutputPrefix.IsEmpty()
-			                                     ? TEXT("Montage")
-			                                     : FString::Printf(
-				                                     TEXT("Montage_%s"), *GraphBeingEdited->GraphOutputPrefix);
-
-		const FString AnimMontageName = FString::Printf(TEXT("%s_%s"),
-		                                                *AnimMontagePrefixStr,
-		                                                *AnimNode->AnimationName);
-
-		const FString AnimMontagePackagePath = GraphBeingEdited->GetOutermost()->GetName() / "Montages";
-
-		FString AnimMontageUniquePackageName;
-		FString AnimMontageUniqueAssetName;
-		AssetToolsModule.Get().CreateUniqueAssetName(AnimMontagePackagePath / AnimMontageName, TEXT(""),
-		                                             AnimMontageUniquePackageName,
-		                                             AnimMontageUniqueAssetName);
-
-
-		UAnimMontageFactory* MontageFactory = NewObject<UAnimMontageFactory>();
-		MontageFactory->TargetSkeleton = SkeletalMesh->GetSkeleton();
-		MontageFactory->SourceAnimation = NewAnimSequence;
-		MontageFactory->PreviewSkeletalMesh = SkeletalMesh;
-
-		UAnimMontage* NewAnimMontage = CastChecked<UAnimMontage>(
-			AssetToolsModule.Get().CreateAsset(AnimMontageUniqueAssetName,
-			                                   FPackageName::GetLongPackagePath(AnimMontageUniquePackageName),
-			                                   UAnimMontage::StaticClass(), MontageFactory));
-
-		UMontageGraphNode_Animation* MontageNode = Cast<UMontageGraphNode_Animation>(AnimNode->RuntimeNode);
-		if (NewAnimMontage == nullptr || MontageNode == nullptr)
-		{
-			return;
-		}
-
-		MontageNode->AnimationMontage = NewAnimMontage;
-	}
-}
-
-bool FMontageGraphDetails::CreateAnimationSequence(const TArray<UObject*> NewAssets,
-                                                   USkeletalMeshComponent* SkelMeshComp, FGuid Binding,
-                                                   bool bCreateSoftLink,
-                                                   TSharedPtr<ISequencer> SequencerPtr) const
-{
-	// bool bResult = false;
-	// if (NewAssets.Num() > 0)
-	// {
-	// 	UAnimSequence* AnimSequence = Cast<UAnimSequence>(NewAssets[0]);
-	// 	if (AnimSequence == nullptr)
-	// 	{
-	// 		return false;
-	// 	}
-	// 	
-	// 	UMovieScene* MovieScene = SequencerPtr->GetFocusedMovieSceneSequence()->GetMovieScene();
-	// 	FMovieSceneSequenceIDRef Template = SequencerPtr->GetFocusedTemplateID();
-	// 	FMovieSceneSequenceTransform RootToLocalTransform = SequencerPtr->
-	// 		GetFocusedMovieSceneSequenceTransform();
-	// 	
-	// 	bResult = MovieSceneToolHelpers::ExportToAnimSequence(AnimSequence, AnimSeqExportOption, MovieScene,
-	// 	                                                      SequencerPtr.Get(), SkelMeshComp, Template,
-	// 	                                                      RootToLocalTransform);
-	//
-	// 	if (bCreateSoftLink)
-	// 	{
-	// 		FScopedTransaction Transaction(LOCTEXT("SaveLinkedAnimation_Transaction", "Save Link Animation"));
-	// 		ULevelSequence* LevelSequence = Cast<ULevelSequence>(SequencerPtr->GetFocusedMovieSceneSequence());
-	// 		if (LevelSequence && LevelSequence->GetClass()->ImplementsInterface(UInterface_AssetUserData::StaticClass())
-	// 			&& AnimSequence->GetClass()->ImplementsInterface(UInterface_AssetUserData::StaticClass()))
-	// 		{
-	// 			LevelSequence->Modify();
-	// 			if (IInterface_AssetUserData* AnimAssetUserData = Cast<IInterface_AssetUserData>(AnimSequence))
-	// 			{
-	// 				UAnimSequenceLevelSequenceLink* AnimLevelLink = AnimAssetUserData->GetAssetUserData<
-	// 					UAnimSequenceLevelSequenceLink>();
-	// 				if (!AnimLevelLink)
-	// 				{
-	// 					AnimLevelLink = NewObject<UAnimSequenceLevelSequenceLink>(
-	// 						AnimSequence, NAME_None, RF_Public | RF_Transactional);
-	// 					AnimAssetUserData->AddAssetUserData(AnimLevelLink);
-	// 				}
-	//
-	// 				AnimLevelLink->SetLevelSequence(LevelSequence);
-	// 				AnimLevelLink->SkelTrackGuid = Binding;
-	// 			}
-	// 			if (IInterface_AssetUserData* AssetUserDataInterface = Cast<IInterface_AssetUserData>(LevelSequence))
-	// 			{
-	// 				bool bAddItem = true;
-	// 				ULevelSequenceAnimSequenceLink* LevelAnimLink = AssetUserDataInterface->GetAssetUserData<
-	// 					ULevelSequenceAnimSequenceLink>();
-	// 				if (LevelAnimLink)
-	// 				{
-	// 					for (FLevelSequenceAnimSequenceLinkItem& LevelAnimLinkItem : LevelAnimLink->AnimSequenceLinks)
-	// 					{
-	// 						if (LevelAnimLinkItem.SkelTrackGuid == Binding)
-	// 						{
-	// 							bAddItem = false;
-	// 							UAnimSequence* OtherAnimSequence = LevelAnimLinkItem.ResolveAnimSequence();
-	//
-	// 							if (OtherAnimSequence != AnimSequence)
-	// 							{
-	// 								if (IInterface_AssetUserData* OtherAnimAssetUserData = Cast<
-	// 									IInterface_AssetUserData>(OtherAnimSequence))
-	// 								{
-	// 									UAnimSequenceLevelSequenceLink* OtherAnimLevelLink = OtherAnimAssetUserData->
-	// 										GetAssetUserData<UAnimSequenceLevelSequenceLink>();
-	// 									if (OtherAnimLevelLink)
-	// 									{
-	// 										OtherAnimAssetUserData->RemoveUserDataOfClass(
-	// 											UAnimSequenceLevelSequenceLink::StaticClass());
-	// 									}
-	// 								}
-	// 							}
-	// 							LevelAnimLinkItem.PathToAnimSequence = FSoftObjectPath(AnimSequence);
-	// 							// LevelAnimLinkItem.bExportMorphTargets = AnimSeqExportOption->bExportMorphTargets;
-	// 							// LevelAnimLinkItem.bExportAttributeCurves = AnimSeqExportOption->bExportAttributeCurves;
-	// 							// LevelAnimLinkItem.bExportMaterialCurves = AnimSeqExportOption->bExportMaterialCurves;
-	// 							// LevelAnimLinkItem.bExportTransforms = AnimSeqExportOption->bExportTransforms;
-	// 							// LevelAnimLinkItem.bRecordInWorldSpace = AnimSeqExportOption->bRecordInWorldSpace;
-	// 							// LevelAnimLinkItem.bEvaluateAllSkeletalMeshComponents = AnimSeqExportOption->
-	// 							// 	bEvaluateAllSkeletalMeshComponents;
-	// 							// LevelAnimLinkItem.Interpolation = AnimSeqExportOption->Interpolation;
-	// 							// LevelAnimLinkItem.CurveInterpolation = AnimSeqExportOption->CurveInterpolation;
-	//
-	// 							break;
-	// 						}
-	// 					}
-	// 				}
-	// 				else
-	// 				{
-	// 					LevelAnimLink = NewObject<ULevelSequenceAnimSequenceLink>(
-	// 						LevelSequence, NAME_None, RF_Public | RF_Transactional);
-	// 				}
-	// 				if (bAddItem == true)
-	// 				{
-	// 					FLevelSequenceAnimSequenceLinkItem LevelAnimLinkItem;
-	// 					LevelAnimLinkItem.SkelTrackGuid = Binding;
-	// 					LevelAnimLinkItem.PathToAnimSequence = FSoftObjectPath(AnimSequence);
-	// 					// LevelAnimLinkItem.bExportMorphTargets = AnimSeqExportOption->bExportMorphTargets;
-	// 					// LevelAnimLinkItem.bExportAttributeCurves = AnimSeqExportOption->bExportAttributeCurves;
-	// 					// LevelAnimLinkItem.bExportMaterialCurves = AnimSeqExportOption->bExportMaterialCurves;
-	// 					// LevelAnimLinkItem.bExportTransforms = AnimSeqExportOption->bExportTransforms;
-	// 					// LevelAnimLinkItem.bRecordInWorldSpace = AnimSeqExportOption->bRecordInWorldSpace;
-	// 					// LevelAnimLinkItem.bEvaluateAllSkeletalMeshComponents = AnimSeqExportOption->
-	// 					// 	bEvaluateAllSkeletalMeshComponents;
-	// 					// LevelAnimLinkItem.Interpolation = AnimSeqExportOption->Interpolation;
-	// 					// LevelAnimLinkItem.CurveInterpolation = AnimSeqExportOption->CurveInterpolation;
-	// 					//
-	// 					LevelAnimLink->AnimSequenceLinks.Add(LevelAnimLinkItem);
-	// 					AssetUserDataInterface->AddAssetUserData(LevelAnimLink);
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// 	// if it contains error, warn them
-	// 	// if (bResult)
-	// 	// {
-	// 		FText NotificationText;
-	// 		if (NewAssets.Num() == 1)
-	// 		{
-	// 			NotificationText = FText::Format(
-	// 				LOCTEXT("NumAnimSequenceAssetsCreated", "{0} Anim Sequence  assets created."), NewAssets.Num());
-	// 		}
-	// 		else
-	// 		{
-	// 			NotificationText = FText::Format(
-	// 				LOCTEXT("AnimSequenceAssetsCreated", "Anim Sequence asset created: '{0}'."),
-	// 				FText::FromString(NewAssets[0]->GetName()));
-	// 		}
-	//
-	// 		FNotificationInfo Info(NotificationText);
-	// 		Info.ExpireDuration = 8.0f;
-	// 		Info.bUseLargeFont = false;
-	// 		Info.Hyperlink = FSimpleDelegate::CreateLambda([NewAssets]()
-	// 		{
-	// 			GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OpenEditorForAssets(NewAssets);
-	// 		});
-	// 		Info.HyperlinkText = FText::Format(
-	// 			LOCTEXT("OpenNewPoseAssetHyperlink", "Open {0}"), FText::FromString(NewAssets[0]->GetName()));
-	//
-	// 		TSharedPtr<SNotificationItem> Notification = FSlateNotificationManager::Get().AddNotification(Info);
-	// 		if (Notification.IsValid())
-	// 		{
-	// 			Notification->SetCompletionState(SNotificationItem::CS_Success);
-	// 		}
-	// 	// }
-	// 	// else
-	// 	// {
-	// 	// 	FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("FailedToCreateAsset", "Failed to create asset"));
-	// 	// }
-	// }
-	return true;
 }
 
 
 void FMontageGraphDetails::OpenLinkedAnimation(UMontageGraphEdNodeMontage* MontageEdNode)
 {
 }
-
 
 void FMontageGraphDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 {
