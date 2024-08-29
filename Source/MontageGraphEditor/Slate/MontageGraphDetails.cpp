@@ -19,6 +19,7 @@
 #include "SequencerTools.h"
 #include "Animation/SkeletalMeshActor.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "ControlRigEditor/Private/ControlRigEditorModule.h"
 #include "ControlRigEditor/Public/EditMode/ControlRigEditMode.h"
 #include "Exporters/AnimSeqExportOption.h"
 #include "Factories/AnimMontageFactory.h"
@@ -276,8 +277,8 @@ void FMontageGraphDetails::CreateLinkedControlRigAnimationForNode(UMontageGraphE
 				{
 					Notification->SetCompletionState(SNotificationItem::CS_Success);
 				}
-				
-				
+
+
 				PackagesToSave.Add(NewAnimSequence->GetPackage());
 				PackagesToSave.Add(NewAnimMontage->GetPackage());
 			}
@@ -293,7 +294,22 @@ void FMontageGraphDetails::CreateLinkedControlRigAnimationForNode(UMontageGraphE
 
 void FMontageGraphDetails::OpenLinkedAnimation(UMontageGraphEdNodeMontage* MontageEdNode)
 {
+	UMontageGraphNode_Animation* AnimNode = Cast<UMontageGraphNode_Animation>(MontageEdNode->RuntimeNode);
+	if (AnimNode && AnimNode->AnimationMontage != nullptr)
+	{
+		TArray<UAnimationAsset*> AnimSequences;
+		AnimNode->AnimationMontage->GetAllAnimationSequencesReferred(AnimSequences);
+
+		if (!AnimSequences.Num())
+		{
+			return;
+		}
+
+		auto SequenceToOpen = Cast<UAnimSequence>(AnimSequences[0]);
+		FControlRigEditorModule::OpenLevelSequence(SequenceToOpen);
+	}
 }
+
 
 void FMontageGraphDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 {
@@ -324,7 +340,7 @@ void FMontageGraphDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 		}
 	}
 
-	if (MontageEdNode != nullptr && !IsValid(GraphBeingEdited->ControlRigClass))
+	if (MontageEdNode == nullptr || !IsValid(GraphBeingEdited->ControlRigClass))
 	{
 		return;
 	}
