@@ -79,11 +79,19 @@ void FMontageGraphDetails::CreateLinkedControlRigMontageForNode(UMontageGraphEdN
 		StringName = StringName + FString(TEXT(" --> ")) + AnimName;
 		MeshActor->SetActorLabel(StringName);
 
+		USkeletalMesh* SkelMesh = nullptr;
+		if (IInterface_PreviewMeshProvider* PreviewMeshInterface = Cast<IInterface_PreviewMeshProvider>(
+			GraphBeingEdited->ControlRigClass->ClassGeneratedBy))
+		{
+			SkelMesh = PreviewMeshInterface->GetPreviewMesh();
+		}
 
-		// if (SkelMesh)
-		// {
-		// 	MeshActor->GetSkeletalMeshComponent()->SetSkeletalMesh(SkelMesh);
-		// }
+
+		if (SkelMesh != nullptr)
+		{
+			MeshActor->GetSkeletalMeshComponent()->SetSkeletalMesh(SkelMesh);
+		}
+		
 		MeshActor->RegisterAllComponents();
 		TArray<TWeakObjectPtr<AActor>> ActorsToAdd;
 		ActorsToAdd.Add(MeshActor);
@@ -104,10 +112,10 @@ void FMontageGraphDetails::CreateLinkedControlRigMontageForNode(UMontageGraphEdN
 			{
 				GCurrentLevelEditingViewportClient->GetWorld()->EditorDestroyActor(MeshActor, true);
 				MeshActor = Cast<ASkeletalMeshActor>(SpawnedMesh);
-				// if (SkelMesh)
-				// {
-				// 	MeshActor->GetSkeletalMeshComponent()->SetSkeletalMesh(SkelMesh);
-				// }
+				if (SkelMesh)
+				{
+					MeshActor->GetSkeletalMeshComponent()->SetSkeletalMesh(SkelMesh);
+				}
 				MeshActor->RegisterAllComponents();
 			}
 		}
@@ -164,9 +172,10 @@ void FMontageGraphDetails::CreateLinkedControlRigMontageForNode(UMontageGraphEdN
 			Track->SetDisplayName(FText::FromString(ObjectName));
 			UMovieSceneControlRigParameterSection* ParamSection = Cast<UMovieSceneControlRigParameterSection>(
 				NewSection);
-				
-				
+
+
 			WeakSequencer.Pin()->SelectTrack(Track);
+			GCurrentLevelEditingViewportClient->FocusViewportOnBox(MeshActor->GetComponentsBoundingBox());
 		}
 	}
 }
@@ -214,49 +223,96 @@ void FMontageGraphDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 		Category.AddProperty(Property); // Copy existing properties so our btn is at the bottom
 	}
 
-	FSimpleDelegate OnClickDelegate = FSimpleDelegate::CreateLambda([this, MontageEdNode]()
+	if (MontageEdNode->bHasLinkedAnimation)
 	{
-		CreateLinkedControlRigMontageForNode(MontageEdNode);
-
-		GraphBeingEdited->Modify(true);
-	});
-
-	Category.AddCustomRow(FText::FromString("MontageGraphFooter"))
-	        .WholeRowWidget
-	[
-		SNew(SOverlay)
-		+ SOverlay::Slot()
-		.Padding(FMargin(.0f, 10.f, .0f, 5.f))
+		FSimpleDelegate OnClickDelegate = FSimpleDelegate::CreateLambda([this, MontageEdNode]()
+		{
+		});
+		Category.AddCustomRow(FText::FromString("MontageGraphFooter"))
+		        .WholeRowWidget
 		[
-			SNew(SButton)
-		.ContentPadding(FMargin(.0f, 10.f, .0f, 10.f))
-		.HAlign(HAlign_Center)
-		.ButtonStyle(FAppStyle::Get(), "FlatButton.Primary")
-		.OnPressed(OnClickDelegate)
-		.Content()
+			SNew(SOverlay)
+			+ SOverlay::Slot()
+			.Padding(FMargin(.0f, 10.f, .0f, 5.f))
 			[
-				SNew(SHorizontalBox)
-
-				+ SHorizontalBox::Slot()
-				  .AutoWidth()
-				  .VAlign(VAlign_Center)
+				SNew(SButton)
+				.ContentPadding(FMargin(.0f, 10.f, .0f, 10.f))
+				.HAlign(HAlign_Center)
+				.ButtonStyle(FAppStyle::Get(), "FlatButton.Success")
+				.OnPressed(OnClickDelegate)
+				.Content()
 				[
-					SNew(SImage)
-				.Image(FCoreStyle::Get().GetBrush("Plus"))
-				.ColorAndOpacity(FLinearColor(0.0f, 1.0f, 0.0f, 1.0f))
-				]
+					SNew(SHorizontalBox)
 
-				+ SHorizontalBox::Slot()
-				  .AutoWidth()
-				  .VAlign(VAlign_Center)
-				  .Padding(FMargin(5.0f, 0.0f))
-				[
-					SNew(STextBlock)
-				.Justification(ETextJustify::Center)
-				.Text(FText::FromString("Create Linked Control Rig Animation"))
-				.TextStyle(FCoreStyle::Get(), "NormalText")
+					+ SHorizontalBox::Slot()
+					  .AutoWidth()
+					  .VAlign(VAlign_Center)
+					[
+						SNew(SImage)
+						.Image(FCoreStyle::Get().GetBrush("Sequencer.AllowSequencerEditsOnly.Small"))
+					]
+
+					+ SHorizontalBox::Slot()
+					  .AutoWidth()
+					  .VAlign(VAlign_Center)
+					  .Padding(FMargin(5.0f, 0.0f))
+					[
+						SNew(STextBlock)
+						.Justification(ETextJustify::Center)
+						.Text(FText::FromString("Edit Linked Animation in Sequencer"))
+						.TextStyle(FCoreStyle::Get(), "NormalText")
+					]
 				]
 			]
-		]
-	];
+		];
+	}
+	else
+	{
+		FSimpleDelegate OnClickDelegate = FSimpleDelegate::CreateLambda([this, MontageEdNode]()
+		{
+			CreateLinkedControlRigMontageForNode(MontageEdNode);
+
+			MontageEdNode->bHasLinkedAnimation = true;
+			MontageEdNode->Modify(true);
+		});
+
+		Category.AddCustomRow(FText::FromString("MontageGraphFooter"))
+		        .WholeRowWidget
+		[
+			SNew(SOverlay)
+			+ SOverlay::Slot()
+			.Padding(FMargin(.0f, 10.f, .0f, 5.f))
+			[
+				SNew(SButton)
+    		.ContentPadding(FMargin(.0f, 10.f, .0f, 10.f))
+    		.HAlign(HAlign_Center)
+    		.ButtonStyle(FAppStyle::Get(), "FlatButton.Primary")
+    		.OnPressed(OnClickDelegate)
+    		.Content()
+				[
+					SNew(SHorizontalBox)
+
+					+ SHorizontalBox::Slot()
+					  .AutoWidth()
+					  .VAlign(VAlign_Center)
+					[
+						SNew(SImage)
+    				.Image(FCoreStyle::Get().GetBrush("Plus"))
+    				.ColorAndOpacity(FLinearColor(0.0f, 1.0f, 0.0f, 1.0f))
+					]
+
+					+ SHorizontalBox::Slot()
+					  .AutoWidth()
+					  .VAlign(VAlign_Center)
+					  .Padding(FMargin(5.0f, 0.0f))
+					[
+						SNew(STextBlock)
+    				.Justification(ETextJustify::Center)
+    				.Text(FText::FromString("Create Linked Control Rig Animation"))
+    				.TextStyle(FCoreStyle::Get(), "NormalText")
+					]
+				]
+			]
+		];
+	}
 }

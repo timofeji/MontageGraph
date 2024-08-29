@@ -20,6 +20,8 @@ public:
 	UPROPERTY(EditAnywhere, Category=Animation, meta=(DisplayPriority=-1))
 	FString AnimationName;
 
+	bool bHasLinkedAnimation = false;
+
 	//~ Begin UEdGraphNode Interface
 	virtual void AllocateDefaultPins() override;
 	virtual void AutowireNewNode(UEdGraphPin* FromPin) override;
