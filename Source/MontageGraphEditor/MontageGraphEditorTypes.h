@@ -6,7 +6,7 @@
 
 /** DataTable used to draw edge (transition) icons in Graph. Determine mappings between Keys and Icon textures */
 USTRUCT(BlueprintType)
-struct MONTAGEGRAPHEDITOR_API FHBMontageGraphInputsMetaData : public FTableRowBase
+struct MONTAGEGRAPHEDITOR_API FMontageGraphInputsMetaData : public FTableRowBase
 {
 	GENERATED_USTRUCT_BODY()
 
@@ -37,7 +37,7 @@ class UMontageGraphPinNames : public UObject
 
 
 /** Predicate class for sorting operation in auto arrange */
-struct FHBMontageGraphCompareNodeXLocation
+struct FMontageGraphCompareNodeXLocation
 {
 	FORCEINLINE bool operator()(const UEdGraphPin& A, const UEdGraphPin& B) const
 	{
@@ -54,7 +54,7 @@ struct FHBMontageGraphCompareNodeXLocation
 };
 
 UENUM()
-enum class EHBMontageGraphAutoArrangeStrategy : uint8
+enum class EMontageGraphAutoArrangeStrategy : uint8
 {
 	/** Setup Event */
 	Vertical,
@@ -64,30 +64,5 @@ enum class EHBMontageGraphAutoArrangeStrategy : uint8
 
 	/** None - invalid */
 	None UMETA(Hidden),
-};
-
-struct FHBMontageGraphEditorModes
-{
-	// Mode constants
-	static const FName HBMontageGraphPersonaModeID;
-	static const FName HBMontageGraphDefaultModeID;
-
-	static FText GetLocalizedMode(const FName InMode)
-	{
-		static TMap<FName, FText> LocModes;
-
-		if (LocModes.Num() == 0)
-		{
-			// LocModes.Add(HBMontageGraphPersonaModeID, NSLOCTEXT("HBMontageGraphEditorModes", "HBMontageGraphPersonaMode", "Persona Preview"));
-			// LocModes.Add(HBMontageGraphDefaultModeID, NSLOCTEXT("HBMontageGraphEditorModes", "HBMontageGraphDefaultMode", "Montage Graph"));
-		}
-
-		check(InMode != NAME_None);
-		const FText* OutDesc = LocModes.Find(InMode);
-		check(OutDesc);
-		return *OutDesc;
-	}
-private:
-	FHBMontageGraphEditorModes() {}
 };
 

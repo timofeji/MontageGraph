@@ -8,10 +8,10 @@
 #include "SGraphPin.h"
 
 
-class SHBMontageGraphEntryPin : public SGraphPin
+class SMontageGraphEntryPin : public SGraphPin
 {
 public:
-	SLATE_BEGIN_ARGS(SHBMontageGraphEntryPin){}
+	SLATE_BEGIN_ARGS(SMontageGraphEntryPin){}
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs, UEdGraphPin* InPin);

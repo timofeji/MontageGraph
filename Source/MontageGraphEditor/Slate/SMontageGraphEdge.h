@@ -6,10 +6,10 @@
 
 class UMontageGraphEdNodeEdge;
 
-class MONTAGEGRAPHEDITOR_API SHBMontageGraphEdge : public SGraphNode
+class MONTAGEGRAPHEDITOR_API SMontageGraphEdge : public SGraphNode
 {
 public:
-	SLATE_BEGIN_ARGS(SHBMontageGraphEdge) {}
+	SLATE_BEGIN_ARGS(SMontageGraphEdge) {}
 	SLATE_END_ARGS()
 
 	/** Constructs this widget with InArgs */

@@ -4,8 +4,8 @@
 
 UMontageGraph::UMontageGraph()
 {
-	// NodeType = UHBMontageGraphNode::StaticClass();
-	// EdgeType = UHBMontageGraphEdge::StaticClass();
+	// NodeType = UMontageGraphNode::StaticClass();
+	// EdgeType = UMontageGraphEdge::StaticClass();
 }
 
 void UMontageGraph::ClearGraph()

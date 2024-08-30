@@ -6,7 +6,7 @@ class UInputMappingContext;
 
 /** Not used right now but might be. Default behavior is render both */
 UENUM()
-enum class EHBMontageGraphDrawPinTypes : uint8
+enum class EMontageGraphDrawPinTypes : uint8
 {
 	/** Setup Event */
 	Both UMETA(DisplayName="Draw both Vertical and Horizontal pins"),

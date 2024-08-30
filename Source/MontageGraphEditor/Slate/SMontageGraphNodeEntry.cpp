@@ -1,18 +1,18 @@
 // Created by Timofej Jermolaev, All rights reserved . 
 
 
-#include "SHBMontageGraphNodeEntry.h"
+#include "SMontageGraphNodeEntry.h"
 
 #include "MontageGraphEditorStyles.h"
 #include "Widgets/SBoxPanel.h"
-#include "SHBMontageGraphEntryPin.h"
-#include "Graph/Nodes/HBMontageGraphEdNodeEntry.h"
+#include "SMontageGraphEntryPin.h"
+#include "..\Graph\Nodes\MontageGraphEdNodeEntry.h"
 
-#define LOCTEXT_NAMESPACE "SHBMontageGraphNodeEntry"
+#define LOCTEXT_NAMESPACE "SMontageGraphNodeEntry"
 /////////////////////////////////////////////////////
-// SHBMontageGraphNodeEntry
+// SMontageGraphNodeEntry
 
-void SHBMontageGraphNodeEntry::Construct(const FArguments& InArgs, UMontageGraphEdNodeEntry* InNode)
+void SMontageGraphNodeEntry::Construct(const FArguments& InArgs, UMontageGraphEdNodeEntry* InNode)
 {
 	GraphNode = InNode;
 
@@ -21,18 +21,18 @@ void SHBMontageGraphNodeEntry::Construct(const FArguments& InArgs, UMontageGraph
 	UpdateGraphNode();
 }
 
-void SHBMontageGraphNodeEntry::GetNodeInfoPopups(FNodeInfoContext* Context,
+void SMontageGraphNodeEntry::GetNodeInfoPopups(FNodeInfoContext* Context,
                                                 TArray<FGraphInformationPopupInfo>& Popups) const
 {
 }
 
-FSlateColor SHBMontageGraphNodeEntry::GetBorderBackgroundColor() const
+FSlateColor SMontageGraphNodeEntry::GetBorderBackgroundColor() const
 {
 	constexpr FLinearColor InactiveStateColor(1.f, 1.f, 1.f, 0.07f);
 	return InactiveStateColor;
 }
 
-void SHBMontageGraphNodeEntry::UpdateGraphNode()
+void SMontageGraphNodeEntry::UpdateGraphNode()
 {
 	InputPins.Empty();
 	OutputPins.Empty();
@@ -72,7 +72,7 @@ void SHBMontageGraphNodeEntry::UpdateGraphNode()
                     			.BorderImage(FMontageGraphEditorStyles::Get().GetBrush("HBEditor.MontageGraph.Entry"))
                     			.Padding(10.f)
                     			.DesiredSizeScale(FVector2d(1.f, 1.f))
-                    			.BorderBackgroundColor(this, &SHBMontageGraphNodeEntry::GetBorderBackgroundColor)
+                    			.BorderBackgroundColor(this, &SMontageGraphNodeEntry::GetBorderBackgroundColor)
 				[
 					SAssignNew(RightNodeBox, SVerticalBox)
 				]
@@ -111,7 +111,7 @@ void SHBMontageGraphNodeEntry::UpdateGraphNode()
 	CreatePinWidgets();
 }
 
-void SHBMontageGraphNodeEntry::AddPin(const TSharedRef<SGraphPin>& PinToAdd)
+void SMontageGraphNodeEntry::AddPin(const TSharedRef<SGraphPin>& PinToAdd)
 {
 	PinToAdd->SetOwner(SharedThis(this));
 	RightNodeBox->AddSlot()
@@ -124,13 +124,13 @@ void SHBMontageGraphNodeEntry::AddPin(const TSharedRef<SGraphPin>& PinToAdd)
 	OutputPins.Add(PinToAdd);
 }
 
-void SHBMontageGraphNodeEntry::CreatePinWidgets()
+void SMontageGraphNodeEntry::CreatePinWidgets()
 {
 	for (UEdGraphPin* Pin : GraphNode->Pins)
 	{
 		if (Pin->Direction == EGPD_Output)
 		{
-			TSharedPtr<SGraphPin> NewPin = SNew(SHBMontageGraphEntryPin, Pin);
+			TSharedPtr<SGraphPin> NewPin = SNew(SMontageGraphEntryPin, Pin);
 			AddPin(NewPin.ToSharedRef());
 		}
 	}
@@ -146,8 +146,8 @@ void SHBMontageGraphNodeEntry::CreatePinWidgets()
 	// Super::CreatePinWidgets();
 }
 
-FText SHBMontageGraphNodeEntry::GetPreviewCornerText() const
+FText SMontageGraphNodeEntry::GetPreviewCornerText() const
 {
-	return NSLOCTEXT("SHBMontageGraphNodeEntry", "CornerTextDescription", "Entry point for state machine");
+	return NSLOCTEXT("SMontageGraphNodeEntry", "CornerTextDescription", "Entry point for state machine");
 }
 #undef LOCTEXT_NAMESPACE

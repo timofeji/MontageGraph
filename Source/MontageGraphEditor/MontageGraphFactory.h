@@ -1,4 +1,4 @@
-// Copyright 2022 Mickael Daniel. All Rights Reserved.
+// Created by Timofej Jermolaev, All rights reserved. 
 
 #pragma once
 

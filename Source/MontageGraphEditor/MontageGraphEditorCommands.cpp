@@ -4,7 +4,7 @@
 #include "MontageGraphEditorCommands.h"
 #include "EditorStyleSet.h"
 
-#define LOCTEXT_NAMESPACE "HBMontageGraphBlueprintEditorCommands"
+#define LOCTEXT_NAMESPACE "MontageGraphBlueprintEditorCommands"
 
 FMontageGraphEditorCommands::FMontageGraphEditorCommands() : TCommands<
 	FMontageGraphEditorCommands>(

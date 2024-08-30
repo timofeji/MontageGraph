@@ -10,11 +10,11 @@
 #include "MontageGraph/MontageGraphNode_Selector.h"
 #include "Nodes/MontageGraphEdNode.h"
 
-#include "Nodes/HBMontageGraphEdNodeSelector.h"
-#include "Nodes/HBMontageGraphEdNodeEdge.h"
-#include "Nodes/HBMontageGraphEdNodeEntry.h"
+#include "Nodes/MontageGraphEdNodeSelector.h"
+#include "Nodes/MontageGraphEdNodeEdge.h"
+#include "Nodes/MontageGraphEdNodeEntry.h"
 
-UMontageGraph* UMontageGraphEdGraph::GetHBMontageGraphModel() const
+UMontageGraph* UMontageGraphEdGraph::GetMontageGraphModel() const
 {
 	return CastChecked<UMontageGraph>(GetOuter());
 }
@@ -74,8 +74,8 @@ void UMontageGraphEdGraph::RebuildGraph()
 {
 	MG_ERROR(Verbose, TEXT("UMontageGraphEdGraph::RebuildGraph has been called. Nodes Num: %d"), Nodes.Num())
 
-	UMontageGraph* HBMontageGraph = GetHBMontageGraphModel();
-	check(HBMontageGraph)
+	UMontageGraph* MontageGraph = GetMontageGraphModel();
+	check(MontageGraph)
 
 	Clear();
 
@@ -86,32 +86,32 @@ void UMontageGraphEdGraph::RebuildGraph()
 
 		if (UMontageGraphEdNodeEntry* GraphEntryNode = Cast<UMontageGraphEdNodeEntry>(CurrentNode))
 		{
-			RebuildGraphForEntry(HBMontageGraph, GraphEntryNode);
+			RebuildGraphForEntry(MontageGraph, GraphEntryNode);
 		}
 		else if (UMontageGraphEdNodeEdge* GraphEdge = Cast<UMontageGraphEdNodeEdge>(CurrentNode))
 		{
-			RebuildGraphForEdge(HBMontageGraph, GraphEdge);
+			RebuildGraphForEdge(MontageGraph, GraphEdge);
 		}
 		else if (UMontageGraphEdNodeSelector* SelectorNode = Cast<UMontageGraphEdNodeSelector>(CurrentNode))
 		{
-			RebuildGraphForSelector(HBMontageGraph, SelectorNode);
+			RebuildGraphForSelector(MontageGraph, SelectorNode);
 		}
 		else if (UMontageGraphEdNode* GraphNode = Cast<UMontageGraphEdNode>(CurrentNode))
 		{
-			RebuildGraphForNode(HBMontageGraph, GraphNode);
+			RebuildGraphForNode(MontageGraph, GraphNode);
 		}
 	}
 
-	for (UMontageGraphNode* Node : HBMontageGraph->AllNodes)
+	for (UMontageGraphNode* Node : MontageGraph->AllNodes)
 	{
 		if (Node->ParentNodes.Num() == 0)
 		{
-			// HBMontageGraph->RootNodes.Add(Node);
+			// MontageGraph->RootNodes.Add(Node);
 			// May cause a weird issue, no crash but editor goes unresponsive
 			// SortNodes(Node);
 		}
 
-		Node->Rename(nullptr, HBMontageGraph, REN_DontCreateRedirectors | REN_DoNotDirty);
+		Node->Rename(nullptr, MontageGraph, REN_DontCreateRedirectors | REN_DoNotDirty);
 	}
 }
 
@@ -254,10 +254,10 @@ bool UMontageGraphEdGraph::Modify(const bool bAlwaysMarkDirty)
 {
 	const bool bWasSaved = Super::Modify(bAlwaysMarkDirty);
 
-	UMontageGraph* HBMontageGraphModel = GetHBMontageGraphModel();
-	if (HBMontageGraphModel)
+	UMontageGraph* MontageGraphModel = GetMontageGraphModel();
+	if (MontageGraphModel)
 	{
-		HBMontageGraphModel->Modify();
+		MontageGraphModel->Modify();
 	}
 
 	for (UEdGraphNode* Node : Nodes)
@@ -384,7 +384,7 @@ namespace ACEAutoArrangeHelpers
 		UEdGraphPin* Pin = FindGraphNodePin(ParentNode, EGPD_Output);
 		if (Pin)
 		{
-			// Pin->LinkedTo.Sort(FHBMontageGraphCompareNodeXLocation());
+			// Pin->LinkedTo.Sort(FMontageGraphCompareNodeXLocation());
 			for (int32 Idx = 0; Idx < Pin->LinkedTo.Num(); Idx++)
 			{
 				UMontageGraphEdNode* GraphNode = Cast<UMontageGraphEdNode>(Pin->LinkedTo[Idx]->GetOwningNode());
@@ -471,10 +471,10 @@ void UMontageGraphEdGraph::AutoArrange(const bool bVertical)
 
 void UMontageGraphEdGraph::Clear()
 {
-	UMontageGraph* HBMontageGraphModel = GetHBMontageGraphModel();
-	if (HBMontageGraphModel)
+	UMontageGraph* MontageGraphModel = GetMontageGraphModel();
+	if (MontageGraphModel)
 	{
-		HBMontageGraphModel->ClearGraph();
+		MontageGraphModel->ClearGraph();
 	}
 
 	NodeMap.Reset();

@@ -11,10 +11,10 @@
 
 class UMontageGraphEdNodeEntry;
 
-class SHBMontageGraphNodeEntry : public SGraphNode
+class SMontageGraphNodeEntry : public SGraphNode
 {
 public:
-	SLATE_BEGIN_ARGS(SHBMontageGraphNodeEntry){}
+	SLATE_BEGIN_ARGS(SMontageGraphNodeEntry){}
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs, UMontageGraphEdNodeEntry* InNode);

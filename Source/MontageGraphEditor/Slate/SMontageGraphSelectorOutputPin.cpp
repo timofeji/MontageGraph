@@ -1,11 +1,11 @@
 ﻿
 
-#include "SHBMontageGraphSelectorOutputPin.h"
+#include "SMontageGraphSelectorOutputPin.h"
 
 #include "MontageGraphEditor/MontageGraphEditorStyles.h"
-#include "MontageGraphEditor/Graph/HBMontageGraphDragDropAction.h"
+#include "MontageGraphEditor/Graph/MontageGraphDragDropAction.h"
 
-void SHBMontageGraphSelectorOutputPin::Construct(const FArguments& InArgs, UEdGraphPin* InPin)
+void SMontageGraphSelectorOutputPin::Construct(const FArguments& InArgs, UEdGraphPin* InPin)
 {
 	SetCursor(EMouseCursor::Default);
 
@@ -20,14 +20,14 @@ void SHBMontageGraphSelectorOutputPin::Construct(const FArguments& InArgs, UEdGr
 	// Set up a hover for pins that is tinted the color of the pin.
 	SBorder::Construct(
 		SBorder::FArguments()
-	   .BorderImage(this, &SHBMontageGraphSelectorOutputPin::GetPinBorder)
-	   .BorderBackgroundColor(this, &SHBMontageGraphSelectorOutputPin::GetPinColor)
-	   .OnMouseButtonDown(this, &SHBMontageGraphSelectorOutputPin::OnPinMouseDown)
-	   .Cursor(this, &SHBMontageGraphSelectorOutputPin::GetPinCursor)
+	   .BorderImage(this, &SMontageGraphSelectorOutputPin::GetPinBorder)
+	   .BorderBackgroundColor(this, &SMontageGraphSelectorOutputPin::GetPinColor)
+	   .OnMouseButtonDown(this, &SMontageGraphSelectorOutputPin::OnPinMouseDown)
+	   .Cursor(this, &SMontageGraphSelectorOutputPin::GetPinCursor)
 	);
 }
 
-int32 SHBMontageGraphSelectorOutputPin::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry,
+int32 SMontageGraphSelectorOutputPin::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry,
                                               const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements,
                                               int32 LayerId,
                                               const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
@@ -60,12 +60,12 @@ int32 SHBMontageGraphSelectorOutputPin::OnPaint(const FPaintArgs& Args, const FG
 	                          bParentEnabled);
 }
 
-TSharedRef<SWidget> SHBMontageGraphSelectorOutputPin::GetDefaultValueWidget()
+TSharedRef<SWidget> SMontageGraphSelectorOutputPin::GetDefaultValueWidget()
 {
 	return SNew(STextBlock);
 }
 
-TSharedRef<FDragDropOperation> SHBMontageGraphSelectorOutputPin::SpawnPinDragEvent(
+TSharedRef<FDragDropOperation> SMontageGraphSelectorOutputPin::SpawnPinDragEvent(
 	const TSharedRef<SGraphPanel>& InGraphPanel, const TArray<TSharedRef<SGraphPin>>& InStartingPins)
 {
 	TArray<FGraphPinHandle> PinHandles;
@@ -78,10 +78,10 @@ TSharedRef<FDragDropOperation> SHBMontageGraphSelectorOutputPin::SpawnPinDragEve
 		PinHandles.Add(PinWidget->GetPinObj());
 	}
 
-	return FHBMontageGraphDragDropAction::New(InGraphPanel, PinHandles);
+	return FMontageGraphDragDropAction::New(InGraphPanel, PinHandles);
 }
 
-const FSlateBrush* SHBMontageGraphSelectorOutputPin::GetPinBorder() const
+const FSlateBrush* SMontageGraphSelectorOutputPin::GetPinBorder() const
 {
 
 

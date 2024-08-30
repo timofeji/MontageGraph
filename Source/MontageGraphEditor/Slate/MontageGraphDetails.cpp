@@ -281,7 +281,7 @@ void FMontageGraphDetails::CreateLinkedControlRigAnimationForNode(UMontageGraphE
 
 			//Instantly Save
 			PackagesToSave.Add(LevelSequencePackage);
-			FEditorFileUtils::PromptForCheckoutAndSave(PackagesToSave, true, true);
+			FEditorFileUtils::PromptForCheckoutAndSave(PackagesToSave, true, false);
 		}
 	}
 }
@@ -310,7 +310,7 @@ void FMontageGraphDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 			}
 			if (UMontageGraphEdGraph* Graph = Cast<UMontageGraphEdGraph>(MontageEdNode->GetGraph()))
 			{
-				GraphBeingEdited = Graph->GetHBMontageGraphModel();
+				GraphBeingEdited = Graph->GetMontageGraphModel();
 			}
 		}
 	}

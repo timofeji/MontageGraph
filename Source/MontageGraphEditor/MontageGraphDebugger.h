@@ -1,4 +1,4 @@
-﻿// Copyright 2022 Mickael Daniel. All Rights Reserved.
+﻿// Created by Timofej Jermolaev, All rights reserved. 
 
 #pragma once
 
@@ -6,7 +6,7 @@
 
 class UHBActionComponent;
 class FMontageGraphEditor;
-class UHBMontageGraphNodeBase;
+class UMontageGraphNodeBase;
 class UMontageGraph;
 class UMontageGraphNode;
 
@@ -25,7 +25,7 @@ public:
 	//~ End FTickableGameObject
 
 	/** Refresh the debugging information we are displaying (only when paused, as Tick() updates when running) */
-	void Setup(UMontageGraph* InHBMontageGraphAsset, TSharedRef<class FMontageGraphEditor, ESPMode::ThreadSafe> InEditorOwner);
+	void Setup(UMontageGraph* InMontageGraphAsset, TSharedRef<class FMontageGraphEditor, ESPMode::ThreadSafe> InEditorOwner);
 
 	bool IsDebuggerReady() const;
 	bool IsDebuggerRunning() const;
@@ -39,7 +39,7 @@ public:
 
 	void OnObjectSelected(UObject* Object);
 	void OnGraphEvaluated(const UHBActionComponent& ActionComponent, const UMontageGraphNode& EvaluatedNode);
-	// void OnHBMontageGraphStarted(const UHBMontageGraphAbilityTask_StartGraph& InOwnerTask, const UHBMontageGraph& InComboGraphAsset);
+	// void OnMontageGraphStarted(const UHBMontageGraphAbilityTask_StartGraph& InOwnerTask, const UHBMontageGraph& InComboGraphAsset);
 	void OnGraphReset(const UHBActionComponent& OwnerActionComponent);
 	UHBActionComponent* GetDebuggedTaskForSelectedActor();
 
@@ -62,10 +62,10 @@ private:
 	TWeakPtr<FMontageGraphEditor> EditorOwner;
 
 	/** asset for debugging */
-	UMontageGraph* HBMontageGraphAsset;
+	UMontageGraph* MontageGraphAsset;
 
 	/** root node in asset's graph */
-	TWeakObjectPtr<UHBMontageGraphNodeBase> RootNode;
+	TWeakObjectPtr<UMontageGraphNodeBase> RootNode;
 
 	/** instance for debugging */
 	TWeakObjectPtr<AActor> MontageGraphComponentOwner;

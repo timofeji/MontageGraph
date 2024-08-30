@@ -1,9 +1,9 @@
-#include "HBMontageGraphEdNodeEntry.h"
+#include "MontageGraphEdNodeEntry.h"
 
 #include "MontageGraphEditorTypes.h"
 #include "MontageGraph/MontageGraphNode_Entry.h"
 
-#define LOCTEXT_NAMESPACE "HBMontageGraphEdNodeEntry"
+#define LOCTEXT_NAMESPACE "MontageGraphEdNodeEntry"
 
 UMontageGraphEdNodeEntry::UMontageGraphEdNodeEntry()
 {

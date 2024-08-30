@@ -12,7 +12,7 @@ class FMontageGraphEditorStyles : public FSlateStyleSet
 {
 public:
 	FMontageGraphEditorStyles()
-		: FSlateStyleSet("HyperbladeEditorStyle")
+		: FSlateStyleSet("MontageGraphEditorStyle")
 	{
 		const FVector2D Icon8x8(8.f,
 		                        8.f);
@@ -87,59 +87,59 @@ public:
 
 
 		// App Mode Icons
-		Set("HBMontageGraph.AppMode.Default",
+		Set("MontageGraph.AppMode.Default",
 		    new IMAGE_BRUSH("Icons/AssetIcons/Blueprint_40x",
 		                    Icon40x40));
-		Set("HBMontageGraph.AppMode.Default.Small",
+		Set("MontageGraph.AppMode.Default.Small",
 		    new IMAGE_BRUSH("Icons/AssetIcons/Blueprint_20x",
 		                    Icon20x20));
-		Set("HBMontageGraph.AppMode.Persona",
+		Set("MontageGraph.AppMode.Persona",
 		    new IMAGE_BRUSH("Icons/AssetIcons/BlendSpace_40x",
 		                    Icon40x40));
-		Set("HBMontageGraph.AppMode.Persona.Small",
+		Set("MontageGraph.AppMode.Persona.Small",
 		    new IMAGE_BRUSH("Icons/AssetIcons/BlendSpace_20x",
 		                    Icon20x20));
 
 		// Toolbar Icons
-		Set("HBMontageGraph.AutoArrange.Vertical",
+		Set("MontageGraph.AutoArrange.Vertical",
 		    new IMAGE_BRUSH("Icons/auto_arrange_vertical",
 		                    Icon40x40));
-		Set("HBMontageGraph.AutoArrange.Horizontal",
+		Set("MontageGraph.AutoArrange.Horizontal",
 		    new IMAGE_BRUSH("Icons/auto_arrange_horizontal",
 		                    Icon40x40));
 
 		// Class Icons
-		Set("ClassIcon.HBMontageGraph",
-		    new IMAGE_BRUSH("Icons/AssetIcons/HBMontageGraph_x16",
+		Set("ClassIcon.MontageGraph",
+		    new IMAGE_BRUSH("Icons/AssetIcons/MontageGraph_x16",
 		                    Icon16x16));
-		Set("ClassThumbnail.HBMontageGraph",
-		    new IMAGE_BRUSH("Icons/AssetIcons/HBMontageGraph_x64",
+		Set("ClassThumbnail.MontageGraph",
+		    new IMAGE_BRUSH("Icons/AssetIcons/MontageGraph_x64",
 		                    Icon64x64));
 
-		Set("ClassIcon.HBMontageGraphNodeMontage",
-		    new IMAGE_BRUSH("Icons/AssetIcons/HBMontageGraph_Montage_x16",
+		Set("ClassIcon.MontageGraphNodeMontage",
+		    new IMAGE_BRUSH("Icons/AssetIcons/MontageGraph_Montage_x16",
 		                    Icon16x16));
-		Set("ClassThumbnail.HBMontageGraphNodeMontage",
-		    new IMAGE_BRUSH("Icons/AssetIcons/HBMontageGraph_Montage_x64",
+		Set("ClassThumbnail.MontageGraphNodeMontage",
+		    new IMAGE_BRUSH("Icons/AssetIcons/MontageGraph_Montage_x64",
 		                    Icon64x64));
-		Set("ClassIcon.HBMontageGraphNodeMontageBlueprint",
-		    new IMAGE_BRUSH("Icons/AssetIcons/HBMontageGraph_Montage_x16",
+		Set("ClassIcon.MontageGraphNodeMontageBlueprint",
+		    new IMAGE_BRUSH("Icons/AssetIcons/MontageGraph_Montage_x16",
 		                    Icon16x16));
-		Set("ClassThumbnail.HBMontageGraphNodeMontageBlueprint",
-		    new IMAGE_BRUSH("Icons/AssetIcons/HBMontageGraph_Montage_x64",
+		Set("ClassThumbnail.MontageGraphNodeMontageBlueprint",
+		    new IMAGE_BRUSH("Icons/AssetIcons/MontageGraph_Montage_x64",
 		                    Icon64x64));
 
-		Set("ClassIcon.HBMontageGraphNodeSequence",
-		    new IMAGE_BRUSH("Icons/AssetIcons/HBMontageGraph_Sequence_x16",
+		Set("ClassIcon.MontageGraphNodeSequence",
+		    new IMAGE_BRUSH("Icons/AssetIcons/MontageGraph_Sequence_x16",
 		                    Icon16x16));
-		Set("ClassThumbnail.HBMontageGraphNodeSequence",
-		    new IMAGE_BRUSH("Icons/AssetIcons/HBMontageGraph_Sequence_x64",
+		Set("ClassThumbnail.MontageGraphNodeSequence",
+		    new IMAGE_BRUSH("Icons/AssetIcons/MontageGraph_Sequence_x64",
 		                    Icon64x64));
-		Set("ClassIcon.HBMontageGraphNodeSequenceBlueprint",
-		    new IMAGE_BRUSH("Icons/AssetIcons/HBMontageGraph_Sequence_x16",
+		Set("ClassIcon.MontageGraphNodeSequenceBlueprint",
+		    new IMAGE_BRUSH("Icons/AssetIcons/MontageGraph_Sequence_x16",
 		                    Icon16x16));
-		Set("ClassThumbnail.HBMontageGraphNodeSequenceBlueprint",
-		    new IMAGE_BRUSH("Icons/AssetIcons/HBMontageGraph_Sequence_x64",
+		Set("ClassThumbnail.MontageGraphNodeSequenceBlueprint",
+		    new IMAGE_BRUSH("Icons/AssetIcons/MontageGraph_Sequence_x64",
 		                    Icon64x64));
 
 		Set("HB.Font.Small", ICON_FONT("Fonts/NovaSquare-Regular",11));

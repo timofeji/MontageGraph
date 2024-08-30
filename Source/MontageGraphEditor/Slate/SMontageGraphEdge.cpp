@@ -1,14 +1,14 @@
 ﻿
-#include "SHBMontageGraphEdge.h"
+#include "SMontageGraphEdge.h"
 
 #include "ConnectionDrawingPolicy.h"
 #include "MontageGraph/MontageGraphEdge.h"
-#include "MontageGraphEditor/Graph/Nodes/HBMontageGraphEdNodeEdge.h"
+#include "..\Graph\Nodes\MontageGraphEdNodeEdge.h"
 #include "Widgets/Text/SInlineEditableTextBlock.h"
 
-#define LOCTEXT_NAMESPACE "SHBMontageGraphEdge"
+#define LOCTEXT_NAMESPACE "SMontageGraphEdge"
 
-void SHBMontageGraphEdge::Construct(const FArguments& InArgs, UMontageGraphEdNodeEdge* InNode)
+void SMontageGraphEdge::Construct(const FArguments& InArgs, UMontageGraphEdNodeEdge* InNode)
 {
 	check(InNode)
 	GraphNode = InNode;
@@ -16,14 +16,14 @@ void SHBMontageGraphEdge::Construct(const FArguments& InArgs, UMontageGraphEdNod
 	UpdateGraphNode();
 }
 
-bool SHBMontageGraphEdge::RequiresSecondPassLayout() const
+bool SMontageGraphEdge::RequiresSecondPassLayout() const
 {
 	return true;
 }
 
-void SHBMontageGraphEdge::PerformSecondPassLayout(const TMap<UObject*, TSharedRef<SNode>>& InNodeToWidgetLookup) const
+void SMontageGraphEdge::PerformSecondPassLayout(const TMap<UObject*, TSharedRef<SNode>>& InNodeToWidgetLookup) const
 {
-	// CG_EDITOR_LOG(Verbose, TEXT("SHBMontageGraphEdge::PerformSecondPassLayout"));
+	// CG_EDITOR_LOG(Verbose, TEXT("SMontageGraphEdge::PerformSecondPassLayout"));
 	const UMontageGraphEdNodeEdge* EdgeNode = CastChecked<UMontageGraphEdNodeEdge>(GraphNode);
 
 	FGeometry StartGeom;
@@ -52,7 +52,7 @@ void SHBMontageGraphEdge::PerformSecondPassLayout(const TMap<UObject*, TSharedRe
 	PositionBetweenTwoNodesWithOffset(StartGeom, EndGeom, NodeIndex, MaxNodes);
 }
 
-void SHBMontageGraphEdge::UpdateGraphNode()
+void SMontageGraphEdge::UpdateGraphNode()
 {
 	InputPins.Empty();
 	OutputPins.Empty();
@@ -71,13 +71,13 @@ void SHBMontageGraphEdge::UpdateGraphNode()
 			[
 				SNew(SImage)
 				.Image(FAppStyle::GetBrush("Graph.TransitionNode.ColorSpill"))
-				.ColorAndOpacity(this, &SHBMontageGraphEdge::GetEdgeColor)
+				.ColorAndOpacity(this, &SMontageGraphEdge::GetEdgeColor)
 			]
 			+ SOverlay::Slot()
 			[
 				SNew(SImage)
-				.Image(this, &SHBMontageGraphEdge::GetEdgeImage)
-				.Visibility(this, &SHBMontageGraphEdge::GetEdgeImageVisibility)
+				.Image(this, &SMontageGraphEdge::GetEdgeImage)
+				.Visibility(this, &SMontageGraphEdge::GetEdgeImageVisibility)
 			]
 
 			+ SOverlay::Slot()
@@ -90,10 +90,10 @@ void SHBMontageGraphEdge::UpdateGraphNode()
 				[
 					SAssignNew(InlineEditableText, SInlineEditableTextBlock)
 					.ColorAndOpacity(FLinearColor::Black)
-					.Visibility(this, &SHBMontageGraphEdge::GetEdgeTitleVisibility)
+					.Visibility(this, &SMontageGraphEdge::GetEdgeTitleVisibility)
 					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 12))
 					.Text(NodeTitle.Get(), &SNodeTitle::GetHeadTitle)
-					.OnTextCommitted(this, &SHBMontageGraphEdge::OnNameTextCommited)
+					.OnTextCommitted(this, &SMontageGraphEdge::OnNameTextCommited)
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
@@ -105,7 +105,7 @@ void SHBMontageGraphEdge::UpdateGraphNode()
 		];
 }
 
-void SHBMontageGraphEdge::PositionBetweenTwoNodesWithOffset(const FGeometry& StartGeom, const FGeometry& EndGeom, int32 NodeIndex, int32 MaxNodes) const
+void SMontageGraphEdge::PositionBetweenTwoNodesWithOffset(const FGeometry& StartGeom, const FGeometry& EndGeom, int32 NodeIndex, int32 MaxNodes) const
 {
 	// Get a reasonable seed point (halfway between the boxes)
 	const FVector2D StartCenter = FGeometryHelper::CenterOf(StartGeom);
@@ -164,7 +164,7 @@ void SHBMontageGraphEdge::PositionBetweenTwoNodesWithOffset(const FGeometry& Sta
 	GraphNode->NodePosY = NewCorner.Y;
 }
 
-void SHBMontageGraphEdge::OnNameTextCommited(const FText& InText, const ETextCommit::Type CommitInfo)
+void SMontageGraphEdge::OnNameTextCommited(const FText& InText, const ETextCommit::Type CommitInfo)
 {
 	SGraphNode::OnNameTextCommited(InText, CommitInfo);
 
@@ -179,7 +179,7 @@ void SHBMontageGraphEdge::OnNameTextCommited(const FText& InText, const ETextCom
 	}
 }
 
-FSlateColor SHBMontageGraphEdge::GetEdgeColor() const
+FSlateColor SMontageGraphEdge::GetEdgeColor() const
 {
 	UMontageGraphEdNodeEdge* EdgeNode = CastChecked<UMontageGraphEdNodeEdge>(GraphNode);
 	if (EdgeNode != nullptr && EdgeNode->RuntimeEdge != nullptr)
@@ -190,7 +190,7 @@ FSlateColor SHBMontageGraphEdge::GetEdgeColor() const
 	return FLinearColor(0.4f, 0.9f, 0.9f, 1.0f);
 }
 
-const FSlateBrush* SHBMontageGraphEdge::GetEdgeImage() const
+const FSlateBrush* SMontageGraphEdge::GetEdgeImage() const
 {
 	const FSlateBrush* DefaultBrush = FAppStyle::GetBrush("Graph.TransitionNode.Icon");
 
@@ -211,12 +211,12 @@ const FSlateBrush* SHBMontageGraphEdge::GetEdgeImage() const
 	return DefaultBrush;
 }
 
-EVisibility SHBMontageGraphEdge::GetEdgeImageVisibility() const
+EVisibility SMontageGraphEdge::GetEdgeImageVisibility() const
 {
 	return EVisibility::Visible;
 }
 
-EVisibility SHBMontageGraphEdge::GetEdgeTitleVisibility() const
+EVisibility SMontageGraphEdge::GetEdgeTitleVisibility() const
 {
 	return EVisibility::Collapsed;
 }

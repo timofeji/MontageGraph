@@ -39,14 +39,14 @@ public:
 	/** Simply returns the value of NodeTitle, and is overridden in child classes to fallback to animation asset name if NodeTitle is empty. */
 	virtual FText GetNodeTitle() const;
 
-	UFUNCTION(BlueprintCallable, Category = "HBMontageGraph")
+	UFUNCTION(BlueprintCallable, Category = "MontageGraph")
 	virtual UMontageGraphEdge* GetEdge(UMontageGraphNode* ChildNode);
 
-	UFUNCTION(BlueprintCallable, Category = "HBMontageGraph")
+	UFUNCTION(BlueprintCallable, Category = "MontageGraph")
 	virtual bool IsLeafNode() const;
 
 	/** Checks all child nodes and the edge they're connected with and return the */
-	// virtual UHBMontageGraphEdge* GetEdgeWithInput(UInputAction* InputAction);
+	// virtual UMontageGraphEdge* GetEdgeWithInput(UInputAction* InputAction);
 
 	/** Returns whether the class is not a direct descendant of native node classes, indicating it's implemented in BP */
 	bool IsHBActionSubclassedInBlueprint() const;
@@ -54,20 +54,20 @@ public:
 
 #if WITH_EDITORONLY_DATA
 	/**
-	 * ContextMenuName is used in HBMontageGraph to generate context menu items (upon right click in the graph to add new nodes)
+	 * ContextMenuName is used in MontageGraph to generate context menu items (upon right click in the graph to add new nodes)
 	 *
 	 * Split up ContextMenuName by "|" to create a top category if there is more than one level.
 	 *
-	 * You can leave this empty to exclude this class from being considered when HBMontageGraph generates a context menu.
+	 * You can leave this empty to exclude this class from being considered when MontageGraph generates a context menu.
 	 */
-	// UPROPERTY(EditDefaultsOnly, Category = "HBMontageGraph", meta = (HideInHBActioGraphDetails))
+	// UPROPERTY(EditDefaultsOnly, Category = "MontageGraph", meta = (HideInHBActioGraphDetails))
 	FText ContextMenuName;
 	
 	// /** Set it to false to prevent context menu in graph to include the BP Class name */
-	// UPROPERTY(EditDefaultsOnly, Category = "HBMontageGraph", meta = (HideInHBActioGraphDetailsPanel))
+	// UPROPERTY(EditDefaultsOnly, Category = "MontageGraph", meta = (HideInHBActioGraphDetailsPanel))
 	bool bIncludeClassNameInContextMenu = true;
 
-	// UPROPERTY(EditDefaultsOnly, Category = "HBMontageGraph" , meta = (ClampMin = "0", EditCondition = "ChildrenLimitType == ENodeLimit::Limited", EditConditionHides))
+	// UPROPERTY(EditDefaultsOnly, Category = "MontageGraph" , meta = (ClampMin = "0", EditCondition = "ChildrenLimitType == ENodeLimit::Limited", EditConditionHides))
 	int32 ChildrenLimit = 0;
 #endif
 

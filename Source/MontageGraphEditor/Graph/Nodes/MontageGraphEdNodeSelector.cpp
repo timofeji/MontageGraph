@@ -1,8 +1,8 @@
-﻿#include "HBMontageGraphEdNodeSelector.h"
+﻿#include "MontageGraphEdNodeSelector.h"
 #include "MontageGraphEditorTypes.h"
 #include "MontageGraph/MontageGraphNode_Selector.h"
 
-#define LOCTEXT_NAMESPACE "HBMontageGraphEdNodeSelector"
+#define LOCTEXT_NAMESPACE "MontageGraphEdNodeSelector"
 
 UMontageGraphEdNodeSelector::UMontageGraphEdNodeSelector()
 {

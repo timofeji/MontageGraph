@@ -4,12 +4,12 @@
 #include "MontageGraphNodePanelFactory.h"
 
 #include "MontageGraphEditorSettings.h"
-#include "Slate/SHBMontageGraphEdge.h"
+#include "Slate/SMontageGraphEdge.h"
 #include "Slate/SGraphNodeAction.h"
-#include "Slate/SHBGraphNodeSelector.h"
-#include "Slate/SHBMontageGraphNodeEntry.h"
-#include "Nodes/HBMontageGraphEdNodeEdge.h"
-#include "Nodes/HBMontageGraphEdNodeEntry.h"
+#include "Slate/SMontageGraphNodeSelector.h"
+#include "Slate/SMontageGraphNodeEntry.h"
+#include "Nodes\MontageGraphEdNodeEdge.h"
+#include "Nodes\MontageGraphEdNodeEntry.h"
 #include "Nodes/MontageGraphEdNodeMontage.h"
 
 TSharedPtr<SGraphNode> FMontageGraphNodePanelFactory::CreateNode(UEdGraphNode* Node) const
@@ -17,17 +17,17 @@ TSharedPtr<SGraphNode> FMontageGraphNodePanelFactory::CreateNode(UEdGraphNode* N
 
 	if (UMontageGraphEdNodeEdge* GraphEdge = Cast<UMontageGraphEdNodeEdge>(Node))
 	{
-		return SNew(SHBMontageGraphEdge, GraphEdge);
+		return SNew(SMontageGraphEdge, GraphEdge);
 	}
 
 	if (UMontageGraphEdNodeEntry* EntryNode = Cast<UMontageGraphEdNodeEntry>(Node))
 	{
-		return SNew(SHBMontageGraphNodeEntry, EntryNode);
+		return SNew(SMontageGraphNodeEntry, EntryNode);
 	}
 
 	// if (UMontageGraphEdNodeSelector* SelectorNode = Cast<UMontageGraphEdNodeSelector>(Node))
 	// {
-	// 	return SNew(SHBGraphNodeSelector, SelectorNode);
+	// 	return SNew(SMontageGraphNodeSelector, SelectorNode);
 	// }
 
 	if (UMontageGraphEdNodeMontage* GraphNode = Cast<UMontageGraphEdNodeMontage>(Node))

@@ -36,7 +36,7 @@ public:
 	
 
 
-	UPROPERTY(VisibleAnywhere, Instanced, Category = "HBMontageGraph")
+	UPROPERTY(VisibleAnywhere, Instanced, Category = "MontageGraph")
 	UMontageGraphNode* RuntimeNode;
 
 	SGraphNodeAction* SlateNode;

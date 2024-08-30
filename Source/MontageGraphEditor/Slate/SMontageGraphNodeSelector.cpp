@@ -1,19 +1,19 @@
 ﻿// Created by Timofej Jermolaev, All rights reserved . 
 
 
-#include "SHBGraphNodeSelector.h"
+#include "SMontageGraphNodeSelector.h"
 #include "GraphEditorSettings.h"
 #include "MontageGraphEditorStyles.h"
 #include "IDocumentation.h"
 #include "SCommentBubble.h"
 #include "SGraphPin.h"
-#include "Graph/Nodes/HBMontageGraphEdNodeSelector.h"
-#include "SHBMontageGraphSelectorOutputPin.h"
+#include "Graph/Nodes/MontageGraphEdNodeSelector.h"
+#include "SMontageGraphSelectorOutputPin.h"
 #include "Widgets/Layout/SScaleBox.h"
 
-#define LOCTEXT_NAMESPACE "SHBMontageGraphNodeSelector"
+#define LOCTEXT_NAMESPACE "SMontageGraphNodeSelector"
 
-void SHBGraphNodeSelector::Construct(const FArguments& InArgs, UMontageGraphEdNodeSelector* InNode)
+void SMontageGraphNodeSelector::Construct(const FArguments& InArgs, UMontageGraphEdNodeSelector* InNode)
 {
 	GraphNode = InNode;
 	CachedGraphNode = InNode;
@@ -21,7 +21,7 @@ void SHBGraphNodeSelector::Construct(const FArguments& InArgs, UMontageGraphEdNo
 	UpdateGraphNode();
 }
 
-void SHBGraphNodeSelector::RefreshOutputPins()
+void SMontageGraphNodeSelector::RefreshOutputPins()
 {
 	bool bShouldUpdate = true;
 	UMontageGraphEdNodeSelector* StateNode = CastChecked<UMontageGraphEdNodeSelector>(GraphNode);
@@ -30,7 +30,7 @@ void SHBGraphNodeSelector::RefreshOutputPins()
 }
 
 
-void SHBGraphNodeSelector::UpdateGraphNode()
+void SMontageGraphNodeSelector::UpdateGraphNode()
 {
 	// Reset variables that are going to be exposed, in case we are refreshing an already setup node.
 	const FSlateBrush* NodeTypeIcon = GetNameIcon();
@@ -47,7 +47,7 @@ void SHBGraphNodeSelector::UpdateGraphNode()
 	[
 		SNew(SBorder)
 		.BorderImage(FMontageGraphEditorStyles::Get().GetBrush("HBEditor.MontageGraph.Node.BackgroundLight"))
-		.BorderBackgroundColor(this, &SHBGraphNodeSelector::GetBorderBackgroundColor)
+		.BorderBackgroundColor(this, &SMontageGraphNodeSelector::GetBorderBackgroundColor)
 		.Padding(5.f)
 		[
 			SNew(SBox)
@@ -115,7 +115,7 @@ void SHBGraphNodeSelector::UpdateGraphNode()
 	CreatePinWidgets();
 }
 
-void SHBGraphNodeSelector::CreatePinWidgets()
+void SMontageGraphNodeSelector::CreatePinWidgets()
 {
 	OutNodeBox->ClearChildren();
 	UMontageGraphEdNode* StateNode = CastChecked<UMontageGraphEdNode>(CachedGraphNode);
@@ -125,7 +125,7 @@ void SHBGraphNodeSelector::CreatePinWidgets()
 		UEdGraphPin* MyPin = StateNode->Pins[PinIdx];
 		if (!MyPin->bHidden && MyPin->Direction == EGPD_Output)
 		{
-			TSharedPtr<SGraphPin> NewPin = SNew(SHBMontageGraphSelectorOutputPin, MyPin);
+			TSharedPtr<SGraphPin> NewPin = SNew(SMontageGraphSelectorOutputPin, MyPin);
 			NewPin->SetOwner(SharedThis(this));
 			OutNodeBox->AddSlot()
 			          .HAlign(HAlign_Fill)
@@ -152,7 +152,7 @@ void SHBGraphNodeSelector::CreatePinWidgets()
 	}
 }
 
-void SHBGraphNodeSelector::AddPin(const TSharedRef<SGraphPin>& PinToAdd)
+void SMontageGraphNodeSelector::AddPin(const TSharedRef<SGraphPin>& PinToAdd)
 {
 	PinToAdd->SetOwner(SharedThis(this));
 	RightNodeBox->AddSlot()
@@ -165,7 +165,7 @@ void SHBGraphNodeSelector::AddPin(const TSharedRef<SGraphPin>& PinToAdd)
 	OutputPins.Add(PinToAdd);
 }
 
-TSharedPtr<SToolTip> SHBGraphNodeSelector::GetComplexTooltip()
+TSharedPtr<SToolTip> SMontageGraphNodeSelector::GetComplexTooltip()
 {
 	UMontageGraphEdNodeSelector* StateNode = CastChecked<UMontageGraphEdNodeSelector>(GraphNode);
 
@@ -198,7 +198,7 @@ TSharedPtr<SToolTip> SHBGraphNodeSelector::GetComplexTooltip()
 	];
 }
 
-FSlateColor SHBGraphNodeSelector::GetBorderBackgroundColor() const
+FSlateColor SMontageGraphNodeSelector::GetBorderBackgroundColor() const
 {
 	// Intentionally basic (might consider adding debug states here)
 	constexpr FLinearColor InactiveStateColor(0.08f, 0.08f, 0.08f);
@@ -208,7 +208,7 @@ FSlateColor SHBGraphNodeSelector::GetBorderBackgroundColor() const
 	return InactiveStateColor;
 }
 
-const FSlateBrush* SHBGraphNodeSelector::GetNameIcon() const
+const FSlateBrush* SMontageGraphNodeSelector::GetNameIcon() const
 {
 	return FAppStyle::GetBrush(TEXT("Graph.SelectorNode.Icon"));
 }

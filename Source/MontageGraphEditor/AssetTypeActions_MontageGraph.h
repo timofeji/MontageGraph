@@ -1,4 +1,4 @@
-﻿// Copyright Drop Games Inc. 
+﻿// Created by Timofej Jermolaev, All rights reserved. 
 
 #pragma once
 

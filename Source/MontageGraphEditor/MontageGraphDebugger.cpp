@@ -33,7 +33,7 @@ static bool AreAllGameWorldPaused()
 
 FMontageGraphDebugger::FMontageGraphDebugger()
 {
-	HBMontageGraphAsset = nullptr;
+	MontageGraphAsset = nullptr;
 	bIsPIEActive = false;
 
 	FEditorDelegates::BeginPIE.AddRaw(this, &FMontageGraphDebugger::OnBeginPIE);
@@ -59,11 +59,11 @@ bool FMontageGraphDebugger::IsTickable() const
 	return IsDebuggerReady();
 }
 
-void FMontageGraphDebugger::Setup(UMontageGraph* InHBMontageGraphAsset,
+void FMontageGraphDebugger::Setup(UMontageGraph* InMontageGraphAsset,
                                    TSharedRef<FMontageGraphEditor, ESPMode::ThreadSafe> InEditorOwner)
 {
 	EditorOwner = InEditorOwner;
-	HBMontageGraphAsset = InHBMontageGraphAsset;
+	MontageGraphAsset = InMontageGraphAsset;
 	KnownInstances.Reset();
 	KnownActors.Reset();
 
@@ -278,7 +278,7 @@ FString FMontageGraphDebugger::GetDebuggedInstanceDesc() const
 		return DescribeInstance(*Actor);
 	}
 
-	return NSLOCTEXT("HBMontageGraphAssetEditor", "DebugActorNothingSelected", "No debug object selected").ToString();
+	return NSLOCTEXT("MontageGraphAssetEditor", "DebugActorNothingSelected", "No debug object selected").ToString();
 }
 
 FString FMontageGraphDebugger::GetActorLabel(const AActor* InActor, const bool bIncludeNetModeSuffix,

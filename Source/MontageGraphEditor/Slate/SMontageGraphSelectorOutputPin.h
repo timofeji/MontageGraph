@@ -1,4 +1,4 @@
-﻿// Copyright 2022 Mickael Daniel. All Rights Reserved.
+﻿// Created by Timofej Jermolaev, All rights reserved. 
 
 #pragma once
 
@@ -6,10 +6,10 @@
 #include "GameplayTagContainer.h"
 #include "SGraphPin.h"
 
-class SHBMontageGraphSelectorOutputPin : public SGraphPin
+class SMontageGraphSelectorOutputPin : public SGraphPin
 {
 public:
-	SLATE_BEGIN_ARGS(SHBMontageGraphSelectorOutputPin){}
+	SLATE_BEGIN_ARGS(SMontageGraphSelectorOutputPin){}
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs, UEdGraphPin* InPin);

@@ -14,10 +14,10 @@ class UMontageGraphNode;
 DECLARE_DELEGATE_RetVal(FText, FACEOnGetValueText);
 
 /** Draws a combo node property row to render label / values for a given property */
-class MONTAGEGRAPHEDITOR_API SHBMontageGraphNodeRow : public SCompoundWidget
+class MONTAGEGRAPHEDITOR_API SMontageGraphNodeRow : public SCompoundWidget
 {
 public:
-	SLATE_BEGIN_ARGS(SHBMontageGraphNodeRow) {}
+	SLATE_BEGIN_ARGS(SMontageGraphNodeRow) {}
 
 	SLATE_ARGUMENT(FText, LabelText)
 	SLATE_ARGUMENT(FText, LabelTooltipText)

@@ -8,17 +8,17 @@
 
 /** Required info for reconstructing a manually specified pin */
 USTRUCT()
-struct FHBMontageGraphPinInfo
+struct FMontageGraphPinInfo
 {
 	GENERATED_BODY()
 
-	FHBMontageGraphPinInfo()
+	FMontageGraphPinInfo()
 		: Name(NAME_None)
 	{
 		Type.ResetToDefaults();
 	}
 
-	FHBMontageGraphPinInfo(const FName& InName, const FEdGraphPinType& InType)
+	FMontageGraphPinInfo(const FName& InName, const FEdGraphPinType& InType)
 		: Name(InName)
 		, Type(InType)
 	{

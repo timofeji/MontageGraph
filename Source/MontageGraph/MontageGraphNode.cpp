@@ -4,7 +4,7 @@
 #include "MontageGraphNode.h"
 
 
-#define LOCTEXT_NAMESPACE "HBMontageGraphNode"
+#define LOCTEXT_NAMESPACE "MontageGraphNode"
 
 FText UMontageGraphNode::GetNodeTitle() const
 {

@@ -1,4 +1,4 @@
-﻿// Copyright Drop Games Inc. 
+﻿// Created by Timofej Jermolaev, All rights reserved. 
 
 #include "AssetTypeActions_MontageGraph.h"
 

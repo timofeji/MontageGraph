@@ -1,18 +1,18 @@
 #include "SGraphNodeAction.h"
 
-#include "Slate/SHBMontageGraphNodeRow.h"
+#include "Slate/SMontageGraphNodeRow.h"
 #include "SCommentBubble.h"
 #include "SGraphPin.h"
 #include "GraphEditorSettings.h"
 #include "Widgets/Text/SInlineEditableTextBlock.h"
 #include "MontageGraphEditorStyles.h"
-#include "Graph/HBMontageGraphDragDropAction.h"
+#include "Graph/MontageGraphDragDropAction.h"
 #include "Graph/Nodes/MontageGraphEdNode.h"
 
 
 #include "MontageGraph/MontageGraphNode.h"
 
-#define LOCTEXT_NAMESPACE "SHBMontageGraphNode"
+#define LOCTEXT_NAMESPACE "SMontageGraphNode"
 
 //////////////////////////////////////////////////////////////////////////
 ///
@@ -79,7 +79,7 @@ protected:
 			PinHandles.Add(PinWidget->GetPinObj());
 		}
 
-		return FHBMontageGraphDragDropAction::New(InGraphPanel, PinHandles);
+		return FMontageGraphDragDropAction::New(InGraphPanel, PinHandles);
 	}
 
 };
@@ -398,7 +398,7 @@ TSharedPtr<SVerticalBox> SGraphNodeAction::CreateNodeContent()
 	       .Padding(TopRowPadding)
 	       .AutoHeight()
 	[
-		SNew(SHBMontageGraphNodeRow, CachedGraphNode->RuntimeNode)
+		SNew(SMontageGraphNodeRow, CachedGraphNode->RuntimeNode)
 		.IsTransparent(false)
 		// .LabelText(CachedGraphNode->RuntimeNode->GetAnimAssetLabel())
 		// .LabelTooltipText(CachedGraphNode->RuntimeNode->GetAnimAssetLabelTooltip())
@@ -411,7 +411,7 @@ TSharedPtr<SVerticalBox> SGraphNodeAction::CreateNodeContent()
 	       .Padding(RowPadding)
 	       .AutoHeight()
 	[
-		SNew(SHBMontageGraphNodeRow, CachedGraphNode->RuntimeNode)
+		SNew(SMontageGraphNodeRow, CachedGraphNode->RuntimeNode)
 		.IsTransparent(false)
 		.LabelText(LOCTEXT("PlayRate", "Rate"))
 		.LabelTooltipText(LOCTEXT("PlayRateTooltip", "Montage Play Rate"))
@@ -425,7 +425,7 @@ TSharedPtr<SVerticalBox> SGraphNodeAction::CreateNodeContent()
 		       .Padding(RowPadding)
 		       .AutoHeight()
 		[
-			SNew(SHBMontageGraphNodeRow, CachedGraphNode->RuntimeNode)
+			SNew(SMontageGraphNodeRow, CachedGraphNode->RuntimeNode)
 			.IsTransparent(false)
 			.LabelText(LOCTEXT("StartSection", "Montage Start Section"))
 			.LabelTooltipText(LOCTEXT("StartSection", "Montage Start Section"))
@@ -439,7 +439,7 @@ TSharedPtr<SVerticalBox> SGraphNodeAction::CreateNodeContent()
 	       .Padding(RowPadding)
 	       .AutoHeight()
 	[
-		SNew(SHBMontageGraphNodeRow, CachedGraphNode->RuntimeNode)
+		SNew(SMontageGraphNodeRow, CachedGraphNode->RuntimeNode)
 		.IsTransparent(false)
 		.LabelText(LOCTEXT("EffectCost", "Effect Cost"))
 		.LabelTooltipText(LOCTEXT("EffectCost", "Effect Cost"))
@@ -457,7 +457,7 @@ TSharedPtr<SVerticalBox> SGraphNodeAction::CreateNodeContent()
 		       .Padding(BottomRowPadding)
 		       .AutoHeight()
 		[
-			SNew(SHBMontageGraphNodeRow, CachedGraphNode->RuntimeNode)
+			SNew(SMontageGraphNodeRow, CachedGraphNode->RuntimeNode)
 			.IsTransparent(true)
 			// .LabelText(LOCTEXT("NodeClass", "Node Class"))
 			.LabelTooltipText(LOCTEXT("NodeClass", "Node Class"))

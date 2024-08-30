@@ -1,8 +1,8 @@
-#include "SHBMontageGraphEntryPin.h"
+#include "SMontageGraphEntryPin.h"
 
 #include "MontageGraphEditorStyles.h"
 
-void SHBMontageGraphEntryPin::Construct(const FArguments& InArgs, UEdGraphPin* InPin)
+void SMontageGraphEntryPin::Construct(const FArguments& InArgs, UEdGraphPin* InPin)
 {
 	SetCursor(EMouseCursor::Default);
 
@@ -17,20 +17,20 @@ void SHBMontageGraphEntryPin::Construct(const FArguments& InArgs, UEdGraphPin* I
 	// Set up a hover for pins that is tinted the color of the pin.
 	SBorder::Construct(
 		SBorder::FArguments()
-		.BorderImage(this, &SHBMontageGraphEntryPin::GetPinBorder)
-		.BorderBackgroundColor(this, &SHBMontageGraphEntryPin::GetPinColor)
-		.OnMouseButtonDown(this, &SHBMontageGraphEntryPin::OnPinMouseDown)
-		.Cursor(this, &SHBMontageGraphEntryPin::GetPinCursor)
+		.BorderImage(this, &SMontageGraphEntryPin::GetPinBorder)
+		.BorderBackgroundColor(this, &SMontageGraphEntryPin::GetPinColor)
+		.OnMouseButtonDown(this, &SMontageGraphEntryPin::OnPinMouseDown)
+		.Cursor(this, &SMontageGraphEntryPin::GetPinCursor)
 		.DesiredSizeScale(FVector2d(10.f, 10.f))
 	);
 }
 
-TSharedRef<SWidget> SHBMontageGraphEntryPin::GetDefaultValueWidget()
+TSharedRef<SWidget> SMontageGraphEntryPin::GetDefaultValueWidget()
 {
 	return SNew(STextBlock);
 }
 
-const FSlateBrush* SHBMontageGraphEntryPin::GetPinBorder() const
+const FSlateBrush* SMontageGraphEntryPin::GetPinBorder() const
 {
 	FString StyleName = IsConnected()
 		                    ? "HBEditor.MontageGraph.Pin.BackgroundConnected"

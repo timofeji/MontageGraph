@@ -5,7 +5,7 @@
 #include "SGraphNode.h"
 
 class UMontageGraphNode_Animation;
-class UHBMontageGraphNodeBase;
+class UMontageGraphNodeBase;
 class UMontageGraphEdNode;
 
 class MONTAGEGRAPHEDITOR_API SGraphNodeAction : public SGraphNode

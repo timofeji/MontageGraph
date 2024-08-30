@@ -1,12 +1,12 @@
 
 
-#include "HBMontageGraphEdNodeEdge.h"
+#include "MontageGraphEdNodeEdge.h"
 
 #include "MontageGraphEditorTypes.h"
 
 #include "MontageGraph/MontageGraphEdge.h"
 #include "MontageGraphEdNode.h"
-#include "HBMontageGraphEdNodeSelector.h"
+#include "MontageGraphEdNodeSelector.h"
 #include "..\..\MontageGraphEditorLog.h"
 
 UMontageGraphEdNodeEdge::UMontageGraphEdNodeEdge()

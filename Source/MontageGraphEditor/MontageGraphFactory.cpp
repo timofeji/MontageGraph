@@ -2,7 +2,7 @@
 #include "MontageGraphFactory.h"
 #include "MontageGraph/MontageGraph.h"
 
-#define LOCTEXT_NAMESPACE "UHBMontageGraphFactory"
+#define LOCTEXT_NAMESPACE "UMontageGraphFactory"
 
 UMontageGraphFactory::UMontageGraphFactory()
 {

@@ -18,7 +18,7 @@
 #include "Graph/MontageGraphEdGraph.h"
 #include "Graph/MontageGraphSchema.h"
 #include "Graph/Nodes/MontageGraphEdNode.h"
-#include "Graph/Nodes/HBMontageGraphEdNodeEdge.h"
+#include "Graph\Nodes\MontageGraphEdNodeEdge.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 
 #include "IPersonaToolkit.h"
@@ -591,7 +591,7 @@ void FMontageGraphEditor::RegisterTabSpawners(const TSharedRef<FTabManager>& InT
 
 	InTabManager->RegisterTabSpawner(FMontageGraphEditor::DetailsTabID,
 	                                 FOnSpawnTab::CreateSP(this, &FMontageGraphEditor::SpawnTab_Details))
-	            .SetDisplayName(LOCTEXT("HBMontageGraphDetailsTab", "PropertyDetails"))
+	            .SetDisplayName(LOCTEXT("MontageGraphDetailsTab", "PropertyDetails"))
 	            .SetGroup(WorkspaceMenuCategoryRef)
 	            .SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "LevelEditor.Tabs.Details"));
 }
@@ -615,11 +615,11 @@ FText FMontageGraphEditor::GetToolkitName() const
 	check(EditingObject);
 
 	FFormatNamedArguments Args;
-	Args.Add(TEXT("HBMontageGraphName"), FText::FromString(EditingObject->GetName()));
+	Args.Add(TEXT("MontageGraphName"), FText::FromString(EditingObject->GetName()));
 	Args.Add(TEXT("DirtyState"), EditingObject->GetOutermost()->IsDirty()
 		                             ? FText::FromString(TEXT("*"))
 		                             : FText::GetEmpty());
-	return FText::Format(LOCTEXT("HBMontageGraphAssetEditorToolkitName", "{HBMontageGraphName}{DirtyState}"), Args);
+	return FText::Format(LOCTEXT("MontageGraphAssetEditorToolkitName", "{MontageGraphName}{DirtyState}"), Args);
 }
 
 void FMontageGraphEditor::RebuildMontageGraph()

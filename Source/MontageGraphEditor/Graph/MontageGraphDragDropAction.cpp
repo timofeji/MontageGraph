@@ -1,5 +1,5 @@
 ﻿
-#include "HBMontageGraphDragDropAction.h"
+#include "MontageGraphDragDropAction.h"
 
 #include "EditorStyleSet.h"
 #include "SGraphPanel.h"
@@ -8,7 +8,7 @@
 
 #define LOCTEXT_NAMESPACE "ACEGraphDragAction"
 
-FHBMontageGraphDragDropAction::FHBMontageGraphDragDropAction(const TSharedRef<SGraphPanel>& GraphPanel, TArray<FGraphPinHandle>& DraggedPins)
+FMontageGraphDragDropAction::FMontageGraphDragDropAction(const TSharedRef<SGraphPanel>& GraphPanel, TArray<FGraphPinHandle>& DraggedPins)
 	: GraphPanel(GraphPanel),
 	  DraggingPins(DraggedPins),
 	  DecoratorAdjust(FSlateApplication::Get().GetCursorSize())
@@ -31,20 +31,20 @@ FHBMontageGraphDragDropAction::FHBMontageGraphDragDropAction(const TSharedRef<SG
 	}
 }
 
-TSharedRef<FHBMontageGraphDragDropAction> FHBMontageGraphDragDropAction::New(const TSharedRef<SGraphPanel>& GraphPanel, TArray<FGraphPinHandle>& InStartingPins)
+TSharedRef<FMontageGraphDragDropAction> FMontageGraphDragDropAction::New(const TSharedRef<SGraphPanel>& GraphPanel, TArray<FGraphPinHandle>& InStartingPins)
 {
-	TSharedRef<FHBMontageGraphDragDropAction> Operation = MakeShareable(new FHBMontageGraphDragDropAction(GraphPanel, InStartingPins));
+	TSharedRef<FMontageGraphDragDropAction> Operation = MakeShareable(new FMontageGraphDragDropAction(GraphPanel, InStartingPins));
 	Operation->Construct();
 	return Operation;
 }
 
-void FHBMontageGraphDragDropAction::OnDrop(const bool bDropWasHandled, const FPointerEvent& MouseEvent)
+void FMontageGraphDragDropAction::OnDrop(const bool bDropWasHandled, const FPointerEvent& MouseEvent)
 {
 	GraphPanel->OnStopMakingConnection();
 	FGraphEditorDragDropAction::OnDrop(bDropWasHandled, MouseEvent);
 }
 
-void FHBMontageGraphDragDropAction::HoverTargetChanged()
+void FMontageGraphDragDropAction::HoverTargetChanged()
 {
 	TArray<FPinConnectionResponse> Responses;
 
@@ -123,7 +123,7 @@ void FHBMontageGraphDragDropAction::HoverTargetChanged()
 	SetFeedbackMessage(FeedbackBox);
 }
 
-void FHBMontageGraphDragDropAction::OnDragged(const FDragDropEvent& DragDropEvent)
+void FMontageGraphDragDropAction::OnDragged(const FDragDropEvent& DragDropEvent)
 {
 	const FVector2D TargetPosition = DragDropEvent.GetScreenSpacePosition();
 
@@ -133,7 +133,7 @@ void FHBMontageGraphDragDropAction::OnDragged(const FDragDropEvent& DragDropEven
 	GraphPanel->RequestDeferredPan(TargetPosition);
 }
 
-FReply FHBMontageGraphDragDropAction::DroppedOnPin(FVector2D ScreenPosition, FVector2D GraphPosition)
+FReply FMontageGraphDragDropAction::DroppedOnPin(FVector2D ScreenPosition, FVector2D GraphPosition)
 {
 	TArray<UEdGraphPin*> ValidSourcePins;
 	ValidateGraphPinList(ValidSourcePins);
@@ -190,7 +190,7 @@ FReply FHBMontageGraphDragDropAction::DroppedOnPin(FVector2D ScreenPosition, FVe
 	return FReply::Handled();
 }
 
-FReply FHBMontageGraphDragDropAction::DroppedOnNode(FVector2D ScreenPosition, FVector2D GraphPosition)
+FReply FMontageGraphDragDropAction::DroppedOnNode(FVector2D ScreenPosition, FVector2D GraphPosition)
 {
 	bool bHandledPinDropOnNode = false;
 	UEdGraphNode* NodeOver = GetHoveredNode();
@@ -238,7 +238,7 @@ FReply FHBMontageGraphDragDropAction::DroppedOnNode(FVector2D ScreenPosition, FV
 	return bHandledPinDropOnNode ? FReply::Handled() : FReply::Unhandled();
 }
 
-FReply FHBMontageGraphDragDropAction::DroppedOnPanel(const TSharedRef<SWidget>& Panel, const FVector2D ScreenPosition, const FVector2D GraphPosition, UEdGraph& Graph)
+FReply FMontageGraphDragDropAction::DroppedOnPanel(const TSharedRef<SWidget>& Panel, const FVector2D ScreenPosition, const FVector2D GraphPosition, UEdGraph& Graph)
 {
 	// Gather any source drag pins
 	TArray<UEdGraphPin*> PinObjects;
@@ -253,7 +253,7 @@ FReply FHBMontageGraphDragDropAction::DroppedOnPanel(const TSharedRef<SWidget>& 
 		: FReply::Handled();
 }
 
-void FHBMontageGraphDragDropAction::ValidateGraphPinList(TArray<UEdGraphPin*>& OutValidPins)
+void FMontageGraphDragDropAction::ValidateGraphPinList(TArray<UEdGraphPin*>& OutValidPins)
 {
 	OutValidPins.Empty(DraggingPins.Num());
 
@@ -266,7 +266,7 @@ void FHBMontageGraphDragDropAction::ValidateGraphPinList(TArray<UEdGraphPin*>& O
 	}
 }
 
-void FHBMontageGraphDragDropAction::AppendConnectionResponsesForHoveredPin(const UEdGraphPin* TargetPin, TArray<FPinConnectionResponse>& OutResponses)
+void FMontageGraphDragDropAction::AppendConnectionResponsesForHoveredPin(const UEdGraphPin* TargetPin, TArray<FPinConnectionResponse>& OutResponses)
 {
 	TArray<UEdGraphPin*> ValidSourcePins;
 	ValidateGraphPinList(ValidSourcePins);
@@ -293,7 +293,7 @@ void FHBMontageGraphDragDropAction::AppendConnectionResponsesForHoveredPin(const
 	}
 }
 
-void FHBMontageGraphDragDropAction::AppendConnectionResponsesForHoveredNode(const UMontageGraphEdNode* TargetNode, TArray<FPinConnectionResponse>& OutResponses)
+void FMontageGraphDragDropAction::AppendConnectionResponsesForHoveredNode(const UMontageGraphEdNode* TargetNode, TArray<FPinConnectionResponse>& OutResponses)
 {
 	TArray<UEdGraphPin*> StartingPins;
 	ValidateGraphPinList(StartingPins);
@@ -326,7 +326,7 @@ void FHBMontageGraphDragDropAction::AppendConnectionResponsesForHoveredNode(cons
 	}
 }
 
-void FHBMontageGraphDragDropAction::AppendConnectionResponsesForHoveredGraph(const UEdGraph* HoverGraph, TArray<FPinConnectionResponse>& OutResponses)
+void FMontageGraphDragDropAction::AppendConnectionResponsesForHoveredGraph(const UEdGraph* HoverGraph, TArray<FPinConnectionResponse>& OutResponses)
 {
 	TArray<UEdGraphPin*> ValidSourcePins;
 	ValidateGraphPinList(ValidSourcePins);

@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "MontageGraphEdNode.h"
-#include "HBMontageGraphEdNodeEntry.generated.h"
+#include "MontageGraphEdNodeEntry.generated.h"
 
 class UMontageGraphNode;
 /** Editor Graph Node for entry point in Montage Graphs. Based off UAnimStateEntryNode for state machine graphs in Anim BP. */

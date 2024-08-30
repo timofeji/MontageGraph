@@ -9,13 +9,13 @@ class UMontageGraphEdNode;
 struct FGraphPinHandle;
 
 /** Customized version of FDragConnection (mainly because it is not exposed to other modules) */
-class MONTAGEGRAPHEDITOR_API FHBMontageGraphDragDropAction : public FGraphEditorDragDropAction
+class MONTAGEGRAPHEDITOR_API FMontageGraphDragDropAction : public FGraphEditorDragDropAction
 {
 public:
 	DRAG_DROP_OPERATOR_TYPE(FACEGraphDragAction, FGraphEditorDragDropAction)
 
-	FHBMontageGraphDragDropAction(const TSharedRef<SGraphPanel>& GraphPanel, TArray<FGraphPinHandle>& DraggedPins);
-	static TSharedRef<FHBMontageGraphDragDropAction> New(const TSharedRef<SGraphPanel>& GraphPanel, TArray<FGraphPinHandle>& InStartingPins);
+	FMontageGraphDragDropAction(const TSharedRef<SGraphPanel>& GraphPanel, TArray<FGraphPinHandle>& DraggedPins);
+	static TSharedRef<FMontageGraphDragDropAction> New(const TSharedRef<SGraphPanel>& GraphPanel, TArray<FGraphPinHandle>& InStartingPins);
 
 	//~ FDragDropOperation interface
 	virtual void OnDrop(bool bDropWasHandled, const FPointerEvent& MouseEvent) override;

@@ -69,13 +69,13 @@ struct MONTAGEGRAPHEDITOR_API FMontageGraphSchemaAction_NewEdge : public FEdGrap
 
 /** Action to add a node action to the graph */
 USTRUCT()
-struct MONTAGEGRAPHEDITOR_API FHBMontageGraphSchemaAction_NewNodeAction : public FEdGraphSchemaAction
+struct MONTAGEGRAPHEDITOR_API FMontageGraphSchemaAction_NewNodeAction : public FEdGraphSchemaAction
 {
 	GENERATED_USTRUCT_BODY();
 
-	FHBMontageGraphSchemaAction_NewNodeAction(): NodeTemplate(nullptr) {}
+	FMontageGraphSchemaAction_NewNodeAction(): NodeTemplate(nullptr) {}
 
-	FHBMontageGraphSchemaAction_NewNodeAction(const FText& InNodeCategory, const FText& InMenuDesc, const FText& InToolTip, const int32 InGrouping)
+	FMontageGraphSchemaAction_NewNodeAction(const FText& InNodeCategory, const FText& InMenuDesc, const FText& InToolTip, const int32 InGrouping)
 		: FEdGraphSchemaAction(InNodeCategory, InMenuDesc, InToolTip, InGrouping), NodeTemplate(nullptr) {}
 
 	virtual UEdGraphNode* PerformAction(class UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode = true) override;
@@ -196,7 +196,7 @@ public:
 	virtual TSharedPtr<FEdGraphSchemaAction> GetCreateCommentAction() const override;
 	//~ End UEdGraphSchema interface
 
-	/** Spawn the correct node in the HBMontageGraph using the given AnimationAsset at the supplied location */
+	/** Spawn the correct node in the MontageGraph using the given AnimationAsset at the supplied location */
 	static void SpawnNodeFromAsset(UAnimationAsset* Asset, const FVector2D& GraphPosition, UEdGraph* Graph, UEdGraphPin* PinIfAvailable);
 
 	/** Helper to return correct Node Handler depending on provided Animation Asset (can be Montages or Sequences) */

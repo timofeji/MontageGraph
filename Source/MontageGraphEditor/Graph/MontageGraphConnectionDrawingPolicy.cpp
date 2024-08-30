@@ -3,9 +3,9 @@
 #include "MontageGraphEdGraph.h"
 #include "MontageGraphEditorStyles.h"
 #include "MontageGraphDebugger.h"
-#include "Slate/SHBMontageGraphSelectorOutputPin.h"
+#include "Slate/SMontageGraphSelectorOutputPin.h"
 #include "Nodes/MontageGraphEdNode.h"
-#include "Nodes/HBMontageGraphEdNodeEntry.h"
+#include "Nodes\MontageGraphEdNodeEntry.h"
 
 FMontageGraphConnectionDrawingPolicy::FMontageGraphConnectionDrawingPolicy(
 	const int32 InBackLayerID, const int32 InFrontLayerID, const float ZoomFactor, const FSlateRect& InClippingRect,

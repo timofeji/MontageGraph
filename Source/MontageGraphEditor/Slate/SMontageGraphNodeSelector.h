@@ -10,10 +10,10 @@ class UMontageGraphEdNodeSelector;
 class UMontageGraphEdNode;
 class SHorizontalBox;
 
-class SHBGraphNodeSelector : public SGraphNodeAction
+class SMontageGraphNodeSelector : public SGraphNodeAction
 {
 public:
-	SLATE_BEGIN_ARGS(SHBGraphNodeSelector){}
+	SLATE_BEGIN_ARGS(SMontageGraphNodeSelector){}
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs, UMontageGraphEdNodeSelector* InNode);

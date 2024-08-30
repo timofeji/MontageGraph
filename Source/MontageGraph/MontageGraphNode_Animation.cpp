@@ -4,12 +4,12 @@
 #include "Animation/AnimMontage.h"
 #include "Animation/AnimSequence.h"
 
-#define LOCTEXT_NAMESPACE "HBMontageGraphNodeSequence"
+#define LOCTEXT_NAMESPACE "MontageGraphNodeSequence"
 
 UMontageGraphNode_Animation::UMontageGraphNode_Animation()
 {
 #if WITH_EDITORONLY_DATA
-	ContextMenuName = LOCTEXT("HBMontageGraphNodeSequence_ContextMenuName", "Montage Action Node");
+	ContextMenuName = LOCTEXT("MontageGraphNodeSequence_ContextMenuName", "Montage Action Node");
 #endif
 }
 

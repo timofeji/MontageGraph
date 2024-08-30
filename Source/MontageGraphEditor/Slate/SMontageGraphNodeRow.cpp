@@ -1,7 +1,7 @@
 ﻿// Created by Timofej Jermolaev, All rights reserved . 
 
 
-#include "SHBMontageGraphNodeRow.h"
+#include "SMontageGraphNodeRow.h"
 
 #include "EditorStyleSet.h"
 #include "SlateOptMacros.h"
@@ -11,7 +11,7 @@
 
 BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
 
-void SHBMontageGraphNodeRow::Construct(const FArguments& InArgs, UMontageGraphNode* InRuntimeNode)
+void SMontageGraphNodeRow::Construct(const FArguments& InArgs, UMontageGraphNode* InRuntimeNode)
 {
 	check(InRuntimeNode);
 	RuntimeNode = InRuntimeNode;
@@ -57,14 +57,14 @@ void SHBMontageGraphNodeRow::Construct(const FArguments& InArgs, UMontageGraphNo
 				SNew(STextBlock)
 				.Justification(ETextJustify::Right)
 				.Font(FontStyle)
-				.Text(this, &SHBMontageGraphNodeRow::GetValueText)
+				.Text(this, &SMontageGraphNodeRow::GetValueText)
 				.ToolTipText(ValueTooltipText)
 			]
 		]
 	];
 }
 
-FText SHBMontageGraphNodeRow::GetValueText() const
+FText SMontageGraphNodeRow::GetValueText() const
 {
 	return OnGetValueText.IsBound() ? OnGetValueText.Execute() : LOCTEXT("NotImplemented", "NotImplemented: Please provide OnGetValueText delegate");
 	// return FText::FromString(FString::SanitizeFloat(RuntimeNode->MontagePlayRate));

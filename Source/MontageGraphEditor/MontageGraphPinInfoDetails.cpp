@@ -7,7 +7,7 @@
 #include "DetailWidgetRow.h"
 #include "SPinTypeSelector.h"
 
-#define LOCTEXT_NAMESPACE "HBMontageGraphPinInfoDetails"
+#define LOCTEXT_NAMESPACE "MontageGraphPinInfoDetails"
 
 void FMontageGraphPinInfoDetails::CustomizeHeader(TSharedRef<IPropertyHandle> InStructPropertyHandle, FDetailWidgetRow& InHeaderRow, IPropertyTypeCustomizationUtils& InStructCustomizationUtils)
 {
@@ -22,8 +22,8 @@ void FMontageGraphPinInfoDetails::CustomizeHeader(TSharedRef<IPropertyHandle> In
 	const UEdGraphSchema_K2* K2Schema = GetDefault<UEdGraphSchema_K2>();
 
 	StructPropertyHandle = InStructPropertyHandle;
-	NamePropertyHandle = InStructPropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FHBMontageGraphPinInfo, Name));
-	TypePropertyHandle = InStructPropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FHBMontageGraphPinInfo, Type));
+	NamePropertyHandle = InStructPropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FMontageGraphPinInfo, Name));
+	TypePropertyHandle = InStructPropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FMontageGraphPinInfo, Type));
 
 	StructPropertyHandle->MarkResetToDefaultCustomized(true);
 

@@ -6,15 +6,16 @@
     - [Showcase](#showcase)
 
 ## About
-Montage Graph is an experimental animation authoring system used within our game [Eonblade](https://store.steampowered.com/app/1213840/EonBlade/).
+Montage Graph is an experimental animation authoring system developed for [Eonblade](https://store.steampowered.com/app/1213840/EonBlade/).
 The focus is of this tool is to speed up authoring of gameplay animations within the editor. 
 
-Contributions, feedback and criticism are more than welcome. Please submit a PR or message one of the devs.
+Contributions, feedback and criticism are more than welcome. 
 
 ## Features
 - Graph Editor:
     - Branching montage selection based gameplay tags and selector nodes
     - Animation combos using linked nodes
+    - One click setup for live-linked animations in Sequencer
     
 
 ## Links

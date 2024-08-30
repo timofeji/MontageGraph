@@ -41,7 +41,7 @@ FLinearColor UMontageGraphEdNode::GetBackgroundColor() const
 		return FLinearColor::Black;
 	}
 
-	// const UHBMontageGraphProjectSettings* Settings = FHBMontageGraphUtils::GetPluginProjectSettings();
+	// const UMontageGraphProjectSettings* Settings = FHBMontageGraphUtils::GetPluginProjectSettings();
 	// const FLinearColor DebugActiveColor = Settings->DebugActiveColor;
 	const FLinearColor DefaultColor = RuntimeNode->GetBackgroundColor();
 
@@ -244,11 +244,11 @@ void UMontageGraphEdNode::UpdateTimeCurrentNode(const float DeltaTime, const flo
 
 const UMontageGraphNode* UMontageGraphEdNode::GetDebuggedNode() const
 {
-	UMontageGraphEdGraph* HBMontageGraph = Cast<UMontageGraphEdGraph>(GetOuter());
+	UMontageGraphEdGraph* MontageGraph = Cast<UMontageGraphEdGraph>(GetOuter());
 
-	if (HBMontageGraph && HBMontageGraph->Debugger.IsValid())
+	if (MontageGraph && MontageGraph->Debugger.IsValid())
 	{
-		FMontageGraphDebugger* Debugger = HBMontageGraph->Debugger.Get();
+		FMontageGraphDebugger* Debugger = MontageGraph->Debugger.Get();
 		if (Debugger && Debugger->IsDebuggerReady())
 		{
 			// UHBActionComponent* EvaluationTask = Debugger->GetDebuggedTaskForSelectedActor();

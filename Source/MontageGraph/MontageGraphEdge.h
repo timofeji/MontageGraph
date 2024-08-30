@@ -16,11 +16,11 @@ class MONTAGEGRAPH_API UMontageGraphEdge : public UObject
 public:
 
 	/** Start or parent node for this edge */
-	UPROPERTY(BlueprintReadOnly, Category = "HBMontageGraph")
+	UPROPERTY(BlueprintReadOnly, Category = "MontageGraph")
 	UMontageGraphNode* StartNode;
 
 	/** End or child node for this edge */
-	UPROPERTY(BlueprintReadOnly, Category = "HBMontageGraph")
+	UPROPERTY(BlueprintReadOnly, Category = "MontageGraph")
 	UMontageGraphNode* EndNode;
 
 	/** Updates ref to OwningActor to send back event when receiving input */
@@ -29,7 +29,7 @@ public:
 
 	
 #if WITH_EDITORONLY_DATA
-	// UPROPERTY(EditDefaultsOnly, Category = "HBMontageGraph")
+	// UPROPERTY(EditDefaultsOnly, Category = "MontageGraph")
 	FText NodeTitle;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Montage Graph | Icons")

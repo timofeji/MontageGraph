@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "MontageGraphEdNode.h"
-#include "HBMontageGraphEdNodeEdge.generated.h"
+#include "MontageGraphEdNodeEdge.generated.h"
 
 class UMontageGraph;
 class UMontageGraphEdNodeSelector;
@@ -20,7 +20,7 @@ public:
 	UMontageGraphEdNodeEdge();
 	virtual ~UMontageGraphEdNodeEdge();
 
-	UPROPERTY(VisibleAnywhere, Instanced, Category = "HBMontageGraph")
+	UPROPERTY(VisibleAnywhere, Instanced, Category = "MontageGraph")
 	UMontageGraphEdge* RuntimeEdge;
 
 	void SetRuntimeEdge(UMontageGraphEdge* InEdge);
