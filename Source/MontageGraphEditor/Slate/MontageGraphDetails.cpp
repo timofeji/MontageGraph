@@ -321,7 +321,6 @@ void FMontageGraphDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 	}
 
 
-
 	//If Not add option to create a linked montage using control rig
 	TArray<TSharedRef<IPropertyHandle>> AllProperties;
 	Category.GetDefaultProperties(AllProperties);
@@ -340,39 +339,68 @@ void FMontageGraphDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 		Category.AddCustomRow(FText::FromString("MontageGraphFooter"))
 		        .WholeRowWidget
 		[
-			SNew(SOverlay)
-			+ SOverlay::Slot()
-			.Padding(FMargin(.0f, 10.f, .0f, 5.f))
-			[
-				SNew(SButton)
-				.ContentPadding(FMargin(.0f, 10.f, .0f, 10.f))
-				.HAlign(HAlign_Center)
-				.ButtonStyle(FAppStyle::Get(), "FlatButton.Success")
-				.OnPressed(OnClickDelegate)
-				.Content()
+			// SNew(SOverlay)
+			// + SOverlay::Slot()
+			// .Padding(FMargin(.0f, 10.f, .0f, 5.f))
+			// [
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				  .FillWidth(1.0f)
+				  .VAlign(VAlign_Center)
 				[
-					SNew(SHorizontalBox)
-
-					+ SHorizontalBox::Slot()
-					  .AutoWidth()
-					  .VAlign(VAlign_Center)
+					SNew(SButton)
+												.ContentPadding(FMargin(.0f, 10.f, .0f, 10.f))
+												.HAlign(HAlign_Fill)
+												.ButtonStyle(FAppStyle::Get(), "FlatButton.Success")
+												.OnPressed(OnClickDelegate)
+												.Content()
 					[
-						SNew(SImage)
-						.Image(FCoreStyle::Get().GetBrush("Sequencer.AllowSequencerEditsOnly"))
-					]
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot()
+						  .AutoWidth()
+						  .VAlign(VAlign_Center)
+						[
+							SNew(SImage)
+							.Image(FCoreStyle::Get().GetBrush("Sequencer.AllowSequencerEditsOnly"))
+						]
 
-					+ SHorizontalBox::Slot()
-					  .AutoWidth()
-					  .VAlign(VAlign_Center)
-					  .Padding(FMargin(5.0f, 0.0f))
-					[
-						SNew(STextBlock)
-						.Justification(ETextJustify::Center)
-						.Text(FText::FromString("Edit Linked Animation in Sequencer"))
-						.TextStyle(FCoreStyle::Get(), "NormalText")
+						+ SHorizontalBox::Slot()
+						  .FillWidth(1.0f)
+						  .VAlign(VAlign_Center)
+						  .Padding(FMargin(3.0f, 0.0f))
+						[
+							SNew(STextBlock)
+							.Justification(ETextJustify::Center)
+							.Text(FText::FromString("Edit Sequence"))
+							.TextStyle(FAppStyle::Get(), "FlatButton.DefaultTextStyle")
+						]
 					]
 				]
-			]
+				+ SHorizontalBox::Slot()
+				  .AutoWidth()
+				  .VAlign(VAlign_Fill)
+				  .Padding(1.0f, 0.f)
+				[
+					SNew(SSeparator)
+					.Orientation(Orient_Vertical)
+					.Thickness(3.0f)
+				]
+				+ SHorizontalBox::Slot()
+				  .AutoWidth()
+				  .VAlign(VAlign_Fill)
+				[
+					SNew(SButton)
+					.ContentPadding(FMargin(.0f, 10.f, .0f, 10.f))
+					.HAlign(HAlign_Right)
+					.ButtonStyle(FAppStyle::Get(), "FlatButton.Dark")
+					.OnPressed(OnClickDelegate)
+					.Content()
+					[
+						SNew(SImage)
+						.Image(FCoreStyle::Get().GetBrush("SystemWideCommands.FindInContentBrowser.Small"))
+					]
+				]
+			// ]
 		];
 	}
 	else
@@ -388,11 +416,7 @@ void FMontageGraphDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 		Category.AddCustomRow(FText::FromString("MontageGraphFooter"))
 		        .WholeRowWidget
 		[
-			SNew(SOverlay)
-			+ SOverlay::Slot()
-			.Padding(FMargin(.0f, 10.f, .0f, 5.f))
-			[
-				SNew(SButton)
+			SNew(SButton)
     		.ContentPadding(FMargin(.0f, 10.f, .0f, 10.f))
     		.HAlign(HAlign_Center)
     		.ButtonStyle(FAppStyle::Get(), "FlatButton.Primary")
@@ -417,11 +441,10 @@ void FMontageGraphDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 					[
 						SNew(STextBlock)
     				.Justification(ETextJustify::Center)
-    				.Text(FText::FromString("Create Linked Control Rig Animation"))
-    				.TextStyle(FCoreStyle::Get(), "NormalText")
+    				.Text(FText::FromString("Create Linked Animation Assets"))
+					.TextStyle(FAppStyle::Get(), "FlatButton.DefaultTextStyle")
 					]
 				]
-			]
 		];
 	}
 }

@@ -18,5 +18,5 @@ public:
 
 	//Conducting state for each of the children nodes in order
 	UPROPERTY(EditAnywhere, Category = "Selector")
-	TArray<FGameplayTag> ConductStates;
+	TArray<FGameplayTag> SelectorStates;
 };

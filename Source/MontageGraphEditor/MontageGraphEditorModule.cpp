@@ -7,6 +7,8 @@
 #include "IAssetTools.h"
 
 #include "AssetTypeActions_MontageGraph.h"
+
+#include "MontageGraphSequencerExtensions.h"
 #include "Graph/MontageGraphNodePanelFactory.h"
 #include "Slate/MontageGraphDetails.h"
 
@@ -40,16 +42,25 @@ void FMontageGraphEditorModule::StartupModule()
 	PropertyEditorModule.RegisterCustomClassLayout("MontageGraphEdNode",
 	                                               FOnGetDetailCustomizationInstance::CreateStatic(
 		                                               &FMontageGraphDetails::MakeInstance));
+
+	
+	SequencerExtensions= MakeShareable(new FMontageGraphSequencerExtensions);
+	SequencerExtensions->Register();
+
 }
 
 void FMontageGraphEditorModule::ShutdownModule()
 {
 	IModuleInterface::ShutdownModule();
 
-	FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
+	FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>(
+		"PropertyEditor");
 	PropertyEditorModule.UnregisterCustomClassLayout("MontageGraphEdNode");
 
 	FEdGraphUtilities::UnregisterVisualNodeFactory(GraphNodeFactory);
+
+	
+	SequencerExtensions->Unregister();
 }
 
 #undef LOCTEXT_NAMESPACE

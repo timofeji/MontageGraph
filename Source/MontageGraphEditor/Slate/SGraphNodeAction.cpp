@@ -309,7 +309,7 @@ EVisibility SGraphNodeAction::GetDragOverMarkerVisibility() const
 
 const FSlateBrush* SGraphNodeAction::GetNameIcon() const
 {
-	return FMontageGraphEditorStyles::Get().GetBrush(TEXT("HBEditor.Character.WeaponAction"));
+	return FMontageGraphEditorStyles::Get().GetBrush(TEXT("MontageGraph.Icon"));
 }
 
 void SGraphNodeAction::GetNodeInfoPopups(FNodeInfoContext* Context, TArray<FGraphInformationPopupInfo>& Popups) const

@@ -38,6 +38,7 @@ void UMontageGraphEdNodeMontage::OpenLinkedAnimation() const
 				ULevelSequence* LevelSequence = AnimLevelLink->ResolveLevelSequence();
 				if (LevelSequence)
 				{
+					
 					//Open Sequencer
 					GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OpenEditorForAsset(LevelSequence);
 					

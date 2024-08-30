@@ -22,6 +22,8 @@ public:
 		                          20.f);
 		const FVector2D Icon40x40(40.f,
 		                          40.f);
+		const FVector2D Icon48x48(48.f,
+		                          48.f);
 		const FVector2D Icon64x64(64.f,
 		                          64.f);
 		const FVector2D Icon128x128(128.f,
@@ -50,8 +52,12 @@ public:
 		                    Icon64x64));
 		
 		
-		Set("HBEditor.Character.WeaponAction", new IMAGE_BRUSH
+		Set("MontageGraph.Icon", new IMAGE_BRUSH
 		("Icons/AssetIcons/Icon_CharacterAction", Icon20x20));
+		
+		
+		Set("MontageGraph.PoseLink", new IMAGE_BRUSH
+		("Icons/AssetIcons/Icon_PoseLink", Icon48x48));
 
 
 		Set("HBEditor.MontageGraph.Entry", new IMAGE_BRUSH("Icons/AssetIcons/MontageGraph/ActionEntry", Icon64x64));

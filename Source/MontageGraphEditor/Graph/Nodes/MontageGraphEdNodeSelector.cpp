@@ -31,7 +31,7 @@ void UMontageGraphEdNodeSelector::PostEditChangeProperty(
 			}
 		}
 
-		int MaxSelectorIndex = SelectorNode->ConductStates.Num();
+		int MaxSelectorIndex = SelectorNode->SelectorStates.Num();
 		if (MaxSelectorIndex > OutputPins.Num())
 		{
 			CreatePin(EGPD_Output, UMontageGraphPinNames::PinName_Out, FName("None"));
@@ -51,7 +51,7 @@ void UMontageGraphEdNodeSelector::PostEditChangeProperty(
 			UEdGraphPin* Pin = GetPinAt(i + 1);
 			if (Pin)
 			{
-				Pin->PinName = SelectorNode->ConductStates[i].GetTagName();
+				Pin->PinName = SelectorNode->SelectorStates[i].GetTagName();
 			}
 		}
 
