@@ -8,7 +8,7 @@
 
 #include "AssetTypeActions_MontageGraph.h"
 
-#include "MontageGraphSequencerExtensions.h"
+#include "Sequencer/MontageGraphSequencerExtensions.h"
 #include "Graph/MontageGraphNodePanelFactory.h"
 #include "Slate/MontageGraphDetails.h"
 
