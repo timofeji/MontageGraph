@@ -33,7 +33,7 @@ FSharedPoseSection::FSharedPoseSection(TWeakPtr<ISequencer> InSequencer, UMovieS
 	: FSequencerSection(InSectionObject), WeakSequencer(InSequencer)
 {
 	FontMeasureService = FSlateApplication::Get().GetRenderer()->GetFontMeasureService().ToSharedPtr();
-	SmallLayoutFont = FCoreStyle::GetDefaultFontStyle("Regular", 10);
+	SmallLayoutFont = FCoreStyle::GetDefaultFontStyle("Regular", 7);
 	// SmallBoldLayoutFont = FCoreStyle::GetDefaultFontStyle("Bold", 10);
 }
 
@@ -68,19 +68,19 @@ int32 FSharedPoseSection::OnPaintSection(FSequencerSectionPainter& Painter) cons
 		                                ? FAppStyle::GetBrush("Sequencer.MarkedFrame.LabelLeft")
 		                                : FAppStyle::GetBrush("Sequencer.MarkedFrame.LabelRight");
 
-
-	FSlateDrawElement::MakeBox(
-		Painter.DrawElements,
-		LayerId + 1,
-		Painter.SectionGeometry.ToPaintGeometry(
-			TextSize + SharedPosesTrackConstants::MarkLabelBoxMargin +
-			SharedPosesTrackConstants::MarkLabelBoxWideMargin,
-			FSlateLayoutTransform(FVector2D(Position, 0.f))),
-		LabelBrush,
-		ESlateDrawEffect::None,
-		DrawColor.CopyWithNewOpacity(0.23f)
-	);
-
+	//
+	// FSlateDrawElement::MakeBox(
+	// 	Painter.DrawElements,
+	// 	LayerId + 1,
+	// 	Painter.SectionGeometry.ToPaintGeometry(
+	// 		TextSize + SharedPosesTrackConstants::MarkLabelBoxMargin +
+	// 		SharedPosesTrackConstants::MarkLabelBoxWideMargin,
+	// 		FSlateLayoutTransform(FVector2D(Position, 0.f))),
+	// 	LabelBrush,
+	// 	ESlateDrawEffect::None,
+	// 	DrawColor.CopyWithNewOpacity(0.23f)
+	// );
+	//
 	FSlateDrawElement::MakeText(
 		Painter.DrawElements,
 		LayerId + 2,

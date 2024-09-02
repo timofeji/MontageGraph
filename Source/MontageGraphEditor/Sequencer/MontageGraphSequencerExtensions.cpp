@@ -10,12 +10,13 @@
 void FMontageGraphSequencerCommands::RegisterCommands()
 {
 	UI_COMMAND(AddSharedPose, "Add Shared Pose", "Adds a Shared Pose at current frame",
-	           EUserInterfaceActionType::Button, FInputChord());
+	           EUserInterfaceActionType::ToggleButton, FInputChord());
 }
 
 
 void FMontageGraphSequencerExtensions::ExtendSequencerToolbar(FToolBarBuilder& ToolbarBuilder) const
 {
+	ToolbarBuilder.BeginSection("MontageGraphExtensions");
 	ToolbarBuilder.AddToolBarButton(
 		FMontageGraphSequencerCommands::Get().AddSharedPose,
 		NAME_None,
@@ -23,25 +24,25 @@ void FMontageGraphSequencerExtensions::ExtendSequencerToolbar(FToolBarBuilder& T
 		LOCTEXT("PoseLinkTooltip", "Create a Shared Pose from current frame"),
 		FSlateIcon(FMontageGraphEditorStyles::Get().GetStyleSetName(), "MontageGraph.PoseLink")
 	);
+	ToolbarBuilder.EndSection();
 }
 
-void FMontageGraphSequencerExtensions::AddSharedPose() const
+void FMontageGraphSequencerExtensions::ToggleSharedPoseDialog()
 {
 	FText TitleText = LOCTEXT("CreateSharedPose", "Create Shared Pose");
 	// Create the window to choose our options
-	TSharedRef<SWindow> Window = SNew(SWindow)
+	TSharedRef<SWindow> SharedPoseWindow = SNew(SWindow)
     		.Title(TitleText)
     		.HasCloseButton(true)
     		.SizingRule(ESizingRule::UserSized)
-    		.ClientSize(FVector2D(400.0f, 200.0f))
+    		.ClientSize(FVector2D(400.0f, 600.0f))
     		.AutoCenter(EAutoCenter::PreferredWorkArea)
     		.SupportsMinimize(false);
 
 	TSharedRef<SControlRigSharedPoseDialog> DialogWidget = SNew(SControlRigSharedPoseDialog);
-	// DialogWidget->SetDelegate(InDelegate);
-	Window->SetContent(DialogWidget);
+	SharedPoseWindow->SetContent(DialogWidget);
 
-	FSlateApplication::Get().AddWindow(Window);
+	FSlateApplication::Get().AddWindow(SharedPoseWindow);
 }
 
 bool FMontageGraphSequencerExtensions::CanAddSharedPose() const
@@ -69,7 +70,7 @@ void FMontageGraphSequencerExtensions::Register()
 
 	TSharedPtr<FUICommandList> UICommandList = MakeShared<FUICommandList>();
 	UICommandList->MapAction(FMontageGraphSequencerCommands::Get().AddSharedPose,
-	                         FExecuteAction::CreateSP(this, &FMontageGraphSequencerExtensions::AddSharedPose),
+	                         FExecuteAction::CreateSP(this, &FMontageGraphSequencerExtensions::ToggleSharedPoseDialog),
 	                         FCanExecuteAction::CreateSP(this, &FMontageGraphSequencerExtensions::CanAddSharedPose)
 	);
 

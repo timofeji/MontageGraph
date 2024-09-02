@@ -3,6 +3,8 @@
 #include "Interfaces/IPluginManager.h"
 #include "Styling/SlateStyle.h"
 #include "Styling/SlateStyleRegistry.h"
+#include "Styling/StarshipCoreStyle.h"
+#include "Styling/ToolBarStyle.h"
 
 #define IMAGE_BRUSH(RelativePath, ...) FSlateImageBrush(RootToContentDir(RelativePath, TEXT(".png") ), __VA_ARGS__)
 #define BOX_BRUSH(RelativePath, ...) FSlateBoxBrush(RootToContentDir(RelativePath, TEXT(".png")), __VA_ARGS__)
@@ -28,15 +30,34 @@ public:
 		                          64.f);
 		const FVector2D Icon128x128(128.f,
 		                            128.f);
-		
+
 		const FVector2D Icon256x256(256.f,
 		                            256.f);
-		
+
 		TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("MontageGraph"));
 		if (ensure(Plugin.IsValid()))
 		{
 			SetContentRoot(FPaths::Combine(Plugin->GetBaseDir(), TEXT("Resources")));
 		}
+
+		const FTableRowStyle& TableRowStyle = FAppStyle::Get().GetWidgetStyle<FTableRowStyle>("TableView.Row");
+
+		FSlateColorBrush HoveredBrush(FStyleColors::PrimaryHover);
+		FSlateColorBrush ActiveColorBrush(FStyleColors::AccentOrange);
+
+		Set("TagListView.Row", FTableRowStyle(TableRowStyle)
+		                       .SetSelectorFocusedBrush(ActiveColorBrush)
+		                       .SetActiveBrush(ActiveColorBrush)
+		                       .SetActiveHighlightedBrush(ActiveColorBrush)
+		                       .SetEvenRowBackgroundHoveredBrush(HoveredBrush)
+		                       .SetOddRowBackgroundHoveredBrush(HoveredBrush));
+
+
+		FTableViewStyle TableViewStyle = FAppStyle::Get().GetWidgetStyle<FTableViewStyle>("SimpleListView");
+		TableViewStyle.BackgroundBrush = FSlateColorBrush(FStyleColors::Background);
+
+		Set("SharedPoseList", FTableViewStyle(TableViewStyle));
+
 
 		/** Gets the style name. */
 
@@ -50,14 +71,13 @@ public:
 		Set("HBEditor.HBUser.HBIcon",
 		    new IMAGE_BRUSH("Icons/AssetIcons/Icon_HB_Logo",
 		                    Icon64x64));
-		
-		
+
+
 		Set("MontageGraph.Icon", new IMAGE_BRUSH
-		("Icons/AssetIcons/Icon_CharacterAction", Icon20x20));
-		
-		
+		    ("Icons/AssetIcons/Icon_CharacterAction", Icon20x20));
+
 		Set("MontageGraph.PoseLink", new IMAGE_BRUSH
-		("Icons/AssetIcons/Icon_PoseLink", Icon48x48));
+		    ("Icons/AssetIcons/Icon_PoseLink", Icon20x20));
 
 
 		Set("HBEditor.MontageGraph.Entry", new IMAGE_BRUSH("Icons/AssetIcons/MontageGraph/ActionEntry", Icon64x64));
@@ -148,13 +168,10 @@ public:
 		    new IMAGE_BRUSH("Icons/AssetIcons/MontageGraph_Sequence_x64",
 		                    Icon64x64));
 
-		Set("HB.Font.Small", ICON_FONT("Fonts/NovaSquare-Regular",11));
+		Set("HB.Font.Small", ICON_FONT("Fonts/NovaSquare-Regular", 11));
 
 		FSlateStyleRegistry::RegisterSlateStyle(*this);
 	}
-
-
-	
 
 
 	static FMontageGraphEditorStyles& Get()
@@ -171,4 +188,3 @@ public:
 
 #undef IMAGE_BRUSH
 #undef BOX_BRUSH
-

@@ -1,10 +1,11 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "ISequencerModule.h"
+#include "Editor/Experimental/EditorInteractiveToolsFramework/Public/Behaviors/2DViewportBehaviorTargets.h"
 
 struct FMontageGraphSequencerExtensions : public TSharedFromThis<FMontageGraphSequencerExtensions>
 {
-	void AddSharedPose() const;
+	void ToggleSharedPoseDialog();
 	bool CanAddSharedPose() const;
 	void Register();
 	void Unregister();
@@ -17,7 +18,7 @@ struct FMontageGraphSequencerExtensions : public TSharedFromThis<FMontageGraphSe
 	TWeakPtr<ISequencer> SequencerRef;
 	FDelegateHandle OnSequencerCreatedHandle;
 	FDelegateHandle OnChannelChangedHandle;
-	FDelegateHandle SharedPosesTrackHandle;
+	FDelegateHandle  SharedPosesTrackHandle;
 };
 
 class FMontageGraphSequencerCommands : public TCommands<FMontageGraphSequencerCommands>

@@ -20,9 +20,15 @@ public:
 	TSharedRef<ITableRow> CreateHandleRow(TSharedPtr<FSharedPoseHandle> InTagHandle,
 	                                      const TSharedRef<STableViewBase>& InOwnerTable);
 
+	void HandleSelectedPoseChanged(TSharedPtr<FSharedPoseHandle> NewSelection, ESelectInfo::Type Arg);
+	
 	/** Constructs this widget with InArgs */
 	void Construct(const FArguments& InArgs);
 	
-	
 	TArray<TSharedPtr<FSharedPoseHandle>> Handles;
+	
+	TSharedPtr<FSharedPoseHandle> SelectedHandle;
+	
+	FString NewHandleString;
+	
 };
