@@ -61,9 +61,7 @@ public class MontageGraphEditor: ModuleRules
 			"AdvancedPreviewScene",
 			"AnimationBlueprintLibrary",
 			"MontageGraph",
-			"EditorInteractiveToolsFramework" // @todo: ~tim: why do we need this, getting a random error without it?
 		});
-			
 	      
 	}
 		

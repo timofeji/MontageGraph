@@ -1,7 +1,6 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "ISequencerModule.h"
-#include "Editor/Experimental/EditorInteractiveToolsFramework/Public/Behaviors/2DViewportBehaviorTargets.h"
 
 struct FMontageGraphSequencerExtensions : public TSharedFromThis<FMontageGraphSequencerExtensions>
 {
