@@ -15,5 +15,6 @@ struct MONTAGEGRAPHEDITOR_API FSharedPoseHandle
 	{
 	};
 
+	UPROPERTY(EditAnywhere)
 	FString PoseName;
 };

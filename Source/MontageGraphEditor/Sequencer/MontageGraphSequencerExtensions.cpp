@@ -2,8 +2,8 @@
 #include "ISequencerModule.h"
 #include "MontageGraphEditorStyles.h"
 #include "MontageGraphSharedPosesTrackEditor.h"
-#include "MovieScene.h"
 #include "..\Slate\SControlRigSharedPoseDialog.h"
+#include "Tools/ControlRigPose.h"
 
 #define LOCTEXT_NAMESPACE "FMontageGraphEditorModule"
 
@@ -29,7 +29,7 @@ void FMontageGraphSequencerExtensions::ExtendSequencerToolbar(FToolBarBuilder& T
 
 void FMontageGraphSequencerExtensions::ToggleSharedPoseDialog()
 {
-	FText TitleText = LOCTEXT("CreateSharedPose", "Create Shared Pose");
+	FText TitleText = LOCTEXT("SharedPoseWindowTitle", "Shared Pose Editor");
 	// Create the window to choose our options
 	TSharedRef<SWindow> SharedPoseWindow = SNew(SWindow)
     		.Title(TitleText)
@@ -39,7 +39,7 @@ void FMontageGraphSequencerExtensions::ToggleSharedPoseDialog()
     		.AutoCenter(EAutoCenter::PreferredWorkArea)
     		.SupportsMinimize(false);
 
-	TSharedRef<SControlRigSharedPoseDialog> DialogWidget = SNew(SControlRigSharedPoseDialog);
+	TSharedRef<SControlRigSharedPoseDialog> DialogWidget = SNew(SControlRigSharedPoseDialog, SequencerRef.Pin());
 	SharedPoseWindow->SetContent(DialogWidget);
 
 	FSlateApplication::Get().AddWindow(SharedPoseWindow);
@@ -109,6 +109,21 @@ void FMontageGraphSequencerExtensions::OnChannelChanged(const FMovieSceneChannel
 
 void FMontageGraphSequencerExtensions::OnMovieSceneDataChanged(EMovieSceneDataChangeType MovieSceneDataChange)
 {
+	// TWeakObjectPtr<UControlRigPoseAsset> PoseAsset;
+	//
+	// FControlRigEditMode* ControlRigEditMode = OwningControlRigWidget->GetEditMode();
+	// if (ControlRigEditMode)
+	// {
+	// 	TMap<UControlRig*, TArray<FRigElementKey>> AllSelectedControls;
+	// 	ControlRigEditMode->GetAllSelectedControls(AllSelectedControls);
+	// 	if (AllSelectedControls.Num() == 1)
+	// 	{
+	// 		TArray<UControlRig*> ControlRigs;
+	// 		AllSelectedControls.GenerateKeyArray(ControlRigs);
+	// 		UControlRig* ControlRig = ControlRigs[0];
+	// 		UObject* NewAsset = nullptr;
+	// 	}
+	// }
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -3,7 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "MontageGraph/MontageGraph.h"
 #include "Widgets/SCompoundWidget.h"
+class ISequencer;
+class UMontageGraphEdGraph;
 struct FSharedPoseHandle;
 /**
  * 
@@ -20,10 +23,12 @@ public:
 	TSharedRef<ITableRow> CreateHandleRow(TSharedPtr<FSharedPoseHandle> InTagHandle,
 	                                      const TSharedRef<STableViewBase>& InOwnerTable);
 
-	void HandleSelectedPoseChanged(TSharedPtr<FSharedPoseHandle> NewSelection, ESelectInfo::Type Arg);
-	
+	void HandleSelectedPoseChanged(TSharedPtr<FSharedPoseHandle> InFilter, ESelectInfo::Type SelectInfo);
+
+	FReply LinkSelectedSharedPoseToFrame();
+	void GraphSelected(const FAssetData& AssetData, TSharedRef<SListView<TSharedPtr<FSharedPoseHandle>>> List);
 	/** Constructs this widget with InArgs */
-	void Construct(const FArguments& InArgs);
+	void Construct(const FArguments& InArgs,  TSharedPtr<ISequencer> SequencerRef);
 	
 	TArray<TSharedPtr<FSharedPoseHandle>> Handles;
 	
@@ -31,4 +36,8 @@ public:
 	
 	FString NewHandleString;
 	
+	TSharedPtr<IPropertyHandle> SourceMontageGraphPropertyHandle;
+	
+	UMontageGraphEdGraph* SelectedGraph;
+	TSharedPtr<ISequencer>  Sequencer;
 };

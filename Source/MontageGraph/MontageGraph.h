@@ -8,6 +8,7 @@
 #include "UObject/Object.h"
 #include "MontageGraph.generated.h"
 
+struct FSharedPoseHandle;
 class UControlRig;
 /**
  * 
@@ -55,6 +56,7 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage Graph Defaults")
 	FString GraphOutputPrefix;
+
 
 private:
 	/** The default skeletal mesh to use when previewing this asset */

@@ -30,7 +30,7 @@ public class MontageGraphEditor: ModuleRules
 			"GameplayTags",
 			"UnrealEd", 
 			"MovieSceneTools",
-			
+			"PropertyEditor"
 		});
         
 		PublicDependencyModuleNames.AddRange(new string[]
@@ -60,8 +60,8 @@ public class MontageGraphEditor: ModuleRules
 			"EditorScriptingUtilities",
 			"AdvancedPreviewScene",
 			"AnimationBlueprintLibrary",
-			"MontageGraph"
-        			
+			"MontageGraph",
+			"EditorInteractiveToolsFramework" // @todo: ~tim: why do we need this, getting a random error without it?
 		});
 			
 	      

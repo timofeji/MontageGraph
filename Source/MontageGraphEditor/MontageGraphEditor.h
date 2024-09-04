@@ -70,7 +70,7 @@ public:
 
 	virtual FString GetReferencerName() const override
 	{
-		return TEXT("FHBCharacterAssetEditor");
+		return TEXT("MontageGraphEditor");
 	}
 
 	void ExtendMenu();

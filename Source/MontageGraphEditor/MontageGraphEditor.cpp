@@ -33,12 +33,10 @@
 
 const FName FMontageGraphEditor::DetailsTabID(TEXT("MontageGraph_Details"));
 const FName FMontageGraphEditor::GraphViewportTabID(TEXT("MontageGraph_Viewport"));
-
 const FName FMontageGraphEditorModes::MontageGraphEditorMode("MontageGraphEditor");
+const FName CharacterEditorAppName = FName(TEXT("MontageGraphEditor"));
 
-const FName CharacterEditorAppName = FName(TEXT("HBCharacterEditor"));
-
-#define LOCTEXT_NAMESPACE "FHBCharacterAssetEditor"
+#define LOCTEXT_NAMESPACE "MontageGraphEditor"
 
 void FMontageGraphEditor::OnSelectedNodesChanged(const TSet<UObject*>& Objects) const
 {

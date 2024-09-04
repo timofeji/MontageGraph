@@ -5,6 +5,7 @@
 #include "EdGraph/EdGraph.h"
 #include "MontageGraphEdGraph.generated.h"
 
+struct FSharedPoseHandle;
 class UMontageGraph;
 class FMontageGraphDebugger;
 class UMontageGraphEdNode;
@@ -31,9 +32,13 @@ public:
 
 	UPROPERTY(Transient)
 	TMap<UMontageGraphEdge*, UMontageGraphEdNodeEdge*> EdgeMap;
+	
+	UPROPERTY(EditAnywhere, Category = "Shared Pose")
+	TArray<FSharedPoseHandle> SharedPoses;
 
 	/** Shared ref to asset editor, namely to access debugger info and debugged node */
 	TSharedPtr<FMontageGraphDebugger> Debugger;
+
 
 	virtual void RebuildGraph();
 
