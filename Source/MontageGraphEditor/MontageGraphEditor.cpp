@@ -119,7 +119,7 @@ void FMontageGraphEditor::ExtendToolbar()
 		HBCharacterCommands.EditClassDefaults,
 		LOCTEXT("Edit Class Defaults", ""),
 		LOCTEXT("EditClassDefaultsTooltip", "Edit default values of this Montage Graph"),
-		FSlateIcon(FMontageGraphEditorStyles::Get().GetStyleSetName(), "MontageGraph.Icon")
+		FSlateIcon(FMontageGraphEditorStyles::Get().GetStyleSetName(), "MontageGraph.SwordTracer")
 	);
 	
 	RegenerateTracersEntry.StyleNameOverride = FName("Toolbar.BackplateLeftPlay");

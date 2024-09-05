@@ -79,6 +79,10 @@ public:
 		Set("MontageGraph.PoseLink", new IMAGE_BRUSH
 		    ("Icons/AssetIcons/Icon_PoseLink", Icon20x20));
 
+		Set("MontageGraph.SwordTracer",
+		    new IMAGE_BRUSH("Icons/AssetIcons/Icon_SwordTracer",Icon64x64));
+
+
 
 		Set("HBEditor.MontageGraph.Entry", new IMAGE_BRUSH("Icons/AssetIcons/MontageGraph/ActionEntry", Icon64x64));
 
@@ -111,6 +115,7 @@ public:
 		Set("HBEditor.MontageGraph.Pin.BackgroundConnectedHovered", new IMAGE_BRUSH(
 			    "Common/PinBackgroundConnectedHovered", Icon128x128));
 
+	
 
 		// App Mode Icons
 		Set("MontageGraph.AppMode.Default",
@@ -134,12 +139,14 @@ public:
 		    new IMAGE_BRUSH("Icons/auto_arrange_horizontal",
 		                    Icon40x40));
 
+		
+
 		// Class Icons
 		Set("ClassIcon.MontageGraph",
-		    new IMAGE_BRUSH("Icons/AssetIcons/MontageGraph_x16",
+		    new IMAGE_BRUSH("Icons/AssetIcons/Icon_CharacterAction",
 		                    Icon16x16));
 		Set("ClassThumbnail.MontageGraph",
-		    new IMAGE_BRUSH("Icons/AssetIcons/MontageGraph_x64",
+		    new IMAGE_BRUSH("Icons/AssetIcons/Icon_CharacterAction",
 		                    Icon64x64));
 
 		Set("ClassIcon.MontageGraphNodeMontage",
