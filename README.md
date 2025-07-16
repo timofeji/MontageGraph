@@ -1,10 +1,11 @@
 # Montage Graph Plugin 
-![MlZDmDnMIi](https://github.com/user-attachments/assets/91a6321f-5f5b-4276-8509-3bb26797cafb)
+<img width="1929" height="1089" alt="UnrealEditor-Win64-DebugGame_vTOvhIHpV4" src="https://github.com/user-attachments/assets/297dfa05-bf69-45b4-bc27-f9005b9cb1cf" />
 - [Montage Graph Plugin](#montage-graph-plugin-)
     - [About](#about)
     - [Features](#features)
     - [Links](#links)
     - [Showcase](#showcase)
+
 
 ## About
 Montage Graph is an experimental animation authoring system developed for [Eonblade](https://store.steampowered.com/app/1213840/EonBlade/).
