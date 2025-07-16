@@ -1,0 +1,13 @@
+#include "MontageGraphDelegates.h"
+
+FMontageGraphDelegates::FOnMontageGraphProcessed FMontageGraphDelegates::OnGraphNodeLinked;
+FMontageGraphDelegates::FOnMontageGraphProcessed FMontageGraphDelegates::OnGraphNodeSelected;
+
+FMontageGraphDelegates::FOnMontageGraphReset FMontageGraphDelegates::OnGraphReset;
+FMontageGraphDelegates::FOnMontageGraphInitialized  FMontageGraphDelegates::OnGraphInitialized;
+FMontageGraphDelegates::FOnMontageGraphNodeEvaluated FMontageGraphDelegates::OnNodeEvaluated;
+
+
+#if WITH_EDITORONLY_DATA
+#endif
+
