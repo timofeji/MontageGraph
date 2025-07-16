@@ -1,4 +1,4 @@
-# Montage Graph Plugin 
+# Montage Graph Editor 
 <img width="1929" height="1089" alt="UnrealEditor-Win64-DebugGame_vTOvhIHpV4" src="https://github.com/user-attachments/assets/297dfa05-bf69-45b4-bc27-f9005b9cb1cf" />
 
 - [Montage Graph Plugin](#montage-graph-plugin-)
@@ -21,8 +21,12 @@ Contributions, feedback and criticism are more than welcome.
   - Networked AnimMontage Linking for fluid Melee/Combat Combos
   - Ability to define custom Montage Blend settings for any AnimMontage Link pair
 - Graph Editor:
-    - Branching montage selection based GameplayTags and selector nodes
-- DopeSheet:
+    - Branching montage selection based on `FGameplayTags` and node edges
+    - Custom Timeline editor 
+    - Collision Caching/Baking using a timeline section
+    - Ability to specify `UGameplayEffects` using timeline sections
+    - Persona Toolkit integration
+
     
 
 ## Links
