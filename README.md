@@ -21,10 +21,11 @@ Contributions, feedback and criticism are more than welcome.
   - Networked AnimMontage Linking for fluid Melee/Combat Combos
   - Ability to define custom Montage Blend settings for any AnimMontage Link pair
   - Branching montage selection based on `FGameplayTags` and node edges
-  - Collision Caching/Baking using a timeline section
   - Ability to specify `UGameplayEffects` using timeline sections
   - Persona Toolkit integration
-
+    
+### Collision Caching with FPS-independent evaluation 
+![UnrealEditor-Win64-DebugGame_D4nU2Q1LsV](https://github.com/user-attachments/assets/c25ba3cd-884e-4948-95bc-f97a0f1d0742)
 
 ### Custom Timeline editor
 ![UnrealEditor-Win64-DebugGame_SSS5CsxcXN](https://github.com/user-attachments/assets/cc41c7f1-be42-46aa-9974-dc5c7d158cfd)
