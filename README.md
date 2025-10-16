@@ -27,6 +27,8 @@ Contributions, feedback and criticism are more than welcome.
 ### Collision Caching with FPS-independent evaluation 
 ![UnrealEditor-Win64-DebugGame_D4nU2Q1LsV](https://github.com/user-attachments/assets/c25ba3cd-884e-4948-95bc-f97a0f1d0742)
 
+Specifying a collision section in the timeline bakes a predefined collision shape to file using samples from the animation. When evaluating a montage through `UMontageGraphComponent`, the collisions are checked retroactively for skipped frames, ensuring consistent sweep detection with unstable framerates, similar to the [approach used by Digital Confectioners](https://www.youtube.com/watch?v=YpikjrkqNoA&t=4s)
+
 ### Custom Timeline editor
 ![UnrealEditor-Win64-DebugGame_SSS5CsxcXN](https://github.com/user-attachments/assets/cc41c7f1-be42-46aa-9974-dc5c7d158cfd)
 
