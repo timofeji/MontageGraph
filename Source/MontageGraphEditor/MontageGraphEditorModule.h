@@ -20,6 +20,4 @@ public:
 	
 	
 	TSharedPtr<FGraphPanelNodeFactory> GraphNodeFactory;
-
-	TSharedPtr<FMontageGraphSequencerExtensions> SequencerExtensions;
 };

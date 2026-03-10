@@ -4,6 +4,35 @@
 #include "IDopeSheetTrack.h"
 #include "DopeSheet/DopeSheetController.h"
 
+FDopeSheetSectionViewModel::FDopeSheetSectionViewModel(UDopeSheetTrackSection* InSection, FDopeSheetTrackViewModel*  InTrackModel)
+{
+	Section = InSection;
+	TrackModelPtr = InTrackModel;
+	StartTime = InSection->StartTime;
+	EndTime = InSection->EndTime;
+}
+
+bool FDopeSheetSectionViewModel::IsSelected()
+{
+	// return false;
+
+	for (auto SharedSection : TrackModelPtr->Controller->SelectedSections)
+	{
+		if (SharedSection.Get() == this)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+void FDopeSheetSectionViewModel::CommitTimeRange()
+{
+	Section->Modify();
+	Section->StartTime = StartTime;
+	Section->EndTime = EndTime;
+}
+
 FDopeSheetTrackViewModel::FDopeSheetTrackViewModel(UDopeSheetTrackBase*             InObjPtr,
                                                    TSharedPtr<FDopeSheetController> InController)
 	: ObjPtr(InObjPtr), Controller(InController)
@@ -16,8 +45,8 @@ FDopeSheetTrackViewModel::FDopeSheetTrackViewModel(UDopeSheetTrackBase*         
 		{
 			continue;
 		}
-
-		SectionModels.Add(FDopeSheetSectionViewModel(Section->StartTime, Section->EndTime));
+		
+		SectionModels.Add(MakeShared<FDopeSheetSectionViewModel>(Section, this));
 	}
 }
 
@@ -79,8 +108,8 @@ void FDopeSheetTrackViewModel::ShiftSection(int32 SectionIndex, double MoveTimeD
 		Section->StartTime += MoveTimeDelta;
 		Section->EndTime += MoveTimeDelta;
 
-		SectionModels[SectionIndex].StartTime = Section->StartTime;
-		SectionModels[SectionIndex].EndTime = Section->EndTime;
+		// SectionModels[SectionIndex].StartTime = Section->StartTime;
+		// SectionModels[SectionIndex].EndTime = Section->EndTime;
 	}
 
 	ObjPtr->OnTrackPropertiesChanged.Broadcast();

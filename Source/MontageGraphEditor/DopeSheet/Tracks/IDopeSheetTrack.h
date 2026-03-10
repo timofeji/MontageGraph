@@ -35,6 +35,10 @@ public:
 	
 	// ** Gets the Track Color*/
 	virtual const FLinearColor GetTrackColor() const = 0;
+
+	
+	// ** Gets the Section Color usually accented*/
+	virtual const FLinearColor  GetSectionColor() const = 0;
 	
 	// ** Gets the Track Icon*/
 	virtual FSlateIcon GetTrackIcon() const = 0;

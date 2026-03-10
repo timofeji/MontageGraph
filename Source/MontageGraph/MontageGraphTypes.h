@@ -1,0 +1,2 @@
+#pragma once
+MONTAGEGRAPH_API DECLARE_LOG_CATEGORY_EXTERN(LogMontageGraph, Log, All);

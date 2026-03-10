@@ -9,6 +9,7 @@
 #include "UObject/Object.h"
 #include "MontageGraph.generated.h"
 
+class UMGNode_Montage;
 class UCollisionTracer;
 /**
  * 
@@ -29,24 +30,20 @@ public:
 	
 	/** Represents the top level entry into various action chains*/
 	UPROPERTY(BlueprintReadOnly, Category = "Montage Graph")
-	TMap<FGameplayTag,UMGNode*> RootNodes;
+	TMap<FGameplayTag, UMGNode*> RootNodes;
 	
-
-	/** Holds all HBActionnodes defined for this graph */
 	UPROPERTY(BlueprintReadOnly, Category = "Montage Graph")
-	TArray<UMGNode*> AllNodes;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Montage Graph")
-	TArray<TSubclassOf<class UGameplayEffect>> GameplayEffects;
+	TArray<UMGNode_Montage*> MontageNodes;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Montage Graph")
 	TArray<UAnimMontage*> Montages;
-	
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Montage Graph")
 	TArray<UCollisionTracer*> CollisionTracers;
 	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Montage Graph")
+	TArray<TSubclassOf<class UGameplayEffect>> GameplayEffects;
 
-	
 
 	/** IPreviewMeshProviderInterface interface */
 	virtual void SetPreviewMesh(USkeletalMesh* PreviewMesh, bool bMarkAsDirty = true);

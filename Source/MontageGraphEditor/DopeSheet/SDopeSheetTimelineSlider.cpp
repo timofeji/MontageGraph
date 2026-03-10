@@ -1,14 +1,11 @@
 // Copyright Drop Games Inc.
 
-
 #include "SDopeSheetTimelineSlider.h"
 
 #include "DopeSheetController.h"
 #include "MontageGraphEditorStyle.h"
 #include "SlateOptMacros.h"
 #include "Fonts/FontMeasure.h"
-
-
 
 TSharedPtr<SWidget> FDopeSheetTimelineSliderScrubOp::GetDefaultDecorator() const
 {
@@ -38,10 +35,8 @@ void FDopeSheetTimelineSliderScrubOp::OnDrop(bool bDropWasHandled, const FPointe
 	// 	// OwningTrack.Pin()->OnRearrangeDrop();
 	// }
 
-
 	FDragDropOperation::OnDrop(bDropWasHandled, MouseEvent);
 }
-
 
 void FDopeSheetTimelineSliderScrubOp::OnDragged(const class FDragDropEvent& DragDropEvent)
 {
@@ -62,7 +57,7 @@ void FDopeSheetTimelineSliderScrubOp::OnDragged(const class FDragDropEvent& Drag
 
 TSharedRef<FDopeSheetTimelineSliderScrubOp> FDopeSheetTimelineSliderScrubOp::New(
 	TSharedPtr<FDopeSheetController> InController,
-	TSharedRef<SWidget> InDraggedWidget, const FVector2D& CursorPosition, const FVector2D& ScreenPositionOfNode)
+	TSharedRef<SWidget>              InDraggedWidget, const FVector2D& CursorPosition, const FVector2D& ScreenPositionOfNode)
 {
 	TSharedRef<FDopeSheetTimelineSliderScrubOp> Operation = MakeShareable(new FDopeSheetTimelineSliderScrubOp);
 
@@ -73,14 +68,13 @@ TSharedRef<FDopeSheetTimelineSliderScrubOp> FDopeSheetTimelineSliderScrubOp::New
 
 	Operation->Construct();
 
-
 	return Operation;
 }
-
 
 namespace FDopeSheetTimelineRenderer
 {
 	static FSlateFontInfo FontInfo = FAppStyle::GetFontStyle("Graph.VectorEditableTextBox");
+
 
 	struct FFrameDisplaySettings
 	{
@@ -91,43 +85,62 @@ namespace FDopeSheetTimelineRenderer
 		FLinearColor StartTextColor   = FLinearColor(0.8f, 0.8f, 0.8f, 1.f);
 		FLinearColor MajorTextColor   = FLinearColor(0.8f, 0.8f, 0.8f, 0.75f);
 		FLinearColor DefaultTextColor = FLinearColor(0.5f, 0.5f, 0.5f, 0.2f);
-		
-		
-		FLinearColor TickColor = FLinearColor(0.5f, 0.5f, 0.5f, 0.1f);
-		FLinearColor TickColorMajor = FLinearColor(0.5f, 0.5f, 0.5f, 0.25f);
 
+		FLinearColor TickColor      = FLinearColor(0.5f, 0.5f, 0.5f, 0.1f);
+		FLinearColor TickColorMajor = FLinearColor(0.5f, 0.5f, 0.5f, 0.25f);
 
 		const FVector2D TextSize = FVector2D(32.f);
 		// = FSlateApplication::Get().GetRenderer()->
 		//                                                     GetFontMeasureService()->Measure(TEXT("0"), FontInfo);
 	};
 
+
 	FFrameDisplaySettings Settings;
 
-	static void RenderTimeline(FSlateWindowElementList&                OutDrawElements,
-	                           int32                                   LayerId,
-	                           const FGeometry&                        AllottedGeometry,
-	                           const TSharedPtr<FDopeSheetController>& Controller)
+	static int32 ComputeFrameAtTime(float InTime, const TArray<FDopeSheetViewSection>& Sections)
 	{
-		const FSlateRect ViewRect = Controller->EditableRect;
-		float      AccumulatedXOffset = ViewRect.Left;
-		for (int i = 0; i < Controller->Sections.Num(); i++)
+		int32 AccumulatedFrames = 0;
+		for (const FDopeSheetViewSection& Section : Sections)
 		{
-			FDopeSheetViewSection ViewSection   = Controller->Sections[i];
-			const float           PixelsPerCell      = Controller->CachedSectionCellWidths[i];
+			const float SectionDuration = Section.EndTime - Section.StartTime;
+			if (InTime <= Section.EndTime || &Section == &Sections.Last())
+			{
+				if (SectionDuration > KINDA_SMALL_NUMBER)
+				{
+					const float T = FMath::Clamp((InTime - Section.StartTime) / SectionDuration, 0.f, 1.f);
+					return AccumulatedFrames + FMath::Clamp(FMath::FloorToInt(T * Section.NumOfFrames), 0, Section.NumOfFrames - 1);
+				}
+				return AccumulatedFrames;
+			}
+			AccumulatedFrames += Section.NumOfFrames;
+		}
+		return AccumulatedFrames;
+	}
+
+	static void RenderTimeline(FSlateWindowElementList& OutDrawElements,
+		int32                                           LayerId,
+		const FGeometry&                                AllottedGeometry,
+		const TSharedPtr<FDopeSheetController>&         Controller)
+	{
+		const FSlateRect ViewRect           = Controller->EditableRect;
+		float            AccumulatedXOffset = ViewRect.Left;
+		for (int i = 0; i < Controller->ViewSections.Num(); i++)
+		{
+			FDopeSheetViewSection ViewSection   = Controller->ViewSections[i];
+			const float           PixelsPerCell = Controller->CachedSectionCellWidths[i];
 			const int             NumOfFrames   = ViewSection.NumOfFrames;
-			
-			TArray<FVector2f>     LinePoints;
+
+			TArray<FVector2f> LinePoints;
 			LinePoints.AddUninitialized(2);
 			for (int FrameIndex = 0; FrameIndex < NumOfFrames; FrameIndex++)
 			{
-				const float OffsetX = AccumulatedXOffset  + (PixelsPerCell * FrameIndex);
+				const float OffsetX = AccumulatedXOffset + (PixelsPerCell * FrameIndex);
 
 				FLinearColor TextColor   = Settings.DefaultTextColor;
 				float        TickYOffset = Settings.TextSize.Y + 5.f;
-				
-				FVector2f    Offset(OffsetX, TickYOffset);
-				FVector2f    TickSize(1.0f, AllottedGeometry.Size.Y);
+
+				FVector2f Offset(OffsetX, 0);
+				FVector2f TickSize(1.0f, AllottedGeometry.Size.Y);
 
 				LinePoints[0] = FVector2f(1.0f, 1.0f);
 				LinePoints[1] = TickSize;
@@ -140,8 +153,8 @@ namespace FDopeSheetTimelineRenderer
 					LinePoints,
 					ESlateDrawEffect::None,
 					Settings.TickColor,
-					false
-				);
+					bAntiAliasLines
+					);
 
 				const FString FrameString   = FString::FromInt(FrameIndex);
 				const bool    bFitsIntoCell = PixelsPerCell > ((2 * Settings.TextSize.X) + Settings.MinTextSpacing);
@@ -151,7 +164,9 @@ namespace FDopeSheetTimelineRenderer
 					TextColor   = Settings.MajorTextColor;
 					TickYOffset = 0;
 				}
-				else if (!bFitsIntoCell) continue;
+				else
+					if (!bFitsIntoCell)
+						continue;
 
 				float TextXOffset = OffsetX;
 
@@ -170,7 +185,7 @@ namespace FDopeSheetTimelineRenderer
 				FPaintGeometry TextGeometry = AllottedGeometry.ToPaintGeometry(
 					FVector2D(TextXOffset, 1.f),
 					Settings.TextSize
-				);
+					);
 				FSlateDrawElement::MakeText(
 					OutDrawElements,
 					LayerId + 1,
@@ -179,16 +194,14 @@ namespace FDopeSheetTimelineRenderer
 					FontInfo,
 					ESlateDrawEffect::None,
 					TextColor
-				);
+					);
 			}
-			
-			AccumulatedXOffset += PixelsPerCell*NumOfFrames;
+
+			AccumulatedXOffset += PixelsPerCell * NumOfFrames;
 		}
 		LayerId += 2; // Account for background and text layers
 	}
 };
-	
-	
 
 BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
 
@@ -208,22 +221,24 @@ void SDopeSheetTimelineSlider::Construct(const FArguments& InArgs, TSharedPtr<FD
 
 END_SLATE_FUNCTION_BUILD_OPTIMIZATION
 
-int32 SDopeSheetTimelineSlider::OnPaint(const FPaintArgs&        Args, const FGeometry& AllottedGeometry,
-                                        const FSlateRect&        MyCullingRect,
-                                        FSlateWindowElementList& OutDrawElements, int32 LayerId,
-                                        const FWidgetStyle&      InWidgetStyle,
-                                        bool                     bParentEnabled) const
+int32 SDopeSheetTimelineSlider::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry,
+	const FSlateRect&                                     MyCullingRect,
+	FSlateWindowElementList&                              OutDrawElements, int32 LayerId,
+	const FWidgetStyle&                                   InWidgetStyle,
+	bool                                                  bParentEnabled) const
 {
 	LayerId = SCompoundWidget::OnPaint(Args, AllottedGeometry, MyCullingRect, OutDrawElements, LayerId,
-	                                   InWidgetStyle, bParentEnabled);
+		InWidgetStyle, bParentEnabled);
 
 	if (!Controller || !Controller->CanDraw())
 	{
 		return LayerId;
 	}
 
-	const FSlateRect ViewRect       = Controller->EditableRect;
+	const FSlateRect ViewRect = Controller->EditableRect;
 	OutDrawElements.PushClip(FSlateClippingZone(AllottedGeometry.GetLayoutBoundingRect()));
+
+	const float SliderHeight = Controller->TimeSliderHeight.Get();
 
 	//////////////////////////////////////////////////////////////////////////
 	// *Draw Timeline Background*//
@@ -232,50 +247,49 @@ int32 SDopeSheetTimelineSlider::OnPaint(const FPaintArgs&        Args, const FGe
 		// Left
 		FPaintGeometry BackgroundGeometry =
 			AllottedGeometry.ToPaintGeometry(FVector2D(0, 0),
-			                                 FVector2D(ViewRect.Left, AllottedGeometry.GetAbsoluteSize().Y));
+				FVector2D(ViewRect.Left, SliderHeight));
 		FSlateDrawElement::MakeBox
-		(
-			OutDrawElements,
-			LayerId++,
-			BackgroundGeometry,
-			BackgroundBrush_Inactive,
-			ESlateDrawEffect::None
-		);
+			(
+				OutDrawElements,
+				LayerId++,
+				BackgroundGeometry,
+				BackgroundBrush_Inactive,
+				ESlateDrawEffect::None
+				);
 	}
 
 	{
 		// Middle
 		FPaintGeometry BackgroundGeometry =
-			AllottedGeometry.ToPaintGeometry(FVector2D(ViewRect.Left, 0),
-			                                 FVector2D(ViewRect.GetSize().X, AllottedGeometry.GetAbsoluteSize().Y));
+			AllottedGeometry.ToPaintGeometry(
+				FVector2f(ViewRect.GetSize().X, SliderHeight),
+				FSlateLayoutTransform(FVector2f(ViewRect.Left, 0)));
+
 		FSlateDrawElement::MakeBox
-		(
-			OutDrawElements,
-			LayerId++,
-			BackgroundGeometry,
-			BackgroundBrush,
-			ESlateDrawEffect::None
-		);
+			(
+				OutDrawElements,
+				LayerId++,
+				BackgroundGeometry,
+				BackgroundBrush,
+				ESlateDrawEffect::None
+				);
 	}
 
 	{
 		// Right
 		FPaintGeometry BackgroundGeometry =
-			AllottedGeometry.ToPaintGeometry(FVector2D(ViewRect.Right, 0),
-			                                 FVector2D(AllottedGeometry.GetAbsoluteSize().X - ViewRect.Right,
-			                                           AllottedGeometry.GetAbsoluteSize().Y));
+			AllottedGeometry.ToPaintGeometry(
+				FVector2f(AllottedGeometry.GetAbsoluteSize().X, SliderHeight),
+				FSlateLayoutTransform(FVector2f(FMath::Max(ViewRect.Right, 0), 0)));
 		FSlateDrawElement::MakeBox
-		(
-			OutDrawElements,
-			LayerId++,
-			BackgroundGeometry,
-			BackgroundBrush_Inactive,
-			ESlateDrawEffect::None
-		);
+			(
+				OutDrawElements,
+				LayerId++,
+				BackgroundGeometry,
+				BackgroundBrush_Inactive,
+				ESlateDrawEffect::None
+				);
 	}
-	
-
-	
 
 	//////////////////////////////////////////////////////////////////////////
 	// *Draw Timeline Frame Text/Ticks*//
@@ -285,7 +299,7 @@ int32 SDopeSheetTimelineSlider::OnPaint(const FPaintArgs&        Args, const FGe
 		LayerId++,
 		AllottedGeometry,
 		Controller
-	);
+		);
 
 	static const float PlayHeadHalfSize = 8.f;
 
@@ -296,8 +310,8 @@ int32 SDopeSheetTimelineSlider::OnPaint(const FPaintArgs&        Args, const FGe
 	if (TimelineHoverTime > 0.f)
 	{
 		const float LineXPos = FMath::Clamp(AllottedGeometry.Size.X * TimelineHoverTime,
-		                                    ViewRect.Left,
-		                                    ViewRect.Right);
+			ViewRect.Left,
+			ViewRect.Right);
 		const float PlayHeadYOffet = AllottedGeometry.Size.Y - 2.f * PlayHeadHalfSize;
 
 		static const FSlateBrush* PlayHeadPreviewBrush = FMontageGraphEditorStyle::Get().GetBrush(
@@ -306,17 +320,17 @@ int32 SDopeSheetTimelineSlider::OnPaint(const FPaintArgs&        Args, const FGe
 		FLinearColor PreviewColor = FLinearColor(1.f, 1.f, 1.f, .5f);
 
 		FSlateDrawElement::MakeBox
-		(
-			OutDrawElements,
-			LayerId++,
-			AllottedGeometry.ToPaintGeometry(
-				FVector2D(LineXPos - PlayHeadHalfSize, PlayHeadYOffet),
-				2.f * FVector2D(PlayHeadHalfSize, PlayHeadHalfSize)),
-			PlayHeadPreviewBrush,
-			ESlateDrawEffect::None,
-			PreviewColor
+			(
+				OutDrawElements,
+				LayerId++,
+				AllottedGeometry.ToPaintGeometry(
+					FVector2D(LineXPos - PlayHeadHalfSize, PlayHeadYOffet),
+					2.f * FVector2D(PlayHeadHalfSize, PlayHeadHalfSize)),
+				PlayHeadPreviewBrush,
+				ESlateDrawEffect::None,
+				PreviewColor
 
-		);
+				);
 
 		TArray<FVector2f> LinePoints;
 		LinePoints.AddUninitialized(2);
@@ -333,9 +347,8 @@ int32 SDopeSheetTimelineSlider::OnPaint(const FPaintArgs&        Args, const FGe
 			PreviewColor,
 			Thickness,
 			DashLengthPx
-		);
+			);
 	}
-
 
 	//////////////////////////////////////////////////////////////////////////
 	// Draw PlayHead
@@ -344,16 +357,16 @@ int32 SDopeSheetTimelineSlider::OnPaint(const FPaintArgs&        Args, const FGe
 			"MontageGraph.Timeline.PlayHead");
 		const float LineXPos = Controller->TimeToXOffset(Controller->GetPlayHeadTime(), AllottedGeometry);
 		FSlateDrawElement::MakeBox
-		(
-			OutDrawElements,
-			LayerId++,
-			AllottedGeometry.ToPaintGeometry(
-				FVector2D(LineXPos - PlayHeadHalfSize, AllottedGeometry.Size.Y - 2.f * PlayHeadHalfSize),
-				2.f * FVector2D(PlayHeadHalfSize, PlayHeadHalfSize)),
-			PlayHeadBrush,
-			ESlateDrawEffect::None,
-			FLinearColor::White
-		);
+			(
+				OutDrawElements,
+				LayerId++,
+				AllottedGeometry.ToPaintGeometry(
+					FVector2D(LineXPos - PlayHeadHalfSize, AllottedGeometry.Size.Y - 2.f * PlayHeadHalfSize),
+					2.f * FVector2D(PlayHeadHalfSize, PlayHeadHalfSize)),
+				PlayHeadBrush,
+				ESlateDrawEffect::None,
+				FLinearColor::White
+				);
 	}
 
 	OutDrawElements.PopClip();
@@ -363,22 +376,30 @@ int32 SDopeSheetTimelineSlider::OnPaint(const FPaintArgs&        Args, const FGe
 
 void SDopeSheetTimelineSlider::OnMouseLeave(const FPointerEvent& MouseEvent)
 {
-	Controller->SetHoverTime(-1.f);
+	// Only clear hover when we're not actively scrubbing (mouse captured)
+	if (!HasMouseCapture())
+	{
+		Controller->SetHoverTime(-1.f);
+	}
 }
 
 FReply SDopeSheetTimelineSlider::OnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
 	FVector2f MouseLocationAbsolute = InMouseEvent.GetScreenSpacePosition();
 	FVector2f MouseLocation         = InGeometry.AbsoluteToLocal(MouseLocationAbsolute);
-	float     NewPlaybackTime       = MouseLocation.X / InGeometry.GetLocalSize().X;
 
-
-	Controller->SetHoverTime(NewPlaybackTime);
-
-
-	if (Controller->ShouldScrubPlayback())
+	if (InMouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
 	{
-		// Controller->ScrubPlayback(NewPlaybackTime);
+		// Clamp to the editable rect so scrubbing stops at the clip boundaries
+		// even when the cursor has moved outside the widget.
+		const FSlateRect ViewRect  = Controller->EditableRect;
+		const float      ClampedX  = FMath::Clamp(MouseLocation.X, ViewRect.Left, ViewRect.Right);
+		Controller->SetPlayHeadTime(Controller->ConvertXCoordToTime(ClampedX, InGeometry), true);
+	}
+	else
+	{
+		const float NormalizedX = MouseLocation.X / InGeometry.GetLocalSize().X;
+		Controller->SetHoverTime(NormalizedX);
 	}
 
 	return FReply::Handled();
@@ -392,12 +413,13 @@ FReply SDopeSheetTimelineSlider::OnMouseButtonDown(const FGeometry& InGeometry, 
 		FVector2f MouseLocation         = InGeometry.AbsoluteToLocal(MouseLocationAbsolute);
 
 		const FSlateRect ViewRect   = Controller->EditableRect;
-		const float      SetAtCoord = FMath::Clamp(MouseLocation.X,
-		                                           ViewRect.Left, ViewRect.Right);
+		const float      SetAtCoord = FMath::Clamp(MouseLocation.X, ViewRect.Left, ViewRect.Right);
 		Controller->SetPlayHeadTime(Controller->ConvertXCoordToTime(SetAtCoord, InGeometry), true);
 		Controller->SetPlaybackState(false);
+
+		return FReply::Handled().CaptureMouse(SharedThis(this));
 	}
-	return FReply::Handled();
+	return FReply::Unhandled();
 }
 
 FReply SDopeSheetTimelineSlider::OnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -405,13 +427,19 @@ FReply SDopeSheetTimelineSlider::OnMouseButtonUp(const FGeometry& InGeometry, co
 	if (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
 	{
 		Controller->SetPlaybackState(false);
+		Controller->SetHoverTime(-1.f);
+		return FReply::Handled().ReleaseMouseCapture();
 	}
-	return FReply::Handled();
+	return FReply::Unhandled();
 }
 
-float SDopeSheetTimelineSlider::GetScreenSpaceXOffsetFromTime(const float      InTime,
-                                                              const FGeometry& AllottedGeometry) const
+FCursorReply SDopeSheetTimelineSlider::OnCursorQuery(const FGeometry& MyGeometry, const FPointerEvent& CursorEvent) const
+{
+	return FCursorReply::Cursor(EMouseCursor::ResizeLeftRight);
+}
+
+float SDopeSheetTimelineSlider::GetScreenSpaceXOffsetFromTime(const float InTime,
+	const FGeometry&                                                      AllottedGeometry) const
 {
 	return AllottedGeometry.Size.X * (InTime - Controller->ViewStartTime);
 }
-

@@ -1,9 +1,9 @@
-
 #include "MGEdNode.h"
-
+#include "MontageGraphDebugger.h"
 #include "MontageGraphEditorTypes.h"
 #include "MontageGraph/Nodes/MGNode.h"
 #include "MontageGraphEditorSettings.h"
+#include "Graph/MontageEdGraph.h"
 #include "Graph/Slate/SMGNode.h"
 
 UMGEdNode::UMGEdNode()
@@ -41,29 +41,37 @@ void UMGEdNode::DebugEvaluate()
 
 FLinearColor UMGEdNode::GetBackgroundColor() const
 {
+
 	if (!RuntimeNode)
 	{
-		return FLinearColor::Black;
+		return FLinearColor::Red;
 	}
 
-	const UMontageGraphEditorSettings* Settings = GetDefault<UMontageGraphEditorSettings>();
-	const FLinearColor DebugActiveColor = Settings->DebugActiveColor;
-	const FLinearColor DefaultColor = RuntimeNode->GetBackgroundColor();
+	const UMontageGraphEditorSettings* Settings   = GetDefault<UMontageGraphEditorSettings>();
+	FLinearColor                       FinalColor = GetNodeTitleColor();
+
+	auto MGEdGraph = Cast<UMontageEdGraph>(GetGraph());
+	if (MGEdGraph && MGEdGraph->Debugger.IsValid())
+	{
+		FMontageGraphDebugger* Debugger = MGEdGraph->Debugger.Get();
+		if (Debugger && Debugger->IsDebuggerReady())
+		{
+			FinalColor = (Debugger->SelectedNode == RuntimeNode)
+							 ? Settings->DebugSelectedColor
+							 : RuntimeNode->GetBackgroundColor();
+		}
+	}
 
 	if (IsDebugActive())
 	{
-		return DebugActiveColor;
+		// Failsafe check to disable divide by 0
+		// const float DebugFadeTime = Settings->DebugFadeTime > 0 ? Settings->DebugFadeTime : 1.f;
+		// const float ActiveTime    = WasActiveTime();
+		return FLinearColor::LerpUsingHSV(Settings->DebugEvaluatedColor, FinalColor, GetDebugNormalizedTime());
 	}
 
-	// Failsafe check to disable divide by 0
-	const float DebugFadeTime = Settings->DebugFadeTime > 0 ? Settings->DebugFadeTime : 1.f;
-	const float ActiveTime = WasActiveTime();
-	if (WasDebugActive() && ActiveTime < 3.f)
-	{
-		return FLinearColor::LerpUsingHSV(DebugActiveColor, DefaultColor, ActiveTime / DebugFadeTime);
-	}
 
-	return DefaultColor;
+	return FinalColor;
 }
 
 void UMGEdNode::AllocateDefaultPins()
@@ -100,24 +108,34 @@ void UMGEdNode::AutowireNewNode(UEdGraphPin* FromPin)
 	}
 }
 
-FLinearColor DefaultWireColor(1.00f, 1.00f, 1.00f, 0.43f);
-FLinearColor DebugWireColor(1.00f, 0.00f, 0.06f, 0.43f);
-FLinearColor UMGEdNode::GetWireColor()
+
+void UMGEdNode::UpdateWireConnectionParams(FConnectionParams& Params)
 {
-	return bIsDebugActive ? DebugWireColor : DefaultWireColor;
+	const UMontageGraphEditorSettings* Settings  = GetDefault<UMontageGraphEditorSettings>();
+	const UMontageEdGraph*        EdGraph = Cast<UMontageEdGraph>(GetGraph());
+	if (EdGraph && EdGraph->Debugger.IsValid())
+	{
+		if (EdGraph->Debugger->SelectedNodes.Contains(this))
+		{
+			Params.WireColor = Settings->DebugSelectedColor;
+			Params.WireThickness += 3.4f * GetDebugNormalizedTime();
+			Params.bDrawBubbles = true;
+		}
+
+		if (EdGraph->Debugger->EvaluatedNodes.Contains(this))
+		{
+			Params.WireColor = FLinearColor::LerpUsingHSV(Settings->DebugEvaluatedColor, Params.WireColor, GetDebugNormalizedTime());
+			Params.WireThickness *= 3.4f ;
+		}
+	}
 }
 
 void UMGEdNode::ValidateNodeDuringCompilation(FCompilerResultsLog& MessageLog) const
 {
-	// TODO: Move most of the editor stuff into Developer module (or UncookedOnly). See how ControlRig is done regarding this
-	// Super::ValidateNodeDuringCompilation(MessageLog);
-
-	// const bool bIsSequence = RuntimeNode->IsA(UMontageGraphNodeSequence::StaticClass());
-	//
-	// if (bIsSequence)
-	// {
-	// 	MessageLog.Warning(TEXT("@@ Using sequences combo nodes is not supported in networked environment. Try using Montages instead."), this);
-	// }
+	if (RuntimeNode == nullptr)
+	{
+		MessageLog.Error<UMGNode*>(*FString::Printf(TEXT("Malformed node detected %s"), *GetName()), RuntimeNode);
+	}
 }
 
 void UMGEdNode::PostEditUndo()
@@ -159,11 +177,11 @@ void UMGEdNode::UpdateErrorReporting(USkeletalMesh* InSkeletalMesh, const FText 
 	// 	return;
 	// }
 
-	#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 26
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION == 26
 	const USkeleton* MeshSkeleton = InSkeletalMesh ? InSkeletalMesh->Skeleton : nullptr;
-	#else
+#else
 	const USkeleton* MeshSkeleton = InSkeletalMesh ? InSkeletalMesh->GetSkeleton() : nullptr;
-	#endif
+#endif
 
 	// FText ErrorText;
 	// if (!AnimSkeleton->IsCompatible(MeshSkeleton))
@@ -180,8 +198,7 @@ float UMGEdNode::WasActiveTime() const
 	return DebugTotalTime - DebugElapsedTime;
 }
 
-
-float UMGEdNode::GetDebugNormalizedTime()
+float UMGEdNode::GetDebugNormalizedTime() const
 {
 	return DebugElapsedTime / DebugMaxTime;
 }
@@ -193,31 +210,35 @@ void UMGEdNode::UpdateTime(const float DeltaTime)
 		bIsDebugActive = bWasDebugActive = false;
 		return;
 	}
-	
 
-	if(bIsDebugActive)
+	if (bIsDebugActive)
 	{
 		if (DebugTotalTime >= DebugMaxTime)
 		{
 			bIsDebugActive = false;
 			DebugTotalTime = DebugElapsedTime = 0.f;
 		}
-		
-		DebugTotalTime = DebugTotalTime + DeltaTime;
+
+		DebugTotalTime   = DebugTotalTime + DeltaTime;
 		DebugElapsedTime = DebugTotalTime;
 	}
 }
-
 
 void UMGEdNode::UpdateTimeRuntimeNodeChanged(const float DeltaTime, const float MaxTime)
 {
 	// Debugged node changed, mark as was active if we were active
 	if (IsDebugActive() && !WasDebugActive())
 	{
-		bWasDebugActive = true;
-		bIsDebugActive = false;
+		bWasDebugActive  = true;
+		bIsDebugActive   = false;
 		DebugElapsedTime = DebugTotalTime;
-		// DebugTotalTime = 0.f;
+
+		const UMontageEdGraph* EdGraph = Cast<UMontageEdGraph>(GetGraph());
+		if (EdGraph && EdGraph->Debugger.IsValid())
+		{
+			EdGraph->Debugger->EvaluatedNodes.Reset();
+		}
+
 	}
 	else if (WasDebugActive() && WasActiveTime() >= MaxTime)
 	{
@@ -231,14 +252,7 @@ void UMGEdNode::UpdateTimeRuntimeNodeChanged(const float DeltaTime, const float 
 	}
 	else
 	{
-		bIsDebugActive = bWasDebugActive = false;
+		bIsDebugActive = bWasDebugActive  = false;
 		DebugTotalTime = DebugElapsedTime = 0.f;
 	}
-}
-
-
-
-const UMGNode* UMGEdNode::GetDebuggedNode() const
-{
-	return nullptr;
 }

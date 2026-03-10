@@ -49,7 +49,7 @@ void UMGEdNode_Edge::PostEditChangeProperty(struct FPropertyChangedEvent& Proper
 				RuntimeEdge = NewObject<UMGEdge_StackCount>(this, UMGEdge_StackCount::StaticClass());
 				break;
 			default:
-				RuntimeEdge = NewObject<UMGEdge>(this, UMGEdge::StaticClass());
+				RuntimeEdge = NewObject<UMGEdge_Combo>(this, UMGEdge_Combo::StaticClass());
 			}
 
 			ReconstructNode();

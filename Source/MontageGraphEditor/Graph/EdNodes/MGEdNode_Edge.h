@@ -15,7 +15,7 @@ class UMGEdNode;
 UENUM(BlueprintType)
 enum class ELinkTransitionRule : uint8
 {
-	None,
+	Combo,
 	TagQuery,
 	GameplayEffectQuery,
 	StackCount,

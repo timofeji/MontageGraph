@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Containers/BitArray.h"
+#include "GameplayEffectTypes.h"
 #include "MontageGraph.h"
 #include "Components/ActorComponent.h"
 #include "Tracers/MontageCollisionTracer.h"
@@ -10,53 +12,38 @@
 
 class UMGNode_Montage;
 
+UENUM(BlueprintType)
+enum class EMontageGraphState : uint8
+{
+	Idle,
+	NodeSelected,
+	NodeQueued,
+	LinkActive,
+	BlendingOut
+};
+
 
 /** Data about montages that is replicated to simulated clients */
 USTRUCT()
-struct MONTAGEGRAPH_API FMontageGraphRepInfo
+struct MONTAGEGRAPH_API FMGReplicatedLinkInfo
 {
 	GENERATED_USTRUCT_BODY()
 
-	/** ID of the MontageNode we're playing*/
 	UPROPERTY()
-	uint16 NodeID;
+	uint16 NodeID = 0;
 	
 	UPROPERTY()
-	float SyncTime;
-	
-	UPROPERTY(NotReplicated)
-	float PredictionTime;
+	float SyncTime = 0.f;
 	
 	/** Play Rate */
 	UPROPERTY()
-	float PlayRate;
-
-	/** Montage position */
-	UPROPERTY(NotReplicated)
-	float Position;
-	
-	UPROPERTY()
-	FPredictionKey PredictionKey;
-
-	/** The current section Id used by the montage. Will only be valid if bRepPosition is false */
-	UPROPERTY()
-	uint8 SectionIdToPlay;
-
-	FMontageGraphRepInfo()
-	: NodeID(0),
-	PlayRate(0.f),
-	Position(0.f),
-	SectionIdToPlay(0),
-	SyncTime(0.f),
-	PredictionTime(0.f)
-	{
-	}
+	float PlayRate = 1.f;
 
 	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess);
 };
 
 template<>
-struct TStructOpsTypeTraits<FMontageGraphRepInfo> : public TStructOpsTypeTraitsBase2<FMontageGraphRepInfo>
+struct TStructOpsTypeTraits<FMGReplicatedLinkInfo> : public TStructOpsTypeTraitsBase2<FMGReplicatedLinkInfo>
 {
 	enum
 	{
@@ -65,57 +52,89 @@ struct TStructOpsTypeTraits<FMontageGraphRepInfo> : public TStructOpsTypeTraitsB
 };
 
 USTRUCT(BlueprintType)
-struct MONTAGEGRAPH_API FMGSelectionInfo
+struct MONTAGEGRAPH_API FMontageLink
 {
-	
 	GENERATED_USTRUCT_BODY()
 
-	/** ID of the MontageNode we just selected*/
 	UPROPERTY()
-	uint16 NodeID = 0;
+	FGameplayEffectContextHandle EffectContextHandle;
 
-	/** ID of the MontageNode  that was last selected*/
-	UPROPERTY()
-	uint16 FromNodeID = 0;
+	/** Bit array for validated collision frames - more memory efficient than TArray<bool> */
+	TBitArray<> ValidatedFrameIndices;
 
 	UPROPERTY()
-	bool bSelectionSuccessful;
+	UCollisionTracer* TracerPtr = nullptr;
+
+	UPROPERTY()
+	UMGNode* LinkedNode = nullptr;
+
+	UPROPERTY()
+	UAnimMontage* Montage = nullptr;
+
+	UPROPERTY()
+	int32 LastValidatedFrame = 0;
+
+	UPROPERTY()
+	float StartTime = 0.f;
+
+	UPROPERTY()
+	float TargetLinkToTime = 0.f;
+
+	/** Optional blend settings - avoids dangling pointer issues */
+	TOptional<FMontageBlendSettings> BlendSettings;
+
+	void InitializeCollision(UCollisionTracer* CollisionTracer)
+	{
+		TracerPtr = CollisionTracer;
+		const int32 NumSamples = TracerPtr ? TracerPtr->SamplePositions.Num() : 0;
+		ValidatedFrameIndices.Init(false, NumSamples);
+		LastValidatedFrame = 0;
+	}
+
+	void Reset()
+	{
+		LinkedNode = nullptr;
+		TracerPtr = nullptr;
+		Montage = nullptr;
+		BlendSettings.Reset();
+		LastValidatedFrame = 0;
+		ValidatedFrameIndices.Empty();
+	}
+
+	FORCEINLINE bool IsFrameValidated(int32 FrameIndex) const
+	{
+		return ValidatedFrameIndices.IsValidIndex(FrameIndex) && ValidatedFrameIndices[FrameIndex];
+	}
+
+	FORCEINLINE void SetFrameValidated(int32 FrameIndex, bool bValidated)
+	{
+		if (ValidatedFrameIndices.IsValidIndex(FrameIndex))
+		{
+			ValidatedFrameIndices[FrameIndex] = bValidated;
+		}
+	}
 };
 
-
-USTRUCT(BlueprintType)
-struct MONTAGEGRAPH_API FMontageLinkInfo
+USTRUCT()
+struct MONTAGEGRAPH_API FCollisionSweepIntersection
 {
-	
 	GENERATED_USTRUCT_BODY()
-
-	/** ID of the MontageNode that was last linked*/
-	UPROPERTY()
-	uint16 FromNodeID= 0;
 	
-	UPROPERTY()
-	uint16 ToNodeID = 0;
+	UPROPERTY(Transient)
+	const AActor* Actor = nullptr;
 	
-	UPROPERTY()
-	UCollisionTracer* CollisionDataPtr;
+	uint8 NumHits = 0;
 	
-	UPROPERTY()
-	TArray<FHitResult> CollisionHits;
-
 };
-
-class UAbilitySystemComponent;
-
-
-DECLARE_MULTICAST_DELEGATE_TwoParams(FMontageNodeDelegate, UMGNode*, uint32)
-DECLARE_MULTICAST_DELEGATE_OneParam(FBindDelegate, FGameplayTag)
-DECLARE_MULTICAST_DELEGATE(FMontageNodeLinkDelegate)
 
 
 DECLARE_DELEGATE_TwoParams(FCollisionHitActorsChanged, TArray<FHitResult>&, TArray<UGameplayEffect*>&)
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMontageNodeCollisionEvent, bool, bIsStart);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMontageNodeDelegate, UMGNode*, MontageNode);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLinkedMontageDelegate);
 
+
+class UAbilitySystemComponent;
 class UMontageGraph;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -126,95 +145,194 @@ class MONTAGEGRAPH_API UMontageGraphComponent : public UActorComponent
 public:
 	// Sets default values for this component's properties
 	UMontageGraphComponent();
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "MontageGraph")
-	FTransform CollisionTracerOffset;
+	
 
 	UFUNCTION(BlueprintCallable)
 	void Init(UAbilitySystemComponent* ASC);
-	
-	
+
 	UFUNCTION(BlueprintCallable)
 	void SetTraceActorsToIgnore(TArray<AActor*> ActorsToIgnore);
 	
-	virtual void RegisterComponentTickFunctions(bool bRegister) override;
+	UFUNCTION(BlueprintCallable)
+	virtual void SelectNode(UMGNode* NodeToTransitionTo);
 
-	virtual void ExecuteMontageCollisionTraceTick(float MontageAlpha);
-
-
-
-	//Filters the branch we should be comboing, based on Selector nodes, then selects appropriate montage based on the ComboIndex
-	void SelectLinkNode(const FGameplayTag& BindTag,
-	                          const FGameplayTagContainer& AdditionalTags,
-	                          FMGSelectionInfo& OutInfo);
-	
-
-
+	UFUNCTION(BlueprintCallable)
 	void SetGraph(UMontageGraph* MontageGraph);
-	const UMontageGraph* GetGraph() const;
 	
-	void StopNodeMontageWithBlend(float OverrideBlendOutTime);
-	void PlayNodeMontage(uint16 NodeID);
+	UFUNCTION(BlueprintCallable)
+	const UMontageGraph* GetGraph() const;
 
+	UFUNCTION(BlueprintCallable)
+	EMontageGraphState GetCurrentState() const { return CurrentState; }
 
-	FBindDelegate OnBindReset(const FGameplayTag& BindTag, const FGameplayTagContainer& AdditionalTags);
-
-
+	virtual void ResetActiveLink();
 
 	UFUNCTION(Server, Reliable)
-	void ServerLinkNode(float PredictedSyncTime, uint16 LinkToNodeID,  FPredictionKey PredictionKey);
+	void ServerQueueNodeLink(uint16 NodeID);
+
+	UFUNCTION()
+	void QueueNodeLink(UMGNode* NodeToLink, bool bNotifyServer = false);
 	
-	void LinkToNodeID(uint16 NodeID);
-	void LinkToNodeID_Predictive(uint16 NodeID, FPredictionKey PredictionKey);
+	void LinkQueuedNode();
 	
+	UFUNCTION(Server, Reliable)
+	void ServerLinkNode(uint16 NodeIDToLink, float PredictionStartTime, FPredictionKey PredictionKey);
+	
+	UFUNCTION(Client, Reliable)
+	void ClientPredictedLinkRejected(uint16 RejectedNodeID);
+	
+	UFUNCTION(Client, Reliable)
+	void ClientPredictedLinkAccepted(uint16 AcceptedNodeID);
+
+	void ActivateMontageLink(UMGNode* NodeToLink, UAnimMontage* MontageToPlay);
+	
+	UFUNCTION()
+	void LinkMontageNode(UMGNode* NodeToLink, const bool bIsPredicting = false);
+	
+	UFUNCTION()
 	void CancelNodeLink();
-
-	UAnimMontage* GetMontageForNodeID(uint16 NodeID);
-
-
-	UMGNode* SelectedNode;
-	FMontageNodeDelegate OnNodeSelected;
-	FMontageNodeDelegate OnNodeCommitted;
-
-	UFUNCTION()
-	virtual void OnRep_ReplicatedAnimMontage();
 	
 	UFUNCTION()
-	virtual void OnRep_GraphID();
-	void         SetupLinkCollisionTick(float MontageLength, float LocalTime);
-	void         StopLinkCollisionTick();
+	void OnPredictiveLinkRejected(uint16 NodeID);
+	
+	//Filters the branch we should be comboing, based on edge transition rules nodes, then selects appropriate montage based on the ComboIndex
+	UMGNode* FindNode(const FGameplayTag& BindTag, const FGameplayTagContainer& AdditionalTags = FGameplayTagContainer());
+
+	virtual bool CanEnqueueNode() const;
+
+	UAnimMontage* GetMontageForNodeID(uint16 NodeID) const;
+	UAnimMontage* GetActiveLinkMontage() const { return ActiveLink.Montage; }
+	
+	void StartLinkedMontageSweep(const UAnimMontage* Montage);
+	void StopLinkedMontageTick();
+	void StopLinkedMontage(float BlendTimeOverride);
 
 	FMontageNodeCollisionEvent OnSweepStateChanged;
-	
-	FMontageNodeLinkDelegate OnNodeLinkFailed;
-	
 	FCollisionHitActorsChanged OnCollisionHitActorsChanged;
+
+	UPROPERTY(EditAnywhere, BlueprintAssignable)
+	FMontageNodeDelegate OnNodeSelected;
+
+	UPROPERTY(EditAnywhere, BlueprintAssignable)
+	FMontageNodeDelegate OnNodeLinked;
+
+	UPROPERTY(EditAnywhere, BlueprintAssignable)
+	FMontageNodeDelegate OnNodeLinkFailed;
+
+	UPROPERTY()
+	UMGNode* QueuedNode = nullptr;
+
+	UPROPERTY()
+	UMGNode* SelectedNode = nullptr;
+
+	// TArray<uint16> QueuedNodes;
+
 protected:
 
 	UPROPERTY(Transient, ReplicatedUsing=OnRep_ReplicatedAnimMontage)
-	FMontageGraphRepInfo RepAnimMontageInfo;
+	FMGReplicatedLinkInfo RepLinkInfo;
+	
+	UFUNCTION()
+	virtual void OnRep_ReplicatedAnimMontage();
 	
 	UPROPERTY(Transient)
-	FMontageLinkInfo LinkInfo;
-
-	UPROPERTY(Transient, ReplicatedUsing=OnRep_GraphID)
-	uint16 GraphID;
-
-	FMontageCollisionTracerTickFunction  CollisionTracerTickFunction;
-private:
-	UMontageGraph* Graph;
+	FMontageLink ActiveLink;
+	
+	
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UMontageGraph> Graph;
+	
+	UPROPERTY(BlueprintReadOnly)
 	UAbilitySystemComponent* ASC;
-	UAnimInstance* AnimInstance;
 
+	/** Cached AnimInstance pointer - refreshed when ASC changes */
+	UPROPERTY(Transient)
+	TWeakObjectPtr<UAnimInstance> CachedAnimInstance;
+
+	/** Current state of the montage graph */
+	UPROPERTY(BlueprintReadOnly, Transient)
+	EMontageGraphState CurrentState = EMontageGraphState::Idle;
+
+	UAnimInstance* GetAnimInstance() const;
+
+
+	/** Sets the current state and handles state transition logic */
+	void SetState(EMontageGraphState NewState);
+
+	virtual void BeginPlay() override;
+	
+	virtual void RegisterComponentTickFunctions(bool bRegister) override;
+
+	//Collision Samples get transformed by this, overload to add crouching support, etc
+	virtual FTransform GetTransformForCollisionTracer(UCollisionTracer* CollisionData);
+	
+	virtual void ExecuteMontageCollisionTraceTick(float AnimAlpha);
+
+	virtual void NotifyIntersectionUpdated(const FCollisionSweepIntersection& Intersection, const FHitResult& Hit){ }
+
+	virtual void NotifyBeginIntersection(const FCollisionSweepIntersection& Intersection, const FHitResult& Hit){ }
+
+	virtual void NotifyNodeLinked(const UMGNode* LinkedNode) {};
+	virtual void NotifyLinkBlendingOut(UMGNode* LinkedNode);
+	
+	virtual void NotifyNodeSelected();
+	virtual void NotifyCollisionSweepStarted();
+	virtual void NotifyCollisionSweepEnded();
+	
+
+protected:
+
+
+	UFUNCTION()
+	void OnMontageBlendingOut(UAnimMontage* AnimMontage, bool bInterrupted);
+	FOnMontageBlendingOutStarted BlendingOutDelegate;
+	
+	UFUNCTION()
+	void OnMontageEnded(UAnimMontage* AnimMontage, bool bInterrupted);
+	FOnMontageEnded MontageEndedDelegate;
+	
+
+	/* Actors that will be ignored for collision detection */
 	TArray<AActor*> TraceActorsToIgnore;
+
+	/** Actors we're currently intersecting in the sweep - uses TMap for O(1) lookup instead of O(n) */
+	TMap<const AActor*, FCollisionSweepIntersection> ActorIntersectionMap;
+
+	/** Reusable array for frames to validate - avoids per-tick allocation */
+	TArray<int32> FramesToValidate;
+
+	/** Pooled hit results array to avoid per-sweep allocation */
+	TArray<FHitResult> PooledHitResults;
+
+	FTimerHandle StartCollisionTimerHandle;
+	FTimerHandle StopCollisionTimerHandle;
+	FTimerHandle QueuedLinkTimerHandle;
 	
 	
-	FTimerHandle StartTimeHandle;
-	FTimerHandle StopTimeHandle;
+	FTimerDelegate StartCollisionSweepDelegate;
+	FTimerDelegate StopCollisionSweepDelegate;
+	FTimerDelegate QueuedLinkDelegate;
 	
-#if !UE_BUILD_SHIPPING
-	TArray<int> DebugHitCollisionIndices;
-#endif
+	FMontageCollisionTracerTickFunction  SweepTickFunc;
+
+
+
+	friend struct FMontageCollisionTracerTickFunction;
+
+	//*Debug*//
+public:
+	static void OnShowDebugInfo(AHUD* HUD, UCanvas* Canvas, const FDebugDisplayInfo& DisplayInfo, float& YL, float& YPos);
+protected:
+	
+	bool IsPredicting() const;
+	
+	virtual void DisplayDebug(class UCanvas* Canvas, const class FDebugDisplayInfo& DebugDisplay, float& YL, float& YPos);
+	
+	#if !UE_BUILD_SHIPPING
+	TArray<int32> DebugHitCollisionIndices;
+	#endif
+	
+	
 };
 
 

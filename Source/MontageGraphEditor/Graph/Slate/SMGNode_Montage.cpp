@@ -636,8 +636,6 @@ const bool SMGNode_Montage::IsTitleVisible() const
 // //
 // // FSlateColor SMGNode_Montage::GetBorderBackgroundColor() const
 // // {
-// // 	const UMGEdNode* MyNode = CastChecked<UMGEdNode>(GraphNode);
-// // 	return MyNode->GetBackgroundColor();
 // // }
 // //
 // // EVisibility SMGNode_Montage::GetDragOverMarkerVisibility() const

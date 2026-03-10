@@ -14,11 +14,18 @@ class MONTAGEGRAPH_API UMontageGraphNode_Entry : public UMGNode
 	GENERATED_BODY()
 
 public:
-	virtual FText GetNodeTitle() const override;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entry")
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Entry")
 	FGameplayTag EntryTag;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Bitflags")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Network")
 	FGameplayTag BitFlagTags;
+
+	
+
+	
+#if WITH_EDITOR
+	virtual FText GetNodeTitle() const override;
+#endif
 };
+

@@ -190,7 +190,7 @@ void FMontageGraphSchemaAction_NewEdge::AddReferencedObjects(FReferenceCollector
 
 UEdGraphNode* FMontageGraphSchemaAction_AutoArrangeVertical::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
 {
-	UMontageGraphEdGraph* Graph = Cast<UMontageGraphEdGraph>(ParentGraph);
+	UMontageEdGraph* Graph = Cast<UMontageEdGraph>(ParentGraph);
 	if (Graph)
 	{
 		Graph->AutoArrange(true);
@@ -204,7 +204,7 @@ UEdGraphNode* FMontageGraphSchemaAction_AutoArrangeVertical::PerformAction(UEdGr
 
 UEdGraphNode* FMontageGraphSchemaAction_AutoArrangeHorizontal::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
 {
-	UMontageGraphEdGraph* Graph = Cast<UMontageGraphEdGraph>(ParentGraph);
+	UMontageEdGraph* Graph = Cast<UMontageEdGraph>(ParentGraph);
 	if (Graph)
 	{
 		Graph->AutoArrange(false);
@@ -231,7 +231,7 @@ void UMontageGraphSchema::CreateDefaultNodesForGraph(UEdGraph& Graph) const
 	// // Create runtime node for this editor node. Entry nodes gets a bare bone anim base one as well with blank anim related info.
 	EntryNode->RuntimeNode = NewObject<UMontageGraphNode_Entry>(MontageGraph, UMontageGraphNode_Entry::StaticClass());
 	
-	if (UMontageGraphEdGraph* EdMontageGraph = CastChecked<UMontageGraphEdGraph>(&Graph))
+	if (UMontageEdGraph* EdMontageGraph = CastChecked<UMontageEdGraph>(&Graph))
 	{
 		EdMontageGraph->EntryNodes.Add(EntryNode);
 	}

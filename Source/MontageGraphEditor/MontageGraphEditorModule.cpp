@@ -8,11 +8,15 @@
 
 #include "AssetTypeActions_MontageGraph.h"
 #include "MontageGraphEditorStyle.h"
+#include "DopeSheet/Tracks/DopeSheetTrackBase.h"
+#include "GameFramework/HUD.h"
 
-#include "Sequencer/MontageGraphSequencerExtensions.h"
 #include "Graph/MontageGraphNodePanelFactory.h"
 #include "Graph/EdNodes/MGEdNode.h"
+#include "Graph/EdNodes/MGEdNode_Montage.h"
+#include "MontageGraph/MontageGraphComponent.h"
 #include "Slate/MontageGraphDetails.h"
+#include "Tracks/MontageTrack_BlendLinks.h"
 
 #define LOCTEXT_NAMESPACE "FMontageGraphEditorModule"
 
@@ -55,13 +59,19 @@ void FMontageGraphEditorModule::StartupModule()
 
 	FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>(
 		"PropertyEditor");
-	PropertyEditorModule.RegisterCustomClassLayout(UMGEdNode::StaticClass()->GetFName(),
+	PropertyEditorModule.RegisterCustomClassLayout(UMGEdNode_Montage::StaticClass()->GetFName(),
 	                                               FOnGetDetailCustomizationInstance::CreateStatic(
 		                                               &FMontageGraphDetails::MakeInstance));
+	
+	PropertyEditorModule.RegisterCustomClassLayout(UMontageTrackSection_LinkBlend::StaticClass()->GetFName(),
+	                                               FOnGetDetailCustomizationInstance::CreateStatic(
+		                                               &UMontageTrackSection_LinkBlendDetails::MakeInstance));
 
 	
-	SequencerExtensions= MakeShareable(new FMontageGraphSequencerExtensions);
-	SequencerExtensions->Register();
+	if (!IsRunningDedicatedServer())
+	{
+		AHUD::OnShowDebugInfo.AddStatic(&UMontageGraphComponent::OnShowDebugInfo);
+	}
 
 }
 
@@ -77,8 +87,6 @@ void FMontageGraphEditorModule::ShutdownModule()
 
 	FEdGraphUtilities::UnregisterVisualNodeFactory(GraphNodeFactory);
 
-	
-	SequencerExtensions->Unregister();
 }
 
 #undef LOCTEXT_NAMESPACE

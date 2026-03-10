@@ -40,12 +40,15 @@ public:
 	FLinearColor SequenceNodeColor;
 
 	/** Default background color for combo nodes in active states (during debug) */
-	UPROPERTY(config,
-		EditAnywhere,
-		Category = "Colors")
-	FLinearColor DebugActiveColor;
 
+	UPROPERTY(config,EditAnywhere,Category = "Colors")
+	FLinearColor DebugSelectedColor;
+	UPROPERTY(config,EditAnywhere,Category = "Colors")
+	FLinearColor DebugEvaluatedColor;
+	UPROPERTY(config,EditAnywhere,Category = "Colors")
+	FLinearColor DebugErrorColor;
 	/**
+	* 
 	 * The duration used to interpolate the background color of nodes from Active to Default color when active states change (no longer active during debug).
 	 *
 	 * If set to 0.0, will disable color interpolation.

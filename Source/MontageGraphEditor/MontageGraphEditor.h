@@ -63,7 +63,8 @@ public:
 	void OnNodeTitleCommitted(const FText& Text, ETextCommit::Type Arg, UEdGraphNode* EdGraphNode) const;
 	void OnGraphActionMenuClosed(bool bArg, bool bCond) const;
 
-	FActionMenuContent OnCreateGraphActionMenu(UEdGraph* EdGraph, const UE::Math::TVector2<double>& Vector2,
+	FActionMenuContent OnCreateGraphActionMenu(UEdGraph* EdGraph,
+												const FVector2f& InNodePosition,
 	                                           const TArray<UEdGraphPin*>& EdGraphPins,
 	                                           bool bArg, TDelegate<void()> Delegate);
 
@@ -107,9 +108,9 @@ public:
 
 
 	TSharedRef<SWidget> OnGetDebuggerActorsMenu();
+	FText GetDebuggerActorDesc() const;
+	bool IsDebuggerReady() const;
 
-	
-	
 	void SelectAllNodes() const;
 	bool CanSelectAllNodes();
 	void DeleteSelectedNodes() const;
@@ -143,10 +144,9 @@ public:
 
 	static const FName ViewportTabID;
 	static const FName GraphViewportTabID;
+	static const FName BlendMatrixTabID;
 	static const FName AnimTimelineTabID;
-	static const FName ActionNameTabID;
 	static const FName DetailsTabID;
-	static const FName PaletteTabID;
 
 	// IToolkit interface
 	//
@@ -154,6 +154,7 @@ public:
 	TSharedRef<SDockTab> SpawnTab_AssetBrowser(const FSpawnTabArgs& SpawnTabArgs);
 	TSharedRef<SDockTab> SpawnTab_GraphViewport(const FSpawnTabArgs& SpawnTabArgs);
 	TSharedRef<SDockTab> SpawnTab_AnimTimeline(const FSpawnTabArgs& SpawnTabArgs);
+	TSharedRef<SDockTab> SpawnTab_BlendMatrix(const FSpawnTabArgs& SpawnTabArgs);
 	TSharedRef<SDockTab> SpawnTab_Details(const FSpawnTabArgs& SpawnTabArgs) const;
 	
 	
@@ -211,16 +212,12 @@ private:
 	void OnFinishedChangingProperties(const FPropertyChangedEvent& PropertyChangedEvent);
 	void CreatePropertyWidget();
 
-	// The custom details view used
-	TSharedPtr<IDetailsView> DetailsView;
-
-	TSharedPtr<SGraphEditor> GraphEditorView;
-	
-	TSharedPtr<class SMontageGraphDopeSheet> AnimDopeSheet;
-	
+	TSharedPtr<IDetailsView>                    DetailsView;
+	TSharedPtr<SGraphEditor>                    GraphEditorView;
 	TSharedPtr<class FAnimTimeSliderController> TimeSliderController;
-
-	TSharedPtr<SBox> AssetBrowserBox;
+	TSharedPtr<class SMontageGraphDopeSheet>    AnimDopeSheet;
+	TSharedPtr<class SMontageBlendMatrix>       BlendMatrix;
+	TSharedPtr<SBox>                            AssetBrowserBox;
 
 	void TogglePlayback(bool bShouldPlay);
 	
@@ -234,6 +231,10 @@ public:
 	
 	/** Get the Details Widget */
 	TSharedPtr<IDetailsView> GetPropertyDetailsWidget() const { return DetailsView; }
+
+	
+	/** Get the DopeSheet Widget*/
+	TSharedPtr<SMontageGraphDopeSheet> GetAnimDopeSheetWidget() const { return AnimDopeSheet; }
 	
 	TSharedRef<IPersonaToolkit> GetPersonaToolkit() const override
 	{

@@ -2,6 +2,7 @@
 
 #include "MontageGraph.h"
 
+#include "Nodes/MGNode_Montage.h"
 
 UMontageGraph::UMontageGraph()
 {
@@ -11,7 +12,7 @@ UMontageGraph::UMontageGraph()
 
 void UMontageGraph::ClearGraph()
 {
-	for (UMGNode* Node : AllNodes)
+	for (UMGNode_Montage* Node : MontageNodes)
 	{
 		if (Node)
 		{
@@ -21,11 +22,12 @@ void UMontageGraph::ClearGraph()
 	}
 
 	RootNodes.Empty();
-	AllNodes.Empty();
+	MontageNodes.Empty();
 
 	GameplayEffects.Empty();
 	Montages.Empty();
 	CollisionTracers.Empty();
+	
 }
 
 void UMontageGraph::SetPreviewMesh(USkeletalMesh* PreviewMesh, bool bMarkAsDirty)

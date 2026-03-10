@@ -361,26 +361,31 @@ void FMontageGraphEditorToolbar::FillModesToolbar(FToolBarBuilder& ToolbarBuilde
 
 void FMontageGraphEditorToolbar::FillDebuggerToolbar(FToolBarBuilder& ToolbarBuilder)
 {
-	// const UMontageGraphEdGraph* EditorGraph = Cast<UMontageGraphEdGraph>(
-	// 	GraphBeingEdited->EditorGraph);
-	//
-	// const TSharedRef<SWidget> SelectionBox = SNew(SComboButton)
-	// 	.OnGetMenuContent(this, &FMontageGraphEditor::OnGetDebuggerActorsMenu)
-	// 	.ButtonContent()
-	// 	[
-	// 		SNew(STextBlock)
-	// 		.ToolTipText(LOCTEXT("SelectDebugActor", "Pick actor to debug"))
-	// 		.Text(EditorGraph && EditorGraph->Debugger.IsValid()
-	// 			      ? FText::FromString(EditorGraph->Debugger->GetDebuggedInstanceDesc())
-	// 			      : FText::GetEmpty())
-	// 	];
-	//
-	// ToolbarBuilder.BeginSection("Debugger");
-	// {
-	// 	ToolbarBuilder.AddWidget(SelectionBox);
-	// 	// ToolBarBuilder.AddWidget(DebugModeComboBox);
-	// }
-	// ToolbarBuilder.EndSection();
+	check(MGEditor.IsValid());
+	TSharedPtr<FMontageGraphEditor> MGEditorPtr = MGEditor.Pin();
+
+	TWeakPtr<FMontageGraphEditor> WeakEditor = MGEditorPtr;
+	const TSharedRef<SWidget> SelectionBox = SNew(SComboButton)
+		.OnGetMenuContent(MGEditorPtr.Get(), &FMontageGraphEditor::OnGetDebuggerActorsMenu)
+		.ButtonContent()
+		[
+			SNew(STextBlock)
+			.ToolTipText(LOCTEXT("SelectDebugActor", "Pick actor to debug"))
+			.Text_Lambda([WeakEditor]()
+			{
+				if (TSharedPtr<FMontageGraphEditor> Editor = WeakEditor.Pin())
+				{
+					return Editor->GetDebuggerActorDesc();
+				}
+				return FText::GetEmpty();
+			})
+		];
+
+	ToolbarBuilder.BeginSection("Debugger");
+	{
+		ToolbarBuilder.AddWidget(SelectionBox);
+	}
+	ToolbarBuilder.EndSection();
 }
 
 void FMontageGraphEditorToolbar::FillGameplayToolbar(FToolBarBuilder& ToolbarBuilder)

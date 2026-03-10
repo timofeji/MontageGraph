@@ -1,5 +1,6 @@
 #pragma once
 #include "CoreMinimal.h"
+#include "ITransportControl.h"
 #include "Tracks/DopeSheetTrackViewModel.h"
 
 #if WITH_EDITOR
@@ -66,19 +67,31 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnDopeSheetTogglePlayback, bool)
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnDopeSheetTimeChanged, float)
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnDopeSheetSectionSelected, UObject*)
 
+class UDopeSheetTrackSection;
+class UDopeSheetTrackBase;
+
 
 class FDopeSheetController : public TSharedFromThis<FDopeSheetController>
 {
+	
 public:
-	float ViewStartTime      = 0.f;
-	float ViewEndTime        = 1.f;
-	float TimeDurationInView = 1.f;
-
+	EPlaybackMode::Type   PlaybackMode;
+	
+	float ViewStartTime  = 0.f;
+	float ViewEndTime    = 1.f;
+	float ViewTimeLength = 1.f;
 
 	void UpdateViewForGeometry(const FGeometry& Geometry);
 
 	bool CanDraw();
 	bool CanUpdate();
+	void AddTrackToSelected(UClass* Class);
+	void RemoveTrack(FDopeSheetTrackViewModelRef TrackModelRef);
+	void AddSubTrackToSelected(UClass* Class, FDopeSheetTrackViewModelRef TrackModel);
+	
+	void SelectSection(TSharedPtr<FDopeSheetSectionViewModel>& Section, bool bIsAdditive = false);
+	void DeleteSelection();
+	
 
 	//*Rectangle representing all the CellViews on the X-axis, and Tracks on the Y-axis*//
 	FSlateRect EditableRect;
@@ -90,7 +103,7 @@ public:
 	//TODO: This shoudnt be an attribtue
 	TAttribute<float> TimeSliderHeight = 32.f;
 
-	TArray<FDopeSheetViewSection> Sections;
+	TArray<FDopeSheetViewSection> ViewSections;
 
 	void AddViewSection(FDopeSheetViewSection NewSection);
 	void Reset(bool bMarkDirty = false);
@@ -100,6 +113,9 @@ public:
 	/// NAVIGATION
 	/////////////////////////////////////////////////////////////////////////
 	///
+	///
+	void OnKeyUp(const FGeometry& Geometry, const FKeyEvent& KeyEvent);
+	void OnKeyDown(const FGeometry& Geometry, const FKeyEvent& KeyEvent);
 	FReply OnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent);
 	FReply OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent, TSharedRef<SWidget> InWidget);
 	FReply OnMouseButtonDown(const FGeometry&    MyGeometry, const FPointerEvent& MouseEvent,
@@ -118,11 +134,11 @@ public:
 	void SetViewRange(double NewStartTime, double NewEndTime);
 	void FrameViewRange();
 
-	float LocalXCoordToTime(float XCoord) const;
-	float AbsoluteXCoordToTime(float XCoord) const;
+	double LocalXCoordToTime(double XCoord) const;
+	double AbsoluteXCoordToTime(double XCoord) const;
 
-	float TimeToXOffset(const float InTime, const FGeometry& AllottedGeometry) const;
-	float ConvertXCoordToTime(float XCoord, const FGeometry& AllottedGeometry) const;
+	double TimeToXOffset(const double InTime, const FGeometry& AllottedGeometry) const;
+	double ConvertXCoordToTime(double XCoord, const FGeometry& AllottedGeometry) const;
 
 	//*Regenerated View Cache*//
 
@@ -157,9 +173,10 @@ public:
 
 	void ClearSelection();
 
+	TArray<TSharedPtr<FDopeSheetSectionViewModel>> SelectedSections;
+
 	void           ProcessBoxSelection();
 	FPaintGeometry GetAdjustedSelectionGeometry(const FGeometry& InGeometry) const;
-
 
 	void DrawSelection(FSlateWindowElementList& OutDrawElements, uint32 LayerID, const FGeometry& Geometry) const;
 
@@ -176,13 +193,16 @@ protected:
 	float PlayHeadTime = 0.0f;
 
 
-	FVector2D StartCoord;
-	FVector2D EndCoord;
+	FVector2f Selection_Start;
+	FVector2f Selection_End;
 
 	int SelectionStartRow   = -1;
 	int SelectionEndRow     = -1;
 	int SelectionStartFrame = -1;
 	int SelectionEndFrame   = -1;
+
+	double SelectionStartTime = -1;
+	double SelectionEndTime   = -1;
 
 	float SelectionWidth = 0;
 
@@ -192,8 +212,23 @@ public:
 	void OnTrackExpanded(TSharedRef<FDopeSheetTrackViewModel> ExpandedTrackModel, bool bExpanded);
 	TArray<UDopeSheetTrackBase*> VisibleTracks;
 
-	void                                SetTracksSource(const TArray<class UDopeSheetTrackBase*>& TrackSrc);
+	void                                SetTracksSource(TArray<class UDopeSheetTrackBase*>& TrackSrc, UObject* TracksOuter = nullptr);
 	TArray<FDopeSheetTrackViewModelRef> RootTracks;
+
+	/** Returns all unique collection names present in the current tracks source. */
+	TSet<FName> GetAllCollectionNames() const;
+
+	/** Returns whether a collection is currently visible (default true for unknown names). */
+	bool IsCollectionVisible(FName InCollectionName) const;
+
+	/** Toggles a collection's visibility and rebuilds the visible track lists. */
+	void SetCollectionVisibility(FName InCollectionName, bool bVisible);
+
+	/** Assigns the given tracks to a collection, registering it if new, and rebuilds the view. */
+	void MoveTracksToCollection(const TArray<UDopeSheetTrackBase*>& Tracks, FName NewCollection);
+
+	/** Visibility state per collection name. */
+	TMap<FName, bool> CollectionVisibility;
 
 	void ForceUpdate();
 	void AddDirtyFlags(EDopeSheetFlags NewFlags);
@@ -202,5 +237,15 @@ private:
 	EDopeSheetFlags DirtyFlags;
 	
 	FGeometry   CachedGeometry;
+	
+	UObject*   TracksOwner = nullptr;
+	
+	TArray<UDopeSheetTrackBase*>* TracksPtr;
+
+	
+	bool   bShiftKeyDown;
 };
+
+
+
 #endif

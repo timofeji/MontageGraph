@@ -1,7 +1,5 @@
 #include "MontageGraphConnectionDrawingPolicy.h"
-
-#include "MontageGraphEdGraph.h"
-#include "MontageGraphDebugger.h"
+#include "MontageEdGraph.h"
 #include "Slate/SMontageGraphSelectorOutputPin.h"
 #include "EdNodes/MGEdNode.h"
 #include "EdNodes/MGEdNode_Edge.h"
@@ -12,7 +10,7 @@ FMontageGraphConnectionDrawingPolicy::FMontageGraphConnectionDrawingPolicy(
 	: FConnectionDrawingPolicy(InBackLayerID, InFrontLayerID, ZoomFactor, InClippingRect, InDrawElements)
 	  , GraphObj(InGraphObj)
 {
-	MGEdGraph = Cast<UMontageGraphEdGraph>(GraphObj);
+	MGEdGraph = Cast<UMontageEdGraph>(GraphObj);
 }
 
 void FMontageGraphConnectionDrawingPolicy::DetermineWiringStyle(UEdGraphPin*       OutputPin, UEdGraphPin* InputPin,
@@ -25,23 +23,17 @@ void FMontageGraphConnectionDrawingPolicy::DetermineWiringStyle(UEdGraphPin*    
 
 	if (MGEdGraph && InputPin)
 	{
-		FLinearColor DefaultWireColor(1.00f, 1.00f, 1.00f, 0.43f);
-		Params.WireColor = DefaultWireColor;
+		FLinearColor BaseWireColor(1.00f, 1.00f, 1.00f, 0.43f);
+		Params.WireColor = BaseWireColor;
 		if (UMGEdNode_Edge* Edge = Cast<UMGEdNode_Edge>(InputPin->GetOwningNode()))
 		{
 			Params.WireColor   = Edge->GetEdgeColor();
-			Params.WireColor.A = DefaultWireColor.A;
+			Params.WireColor.A = BaseWireColor.A;
 		}
-		
-		
-		if (auto HBEdNode{Cast<UMGEdNode>(InputPin->GetOwningNode())})
+
+		if (UMGEdNode* MGEdNode = Cast<UMGEdNode>(InputPin->GetOwningNode()))
 		{
-			if (MGEdGraph->Debugger->SelectedNodes.Contains(HBEdNode))
-			{
-				Params.WireColor = HBEdNode->GetWireColor();
-				Params.WireThickness += 3.4f * HBEdNode->GetDebugNormalizedTime();
-				Params.bDrawBubbles = true;
-			}
+			MGEdNode->UpdateWireConnectionParams(Params);
 		}
 	}
 
@@ -112,7 +104,7 @@ void FMontageGraphConnectionDrawingPolicy::Draw(TMap<TSharedRef<SWidget>, FArran
 }
 
 void FMontageGraphConnectionDrawingPolicy::DrawPreviewConnector(const FGeometry& PinGeometry,
-                                                                const FVector2D& StartPoint, const FVector2D& EndPoint,
+                                                                const FVector2f& StartPoint, const FVector2f& EndPoint,
                                                                 UEdGraphPin* Pin)
 {
 	FConnectionParams Params;
@@ -169,29 +161,29 @@ void FMontageGraphConnectionDrawingPolicy::DrawPinGeometries(TMap<TSharedRef<SWi
 	}
 }
 
-void FMontageGraphConnectionDrawingPolicy::DrawSplineWithArrow(const FVector2D& StartPoint, const FVector2D& EndPoint,
+void FMontageGraphConnectionDrawingPolicy::DrawSplineWithArrow(const FVector2f& StartPoint, const FVector2f& EndPoint,
                                                                const FConnectionParams& Params)
 {
 	// bUserFlag1 indicates that we need to reverse the direction of connection (used by debugger)
-	const FVector2D& P0 = Params.bUserFlag1 ? EndPoint : StartPoint;
-	const FVector2D& P1 = Params.bUserFlag1 ? StartPoint : EndPoint;
+	const FVector2f& P0 = Params.bUserFlag1 ? EndPoint : StartPoint;
+	const FVector2f& P1 = Params.bUserFlag1 ? StartPoint : EndPoint;
 
 	Internal_DrawLineWithArrow(P0, P1, Params);
 }
 
-void FMontageGraphConnectionDrawingPolicy::Internal_DrawLineWithArrow(const FVector2D&         StartPoint,
-                                                                      const FVector2D&         EndPoint,
+void FMontageGraphConnectionDrawingPolicy::Internal_DrawLineWithArrow(const FVector2f&         StartPoint,
+                                                                      const FVector2f&         EndPoint,
                                                                       const FConnectionParams& Params)
 {
-	const FVector2D Dir = (EndPoint - StartPoint).GetSafeNormal();
-								// + FVector2D(0.f, 0.1f); //Bias Horizontal Direction
-	const FVector2D CardinalDir = FMath::Abs(Dir.X) > FMath::Abs(Dir.Y)
-		                              ? FVector2D(FMath::Sign(Dir.X), 0.f)
-		                              : FVector2D(0.f, FMath::Sign(Dir.Y));
+	const FVector2f Dir = (EndPoint - StartPoint).GetSafeNormal();
+								// + FVector2f(0.f, 0.1f); //Bias Horizontal Direction
+	const FVector2f CardinalDir = FMath::Abs(Dir.X) > FMath::Abs(Dir.Y)
+		                              ? FVector2f(FMath::Sign(Dir.X), 0.f)
+		                              : FVector2f(0.f, FMath::Sign(Dir.Y));
 
-	const FVector2D Mid = CardinalDir * LineSeparationAmount * ZoomFactor;
-	const FVector2D P2  = StartPoint + Mid;
-	const FVector2D P3  = EndPoint - Mid;
+	const FVector2f Mid = CardinalDir * LineSeparationAmount * ZoomFactor;
+	const FVector2f P2  = StartPoint + Mid;
+	const FVector2f P3  = EndPoint - Mid;
 
 	// Draw a line/spline
 	DrawConnection(WireLayerID, StartPoint, P2, Params);
@@ -201,7 +193,7 @@ void FMontageGraphConnectionDrawingPolicy::Internal_DrawLineWithArrow(const FVec
 
 	// Draw pin type
 	const FSlateBrush* BrushToDraw = ArrowImage;
-	const FVector2D EndImgDrawPos = EndPoint - .5f * BrushToDraw->ImageSize * ZoomFactor;
+	const FVector2f EndImgDrawPos = EndPoint - .5f * BrushToDraw->ImageSize * ZoomFactor;
 	const float AngleInRadians = static_cast<float>(FMath::Atan2(CardinalDir.Y, CardinalDir.X));
 	
 	if (Params.AssociatedPin2)
@@ -213,23 +205,23 @@ void FMontageGraphConnectionDrawingPolicy::Internal_DrawLineWithArrow(const FVec
 			BrushToDraw,
 			ESlateDrawEffect::None,
 			AngleInRadians,
-			TOptional<FVector2D>(),
+			TOptional<FVector2f>(),
 			FSlateDrawElement::RelativeToElement,
 			Params.WireColor
 		);
 	}
 }
 
-FVector2D FMontageGraphConnectionDrawingPolicy::FindClosestEdgeMidpointOnGeometry(const FGeometry& StartGeom, const FVector2D SeedPoint)
+FVector2f FMontageGraphConnectionDrawingPolicy::FindClosestEdgeMidpointOnGeometry(const FGeometry& StartGeom, const FVector2f SeedPoint)
 {
-	TArray<FVector2D> Points;
+	TArray<FVector2f> Points;
 	FGeometryHelper::ConvertToPoints(StartGeom, Points);
 
 	float     BestDistanceSquared = MAX_FLT;
-	FVector2D BestPoint                     = FVector2D::ZeroVector;
+	FVector2f BestPoint                     = FVector2f::ZeroVector;
 	for (int32 i = 0; i < Points.Num(); ++i)
 	{
-		const FVector2D Candidate                = .5f * (Points[i] + Points[(i + 1) % Points.Num()]);
+		const FVector2f Candidate                = .5f * (Points[i] + Points[(i + 1) % Points.Num()]);
 		const float     CandidateDistanceSquared = (Candidate - SeedPoint).SizeSquared();
 		if (CandidateDistanceSquared < BestDistanceSquared)
 		{
@@ -244,22 +236,22 @@ void FMontageGraphConnectionDrawingPolicy::DrawSplineWithArrow(const FGeometry& 
                                                                const FConnectionParams& Params)
 {
 	// Get a reasonable seed point (halfway between the boxes)
-	const FVector2D StartCenter = FGeometryHelper::CenterOf(StartGeom);
-	const FVector2D EndCenter = FGeometryHelper::CenterOf(EndGeom);
-	const FVector2D SeedPoint = (StartCenter + EndCenter) * 0.5;
+	const FVector2f StartCenter = FGeometryHelper::CenterOf(StartGeom);
+	const FVector2f EndCenter = FGeometryHelper::CenterOf(EndGeom);
+	const FVector2f SeedPoint = (StartCenter + EndCenter) * 0.5;
 
 	//*Aggregate Spline start/end positions to geometry edge midpoints*//
-	const FVector2D StartAnchorPoint = FindClosestEdgeMidpointOnGeometry(StartGeom, SeedPoint);;
-	const FVector2D EndAnchorPoint   = FindClosestEdgeMidpointOnGeometry(EndGeom, SeedPoint);;
+	const FVector2f StartAnchorPoint = FindClosestEdgeMidpointOnGeometry(StartGeom, SeedPoint);;
+	const FVector2f EndAnchorPoint   = FindClosestEdgeMidpointOnGeometry(EndGeom, SeedPoint);;
 
 	DrawSplineWithArrow(StartAnchorPoint, EndAnchorPoint, Params);
 }
 
-FVector2D FMontageGraphConnectionDrawingPolicy::ComputeSplineTangent(const FVector2D& Start,
-                                                                     const FVector2D& End) const
+FVector2f FMontageGraphConnectionDrawingPolicy::ComputeSplineTangent(const FVector2f& Start,
+                                                                     const FVector2f& End) const
 {
-	const FVector2D Delta = End - Start;
-	const FVector2D NormDelta = Delta.GetSafeNormal();
+	const FVector2f Delta = End - Start;
+	const FVector2f NormDelta = Delta.GetSafeNormal();
 
 	return NormDelta;
 }

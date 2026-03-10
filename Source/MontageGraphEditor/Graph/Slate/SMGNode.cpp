@@ -4,12 +4,8 @@
 #include "SGraphPin.h"
 #include "GraphEditorSettings.h"
 #include "IDocumentation.h"
-#include "MontageGraphDebugger.h"
 #include "MontageGraphEditorStyle.h"
 #include "SGraphPanel.h"
-#include "TutorialMetaData.h"
-#include "Editor/KismetWidgets/Public/SLevelOfDetailBranchNode.h"
-#include "Graph/MontageGraphEdGraph.h"
 #include "Graph/EdNodes/MGEdNode.h"
 #include "MontageGraph/Nodes/MGNode.h"
 #include "Widgets/Text/SInlineEditableTextBlock.h"
@@ -565,36 +561,12 @@ const FSlateBrush* SMGNode::GetNodeBodyBrush() const
 
 FSlateColor SMGNode::GetNodeTitleColor() const
 {
-	FLinearColor ReturnTitleColor = GraphNode->IsDeprecated() ? FLinearColor::Red : GetNodeObj()->GetNodeTitleColor();
-
-
-	auto ThinkEdGraph = Cast<UMontageGraphEdGraph>(GraphNode->GetGraph());
-	if (ThinkEdGraph && ThinkEdGraph->Debugger.IsValid())
+	if(const UMGEdNode* MyNode = CastChecked<UMGEdNode>(GraphNode))
 	{
-		FMontageGraphDebugger* Debugger = ThinkEdGraph->Debugger.Get();
-		if (Debugger && Debugger->IsDebuggerReady())
-		{
-			if (UMGEdNode* MGGraphEdNode = Cast<UMGEdNode>(GraphNode))
-			{
-				Debugger->SelectedNode == MGGraphEdNode->RuntimeNode ? FLinearColor::White : GraphNode->GetNodeTitleColor();
-			}
-		}
+		return MyNode->GetBackgroundColor();
 	}
-
-	// if (FlowGraphNode->GetSignalMode() == EFlowSignalMode::Enabled)
-	// {
-	// 	ReturnTitleColor.A = FadeCurve.GetLerp();
-	// }
-	// else
-	// {
-	// 	ReturnTitleColor *= FLinearColor(0.5f, 0.5f, 0.5f, 0.4f);
-	// }
-	//
-	// if (!IsFlowGraphNodeSelected(FlowGraphNode) && FlowGraphNode->IsSubNode())
-	// {
-	// 	ReturnTitleColor *= UnselectedNodeTint;
-	// }
-
+	
+	FLinearColor ReturnTitleColor = GraphNode->IsDeprecated() ? FLinearColor::Red : GetNodeObj()->GetNodeTitleColor();
 	return ReturnTitleColor;
 }
 
@@ -629,7 +601,7 @@ void SMGNode::GetNodeInfoPopups(FNodeInfoContext* Context, TArray<FGraphInformat
 		return;
 	}
 
-	const UMGNode* DebuggedNode = MGGraphEdNode->GetDebuggedNode();
+	const UMGNode* DebuggedNode = MGGraphEdNode->RuntimeNode;
 	if (!DebuggedNode)
 	{
 		return;

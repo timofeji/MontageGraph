@@ -40,7 +40,7 @@ public:
 
 
 	void MarkStale();
-	void RegenerateMontage(class UMontageGraph* Graph);
+	void RegenerateMontage(class UMontageGraph* Graph, class UMGNode_Montage* NewNode);
 	bool bShouldRegenerate;
 
 

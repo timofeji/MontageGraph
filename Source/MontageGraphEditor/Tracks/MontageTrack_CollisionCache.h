@@ -15,9 +15,9 @@ class MONTAGEGRAPHEDITOR_API UMontageTrackSection_CollisionCache : public UDopeS
 
 	
 public:
+	//Multiplies the total number of samples to be taken from the animation
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Collision")
-	double Resolution = 180.f;
-
+	double SampleMultiplier = 3.f;
 
 	/*CollisionEffects applied to tagets hit by this Collision Trace*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Collision")
@@ -50,6 +50,9 @@ public:
 	UMontageTrack_CollisionCache(const FObjectInitializer& ObjectInitializer);
 
 	virtual UObject* GenerateNewDataAsset(UObject* Outer, FName Name) override;
+
+	virtual void BakeToNode(UMGNode_Montage* RuntimeNode, FMGBakedNodeData& BakedData,
+	                        UMontageGraph* OwnerGraph, const FString& DisplayName) override;
 
 	virtual void KeyTimeRange(float SelectionStartFrame, float SelectionEndFrame) override;
 

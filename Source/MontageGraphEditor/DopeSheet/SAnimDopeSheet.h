@@ -52,6 +52,10 @@ public:
 	virtual FReply OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 	virtual FReply OnMouseMove(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 	virtual FReply OnMouseWheel(const FGeometry& InGeometry, const FPointerEvent& MouseEvent) override;
+	virtual FReply OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
+	virtual FReply OnKeyUp(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
+
+	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
 
 	void                             RebuildTracks();
 
@@ -77,12 +81,12 @@ public:
 	SLATE_END_ARGS()
 
 
+	void DeleteSelection();
 	void KeySelection();
 	bool CanKeySelection();
-	
-	
+
 	void CreateDopeSheetCommands();
-	
+
 	void Construct(const FArguments& InArgs, TSharedPtr<FDopeSheetController> InController);
 	
 	
@@ -90,7 +94,7 @@ public:
 
 	void RequestRefresh();
 	
-	void SetTracksSource(const TArray<class UDopeSheetTrackBase*>& Array);
+	void SetTracksSource( TArray<class UDopeSheetTrackBase*>& Array);
 
 //////////////////////////////////////////////////////////////////
 /// UI COMMANDS
@@ -102,24 +106,30 @@ public:
 	void FindTrack();
 
 protected:
-	
+
 	TSharedPtr<FUICommandList> DopeSheetActions;
-	
-	
+
+	TSharedRef<SWidget> MakeCollectionsMenuContent();
+
 	virtual void OnMouseLeave(const FPointerEvent& MouseEvent) override;
 	virtual void OnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
-	
+
 	virtual bool   SupportsKeyboardFocus() const override { return true; }
 	virtual FReply OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
 	virtual FReply OnKeyUp(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
 //////////////////////////////////////////////////////////////////
 
-	TSharedPtr<SDopeSheetOutliner>   OutlinerWidget;
-	TSharedPtr<SSearchBox>           OutlinerFilterBox;
-	TSharedPtr<SVerticalBox>         TrackVerticalBox;
-	TSharedPtr<SDopeSheet>           DopeSheet;
+	TSharedPtr<SDopeSheetOutliner> OutlinerWidget;
+	TSharedPtr<SSearchBox>         OutlinerFilterBox;
+	TSharedPtr<SComboButton>       CollectionsButton;
+	TSharedPtr<SVerticalBox>       TrackVerticalBox;
+	TSharedPtr<SDopeSheet>         DopeSheet;
+	TSharedPtr<SScrollBox>         TimelineScrollBox;
+	TSharedPtr<SWidget>            TransportControls;
 
 	TSharedPtr<FDopeSheetController> Controller;
+
+	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
 
 };
 

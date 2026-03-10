@@ -18,9 +18,6 @@ public:
 	{
 		return MakeShareable(new FMontageGraphDetails);
 	}
-	
-	
-	
 
 	// IDetailCustomization interface
 	virtual void CustomizeDetails(IDetailLayoutBuilder& DetailBuilder) override;

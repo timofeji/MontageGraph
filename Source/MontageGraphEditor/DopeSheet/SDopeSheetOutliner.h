@@ -15,8 +15,10 @@ class SDopeSheetOutliner : public STreeView<FDopeSheetTrackViewModelRef>
 		SLATE_ARGUMENT(TSharedPtr<SScrollBar>, ExternalScrollbar)
 	SLATE_END_ARGS()
 
-	void Construct(const FArguments& InArgs, TSharedPtr<FDopeSheetController> InController);
-
+	bool IsDeleteEnabled() const;
+	void   Construct(const FArguments& InArgs, TSharedPtr<FDopeSheetController> InController);
+	FReply OnAddTrackClicked(FDopeSheetTrackViewModelRef ParentTrack);
+	FReply OnRemoveTrackClicked();
 
 	TSharedRef<ITableRow> MakeTableRowWidget(FDopeSheetTrackViewModelRef       InItem,
 	                                         const TSharedRef<STableViewBase>& TableViewBase);
@@ -27,7 +29,16 @@ class SDopeSheetOutliner : public STreeView<FDopeSheetTrackViewModelRef>
 
 	void SetFilterText(const FText& Text);
 
+	void OnAddTrackSelected(UClass* TrackClass, FDopeSheetTrackViewModelRef ObjPtr);
+
+	FReply HandleMouseClick();
+
+	TSharedPtr<SWidget> OnContextMenuOpening();
+	void AssignSelectedTracksToCollection(FName CollectionName);
+	void OnAddRootTrackSelected(UClass* TrackClass);
+
 private:
-	
+
 	TSharedPtr<FDopeSheetController>                   Controller;
+	TSharedPtr<STreeView<FDopeSheetTrackViewModelRef>> TreeView;
 };

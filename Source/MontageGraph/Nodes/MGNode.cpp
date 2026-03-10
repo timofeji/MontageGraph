@@ -12,19 +12,9 @@ FText UMGNode::GetNodeTitle() const
 	return NodeTitle.IsEmpty() ? DefaultText : NodeTitle;
 }
 
-UMGEdge* UMGNode::GetEdge(UMGNode* ChildNode)
-{
-	return  nullptr;
-}
-
-bool UMGNode::IsLeafNode() const
-{
-	return ChildrenNodes.Num() == 0;
-}
-
-
-
 #if WITH_EDITOR
+
+
 bool UMGNode::IsNameEditable() const
 {
 	return true;

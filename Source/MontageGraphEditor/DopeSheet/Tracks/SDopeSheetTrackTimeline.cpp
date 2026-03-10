@@ -11,6 +11,7 @@
 #include "DopeSheet/SDopeSheetTrackSection.h"
 
 
+
 TSharedPtr<SWidget> FDopeSheetSectionDragDropOp::GetDefaultDecorator() const
 {
 	return SectionBeingDragged.Pin();
@@ -31,16 +32,12 @@ void FDopeSheetSectionDragDropOp::OnDrop(bool bDropWasHandled, const FPointerEve
 		FSlateRect SectionRect  = SectionBeingDragged.Pin()->GetCachedGeometry().GetLayoutBoundingRect();
 
 
-		FVector2D MousePos = MouseEvent.GetScreenSpacePosition();
-		FVector2D DroppedPosition;
-		DroppedPosition.X = FMath::Clamp((MousePos).X,
+		FVector2D DroppedPosition = MouseEvent.GetScreenSpacePosition();
+		DroppedPosition.X = FMath::Clamp((DroppedPosition + Offset).X,
 		                                 BoundingRect.Left,
 		                                 BoundingRect.Right - SectionRect.GetSize().X);
 
-		double endTime   = TrackModel->Controller->AbsoluteXCoordToTime(DroppedPosition.X);
-		double startTime = TrackModel->Controller->AbsoluteXCoordToTime((StartingScreenPos).X);
-
-		double MoveDelta = endTime - startTime;
+		double MoveDelta = TrackModel->Controller->AbsoluteXCoordToTime(DroppedPosition.X) - TrackModel->Controller->AbsoluteXCoordToTime(StartingScreenPos.X);
 		OwnerTrack.Pin()->DropDraggedSection(SectionIndex, MoveDelta);
 	}
 
@@ -56,12 +53,12 @@ void FDopeSheetSectionDragDropOp::OnDragged(const class FDragDropEvent& DragDrop
 
 
 	FVector2D MousePos = DragDropEvent.GetScreenSpacePosition();
-	FVector2D SectionDerotatowPos;
-	SectionDerotatowPos.X = FMath::Clamp((MousePos + Offset).X,
+	FVector2D DecoratorPos;
+	DecoratorPos.X = FMath::Clamp((MousePos + Offset).X,
 	                                     BoundingRect.Left,
 	                                     BoundingRect.Right - SectionRect.GetSize().X);
-	SectionDerotatowPos.Y = StartingScreenPos.Y;
-	CursorDecoratorWindow->MoveWindowTo(SectionDerotatowPos);
+	DecoratorPos.Y = StartingScreenPos.Y;
+	CursorDecoratorWindow->MoveWindowTo(DecoratorPos);
 }
 
 TSharedRef<FDopeSheetSectionDragDropOp> FDopeSheetSectionDragDropOp::New(
@@ -127,15 +124,19 @@ void SDopeSheetTrackTimeline::RegenerateSections()
 		{
 			const int NumOfSections = Track->Sections.Num();
 			TrackSectionWidgets.Reset(NumOfSections);
+			TrackModel->SectionModels.Reset(NumOfSections);
 
 			for (int i = 0; i < NumOfSections; i++)
 			{
 				if (UDopeSheetTrackSection* Section = Track->Sections[i])
 				{
-					TrackSectionWidgets.Add(SNew(SDopeSheetTrackSection, TrackModel));
+					int SectionIndex = TrackModel->SectionModels.Add(MakeShared<FDopeSheetSectionViewModel>(Section, TrackModel.Get()));
+					TrackSectionWidgets.Add(SNew(SDopeSheetTrackSection, TrackModel, SectionIndex));
 				}
 			}
 		}
+
+		Invalidate(EInvalidateWidgetReason::LayoutAndVolatility);
 	}
 }
 
@@ -154,6 +155,11 @@ void SDopeSheetTrackTimeline::MakeSectionContextMenu(FMenuBuilder& ContextMenuBu
 	ContextMenuBuilder.AddMenuEntry(FText::FromString("Delete Section"), TAttribute<FText>(),
 	                                FSlateIcon(FAppStyle::GetAppStyleSetName(), "ClassIcon.AnimMontage"),
 	                                ItemAction);
+}
+
+void SDopeSheetTrackTimeline::MakeTrackContextMenu(FMenuBuilder& ContextMenuBuilder)
+{
+	
 }
 
 int32 SDopeSheetTrackTimeline::GetSectionIndexUnderCursor(const FPointerEvent& InMouseEvent)
@@ -182,14 +188,6 @@ FReply SDopeSheetTrackTimeline::OnMouseButtonDown(const FGeometry& InGeometry, c
 {
 	FReply Reply = FReply::Unhandled();
 
-	if (SelectedSectionIndex >= 0)
-	{
-		const TSharedRef<SDopeSheetTrackSection> SelectedSectionWidget = StaticCastSharedRef<SDopeSheetTrackSection>(
-			TrackSectionWidgets[SelectedSectionIndex]);
-
-		SelectedSectionWidget->bIsSelected = false;
-		SelectedSectionIndex               = -1;
-	}
 
 	int32 SectionToSelectIndex = GetSectionIndexUnderCursor(InMouseEvent);
 	if (SectionToSelectIndex >= 0)
@@ -198,13 +196,11 @@ FReply SDopeSheetTrackTimeline::OnMouseButtonDown(const FGeometry& InGeometry, c
 			TrackSectionWidgets[SectionToSelectIndex]);
 
 
-		if (UObject* SelectedSection = TrackModel->ObjPtr->Sections[SectionToSelectIndex])
+		if (TSharedPtr<FDopeSheetSectionViewModel>& SelectedSection = TrackModel->SectionModels[SectionToSelectIndex])
 		{
-			TrackModel->Controller->OnSectionSelected.Broadcast(SelectedSection);
+			TrackModel->Controller->SelectSection(SelectedSection, InMouseEvent.IsShiftDown());
 		}
-
-
-		SectionToSelectWidget->bIsSelected = true;
+		
 
 		SelectedSectionIndex = SectionToSelectIndex;
 
@@ -226,26 +222,29 @@ FReply SDopeSheetTrackTimeline::OnMouseButtonUp(const FGeometry& InGeometry, con
 {
 	FReply Reply = FReply::Unhandled().ReleaseMouseCapture();
 
-	int32 SelectedIndex = GetSectionIndexUnderCursor(InMouseEvent);
-	if (SelectedIndex >= 0)
+	if (InMouseEvent.GetEffectingButton() == EKeys::RightMouseButton)
 	{
-		if (InMouseEvent.GetEffectingButton() == EKeys::RightMouseButton)
+		FMenuBuilder ContextMenuBuilder(true, nullptr);
+		int32        SelectedIndex = GetSectionIndexUnderCursor(InMouseEvent);
+		if (SelectedIndex >= 0)
 		{
-			FMenuBuilder ContextMenuBuilder(true, nullptr);
 			MakeSectionContextMenu(ContextMenuBuilder);
-
-
-			// Show the floating menu
-			FSlateApplication::Get().PushMenu(
-				FSlateApplication::Get().GetActiveTopLevelWindow().ToSharedRef(),
-				FWidgetPath(),
-				ContextMenuBuilder.MakeWidget(),
-				InMouseEvent.GetScreenSpacePosition(),
-				FPopupTransitionEffect::ContextMenu
-			);
-			
-			Reply = FReply::Handled().ReleaseMouseCapture();
 		}
+		else
+		{
+			MakeTrackContextMenu(ContextMenuBuilder);
+		}
+		
+		// Show the floating menu
+		FSlateApplication::Get().PushMenu(
+			FSlateApplication::Get().GetActiveTopLevelWindow().ToSharedRef(),
+			FWidgetPath(),
+			ContextMenuBuilder.MakeWidget(),
+			InMouseEvent.GetScreenSpacePosition(),
+			FPopupTransitionEffect::ContextMenu
+			);
+
+		Reply = FReply::Handled().ReleaseMouseCapture();
 	}
 
 	return Reply;
@@ -310,11 +309,10 @@ void SDopeSheetTrackTimeline::OnArrangeChildren(const FGeometry&   AllottedGeome
 
 		auto Section = TrackModel->SectionModels[ChildIndex];
 
-		const float ViewedTimeCoefficient = Section.GetTimeLength() / TrackModel->Controller->TimeDurationInView;
+		const float ViewedTimeCoefficient = Section->GetTimeLength() / TrackModel->Controller->ViewTimeLength;
 		const float SectionWidth          = AllottedWidth * ViewedTimeCoefficient;
 
-		const float SectionOffset = TrackModel->Controller->EditableRect.Left + TrackModel->Controller->EditableRect
-			.GetSize().X * Section.StartTime;
+		const float SectionOffset = TrackModel->Controller->TimeToXOffset(Section->StartTime, AllottedGeometry);
 
 
 		ArrangedChildren.AddWidget(AllottedGeometry.MakeChild(
@@ -345,19 +343,19 @@ int32 SDopeSheetTrackTimeline::OnPaint(const FPaintArgs&   Args, const FGeometry
 		static const FSlateBrush* PreviewBorderBrush = FMontageGraphEditorStyle::Get().GetBrush(
 			"MontageGraph.SequenceTrack.Section.Preview");
 
-		FGeometry DraggedSection = SectionWidget->GetPaintSpaceGeometry();
-		FVector2f LocalPosition = FVector2f(DraggedSection.Position.X,DraggedSection.Position.Y);
-		FSlateDrawElement::MakeBox
-		(
-			OutDrawElements,
-			InLayerId++,
-			AllottedGeometry.ToPaintGeometry(DraggedSection.GetLocalSize(),
-			                                 FSlateLayoutTransform(LocalPosition)),
-			PreviewBorderBrush,
-			ESlateDrawEffect::None,
-			TrackModel->GetTrackColor()
-		);
+		const double TimeOffset = TrackModel->SectionModels[SelectedSectionIndex]->StartTime;
 
+		FGeometry DraggedSection = SectionWidget->GetPaintSpaceGeometry();
+		FSlateDrawElement::MakeBox
+			(
+				OutDrawElements,
+				InLayerId++,
+				AllottedGeometry.ToPaintGeometry(DraggedSection.Size,
+					FSlateLayoutTransform(FVector2f(TrackModel->Controller->TimeToXOffset(TimeOffset, AllottedGeometry), 0.f))),
+				PreviewBorderBrush,
+				ESlateDrawEffect::None,
+				TrackModel->GetTrackColor()
+				);
 
 		return InLayerId;
 	}

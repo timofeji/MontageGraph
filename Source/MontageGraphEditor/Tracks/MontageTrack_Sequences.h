@@ -5,6 +5,8 @@
 #include "DopeSheet/Tracks/SDopeSheetTrackTimeline.h"
 #include "MontageTrack_Sequences.generated.h"
 
+class FDopeSheetController;
+
 #if WITH_EDITOR
 UCLASS()
 class MONTAGEGRAPHEDITOR_API UMontageTrackSection_Sequences : public UDopeSheetTrackSection
@@ -22,11 +24,67 @@ public:
 	
 	UPROPERTY(EditAnywhere, Category = "Settings")
 	FName SectionName = FName("Default");
+
+	UPROPERTY(EditAnywhere, Category = "Blend")
+	FMontageBlendSettings BlendInSettings;
+
+	UPROPERTY(EditAnywhere, Category = "Blend")
+	FMontageBlendSettings BlendOutSettings;
 };
 
 
 class SMGSequenceTrack;
 class SMGSequenceTrackSection;
+
+/** Which edge of a sequence section a blend handle represents. */
+enum class EMGBlendHandleType : uint8
+{
+	BlendIn,
+	BlendOut,
+};
+
+/** Drag-drop operation that modifies blend-in or blend-out time on a sequence section. */
+struct FMGBlendHandleDragDrop : public FDragDropOperation
+{
+	DRAG_DROP_OPERATOR_TYPE(FMGBlendHandleDragDrop, FDragDropOperation);
+
+	virtual void Construct() override;
+	virtual void OnDrop(bool bDropWasHandled, const FPointerEvent& MouseEvent) override;
+	virtual void OnDragged(const FDragDropEvent& DragDropEvent) override;
+	virtual TSharedPtr<SWidget> GetDefaultDecorator() const override;
+
+	static TSharedRef<FMGBlendHandleDragDrop> New(
+		TWeakObjectPtr<UMontageTrackSection_Sequences> InSectionData,
+		TSharedPtr<FDopeSheetController>               InController,
+		EMGBlendHandleType                             InHandleType);
+
+	TWeakObjectPtr<UMontageTrackSection_Sequences> SectionDataPtr;
+	TSharedPtr<FDopeSheetController>               ControllerPtr;
+	EMGBlendHandleType                             HandleType;
+};
+
+/** Small draggable handle widget placed at the left/right edge of a sequence section. */
+class SMGSequenceBlendHandle : public SCompoundWidget
+{
+public:
+	SLATE_BEGIN_ARGS(SMGSequenceBlendHandle) {}
+		SLATE_ARGUMENT(TWeakObjectPtr<UMontageTrackSection_Sequences>, SectionData)
+		SLATE_ARGUMENT(TSharedPtr<FDopeSheetController>, Controller)
+		SLATE_ARGUMENT(EMGBlendHandleType, HandleType)
+	SLATE_END_ARGS()
+
+	void Construct(const FArguments& InArgs);
+
+	virtual void   OnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
+	virtual void   OnMouseLeave(const FPointerEvent& MouseEvent) override;
+	virtual FReply OnDragDetected(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
+
+private:
+	TWeakObjectPtr<UMontageTrackSection_Sequences> SectionDataPtr;
+	TSharedPtr<FDopeSheetController>               ControllerPtr;
+	EMGBlendHandleType                             HandleType;
+	bool                                           bIsHovered = false;
+};
 
 /** Implements drag and drop operation. */
 struct FDopeSheetSequenceSectionDragDrop : public FDragDropOperation
@@ -68,25 +126,30 @@ public:
 		{
 		}
 
-		SLATE_ARGUMENT(UAnimSequence*, Sequence);
+		SLATE_ARGUMENT(UAnimSequence*, Sequence)
+		SLATE_ARGUMENT(UMontageTrackSection_Sequences*, SectionData)
+		SLATE_ARGUMENT(TSharedPtr<FDopeSheetController>, Controller)
 
 	SLATE_END_ARGS()
-	
-	void Construct(const FArguments& InArgs);
-	
-	
 
+	void Construct(const FArguments& InArgs);
+
+	virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
+	                      FSlateWindowElementList& OutDrawElements, int32 InLayerId,
+	                      const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override;
 
 	virtual FReply OnMouseButtonDoubleClick(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 	virtual void   OnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 	virtual void   OnMouseLeave(const FPointerEvent& MouseEvent) override;
 
 	virtual FVector2D ComputeDesiredSize(float LayoutScaleMultiplier) const override;
-	
+
 	void           Select();
-	
+
 protected:
-	UAnimSequence* SequencePtr;
+	UAnimSequence*                                 SequencePtr;
+	TWeakObjectPtr<UMontageTrackSection_Sequences> SectionDataPtr;
+	TSharedPtr<FDopeSheetController>               ControllerPtr;
 };
 
 
@@ -144,8 +207,13 @@ public:
 	UMontageTrack_Sequences(const FObjectInitializer& ObjectInitializer);
 	
 	virtual UObject* GenerateNewDataAsset(UObject* Outer, FName Name) override;
-	
 
+	virtual void BakeToNode(UMGNode_Montage* RuntimeNode, FMGBakedNodeData& BakedData,
+	                        UMontageGraph* OwnerGraph, const FString& DisplayName) override;
+
+	virtual bool CanCreateSubTracks() override;
+	
+	virtual void GetSubTrackClasses(TArray<UClass*>& TrackClasses) override;
 	
 	/*Begin IDopeSheetTrack Interface*/
 	virtual TSharedRef<SWidget> MakeTrackTimelineWidget(TSharedPtr<FDopeSheetTrackViewModel> Shared) const override;

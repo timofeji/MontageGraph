@@ -20,11 +20,15 @@ public:
 	
 	/** Start or parent node for this edge */
 	UPROPERTY(BlueprintReadOnly, Category = "MontageGraph")
-	UMGNode* StartNode;
+	TObjectPtr<UMGNode> StartNode;
 
 	/** End or child node for this edge */
 	UPROPERTY(BlueprintReadOnly, Category = "MontageGraph")
-	UMGNode* EndNode;
+	TObjectPtr<UMGNode> EndNode;
+
+	/* An edge with a higher priority value will be selected over edges with lower that also had their rules evaluated to true*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Transition Rules")
+	uint8 Priority = 0;
 
 	
 #if WITH_EDITORONLY_DATA
@@ -62,16 +66,20 @@ public:
 
 
 UCLASS(Blueprintable)
-class MONTAGEGRAPH_API UMGEdge_StackCount : public UMGEdge
+class MONTAGEGRAPH_API UMGEdge_StackCount : public UMGEdge_GameplayEffectQuery
 {
 	GENERATED_BODY()
 
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Transition Rules")
 	int32 RequiredNumOfStacks;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Transition Rules")
-	FGameplayEffectQuery Query;
-
 	
 };
+
+
+UCLASS(Blueprintable)
+class MONTAGEGRAPH_API UMGEdge_Combo : public UMGEdge
+{
+	GENERATED_BODY()
+};
+

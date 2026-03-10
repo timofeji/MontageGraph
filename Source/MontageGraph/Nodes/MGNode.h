@@ -16,9 +16,6 @@ class MONTAGEGRAPH_API UMGNode : public UObject
 	GENERATED_BODY()
 
 public:
-	/** When not empty, will draw title with specified value instead of using Animation Asset name (Montage or Sequence) */
-	FText NodeTitle;
-	
 	
 	UPROPERTY(BlueprintReadOnly, Category = "Montage Graph")
 	int ID;
@@ -29,22 +26,12 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Montage Graph")
 	TArray<UMGEdge*> Edges;
 
-	// UPROPERTY(BlueprintReadOnly, Category = "Montage Graph")
-	// TMap<UMGNode*, UMontageGraphEdge*> Edges;
-
-	/** Simply returns the value of NodeTitle, and is overridden in child classes to fallback to animation asset name if NodeTitle is empty. */
+	
 	virtual FText GetNodeTitle() const;
-
-	UFUNCTION(BlueprintCallable, Category = "MontageGraph")
-	virtual UMGEdge* GetEdge(UMGNode* ChildNode);
-
-	UFUNCTION(BlueprintCallable, Category = "MontageGraph")
-	virtual bool IsLeafNode() const;
-
-	/** Checks all child nodes and the edge they're connected with and return the */
-	// virtual UMontageGraphEdge* GetEdgeWithInput(UInputAction* InputAction);
+	FText NodeTitle;
 
 #if WITH_EDITORONLY_DATA
+	/** When not empty, will draw title with specified value instead of using Animation Asset name (Montage or Sequence) */
 	/**
 	 * ContextMenuName is used in MontageGraph to generate context menu items (upon right click in the graph to add new nodes)
 	 *
@@ -66,8 +53,10 @@ public:
 #endif
 
 #if WITH_EDITOR
+
 	virtual bool IsNameEditable() const;
 
+	/** Simply returns the value of NodeTitle, and is overridden in child classes to fallback to animation asset name if NodeTitle is empty. */
 	virtual void SetNodeTitle(const FText& NewTitle);
 
 	virtual FLinearColor GetBackgroundColor() const { return FLinearColor::White; };

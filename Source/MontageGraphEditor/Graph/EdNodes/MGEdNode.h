@@ -2,6 +2,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ConnectionDrawingPolicy.h"
 #include "MontageGraph/Nodes/MGEdge.h"
 #include "MGEdNode.generated.h"
 
@@ -18,7 +19,7 @@ public:
 	
 	UMGEdNode();
 
-	UPROPERTY(Instanced)
+	UPROPERTY(VisibleAnywhere, Instanced, BlueprintReadWrite)
 	UMGNode* RuntimeNode;
 
 	virtual UMGNode* GetRuntimeNode() { return RuntimeNode; }
@@ -33,9 +34,9 @@ public:
 	// Nodes are now inheriting from UK2Node to avoid ensure condition on startup with pure check (see #3)
 	virtual void AutowireNewNode(UEdGraphPin* FromPin) override ;
 	virtual void PinConnectionListChanged(UEdGraphPin* Pin) override {}
-	
-	FLinearColor GetWireColor();
 	//~ End UEdGraphNode Interface
+	
+	void UpdateWireConnectionParams(FConnectionParams& Params);
 
 	SMGNode* SlateNode;
 
@@ -55,13 +56,12 @@ public:
 #endif
 	//~ End UEdGraphNode interface
 
-	const UMGNode* GetDebuggedNode() const;
 
 	bool IsDebugActive() const { return bIsDebugActive; }
 	bool WasDebugActive() const { return bWasDebugActive; }
 	float GetDebugTotalTime() const { return DebugTotalTime; }
 	float GetEvaluationTime(){return EvaluatedInTime;}
-	float GetDebugNormalizedTime();
+	float GetDebugNormalizedTime() const;
 
 	/** Called from associated Slate Node widget tick to pass in time ticks and update debug information. */
 	virtual void UpdateTime(float DeltaTime);

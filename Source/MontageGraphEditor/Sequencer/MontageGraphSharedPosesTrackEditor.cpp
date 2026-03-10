@@ -153,30 +153,30 @@ FSharedPosesTrackEditor::FSharedPosesTrackEditor(TSharedRef<ISequencer> InSequen
 
 void FSharedPosesTrackEditor::BuildAddTrackMenu(FMenuBuilder& MenuBuilder)
 {
-	MenuBuilder.AddMenuEntry(
-		LOCTEXT("AddSharedPosesTrack", "Add Shared Poses Track"), //Label
-		LOCTEXT("AddSharedPosesTrack", "Add Shared Poses Track"), //Tooltip
-		FSlateIcon(FMontageGraphEditorStyle::Get().GetStyleSetName(), "MontageGraph.PoseLink"),
-		FUIAction(FExecuteAction::CreateLambda([this]
-		{
-			UMovieScene* FocusedMovieScene = GetFocusedMovieScene();
-			if (IsValid(FocusedMovieScene))
-			{
-				//Create scoped transaction:
-				const FScopedTransaction Transaction(NSLOCTEXT("Sequencer", "AddSharedPoses_Transaction",
-				                                               "Add Shared Poses Track"));
-				FocusedMovieScene->Modify();
-
-				UMontageGraphSharedPosesTrack* NewTrack = FocusedMovieScene->AddTrack<UMontageGraphSharedPosesTrack>();
-				ensure(NewTrack);
-
-				// FSharedPosesTrackEditor::AddNewTrack(NewTrack, FocusedMovieScene);
-
-
-				//Notify SequencerAboutTransactions:
-				GetSequencer()->NotifyMovieSceneDataChanged(EMovieSceneDataChangeType::MovieSceneStructureItemAdded);
-			}
-		})));
+	// MenuBuilder.AddMenuEntry(
+	// 	LOCTEXT("AddSharedPosesTrack", "Add Shared Poses Track"), //Label
+	// 	LOCTEXT("AddSharedPosesTrack", "Add Shared Poses Track"), //Tooltip
+	// 	FSlateIcon(FMontageGraphEditorStyle::Get().GetStyleSetName(), "MontageGraph.PoseLink"),
+	// 	FUIAction(FExecuteAction::CreateLambda([this]
+	// 	{
+	// 		UMovieScene* FocusedMovieScene = GetFocusedMovieScene();
+	// 		if (IsValid(FocusedMovieScene))
+	// 		{
+	// 			//Create scoped transaction:
+	// 			const FScopedTransaction Transaction(NSLOCTEXT("Sequencer", "AddSharedPoses_Transaction",
+	// 			                                               "Add Shared Poses Track"));
+	// 			FocusedMovieScene->Modify();
+	//
+	// 			UMontageGraphSharedPosesTrack* NewTrack = FocusedMovieScene->AddTrack<UMontageGraphSharedPosesTrack>();
+	// 			ensure(NewTrack);
+	//
+	// 			// FSharedPosesTrackEditor::AddNewTrack(NewTrack, FocusedMovieScene);
+	//
+	//
+	// 			//Notify SequencerAboutTransactions:
+	// 			GetSequencer()->NotifyMovieSceneDataChanged(EMovieSceneDataChangeType::MovieSceneStructureItemAdded);
+	// 		}
+	// 	})));
 }
 
 bool FSharedPosesTrackEditor::SupportsType(TSubclassOf<UMovieSceneTrack> Type) const

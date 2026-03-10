@@ -3,8 +3,6 @@
 #include "MontageGraphEditor.h"
 
 #include "AnimationEditorPreviewActor.h"
-#include "AnimPose.h"
-#include "AnimPreviewInstance.h"
 #include "BlueprintEditor.h"
 #include "ContentBrowserDataSource.h"
 #include "ContentBrowserModule.h"
@@ -15,12 +13,10 @@
 #include "IContentBrowserSingleton.h"
 #include "MontageGraphDebugger.h"
 #include "MontageGraphEditorCommands.h"
-#include "MontageGraphEditorStyle.h"
-#include "MontageGraphEditorLog.h"
 #include "PersonaModule.h"
 #include "Framework/Commands/GenericCommands.h"
 #include "GenericPlatform/GenericApplication.h"
-#include "Graph/MontageGraphEdGraph.h"
+#include "Graph/MontageEdGraph.h"
 #include "Graph/MontageGraphSchema.h"
 #include "Graph/EdNodes/MGEdNode.h"
 #include "Graph\EdNodes\MGEdNode_Edge.h"
@@ -37,10 +33,9 @@
 #include "DopeSheet/DopeSheetController.h"
 #include "Editor/Experimental/EditorInteractiveToolsFramework/Public/Behaviors/2DViewportBehaviorTargets.h"
 
-
 #include "Engine/StaticMeshActor.h"
 #include "Graph/EdNodes/MGEdNode_Montage.h"
-
+#include "MontageGraph/Nodes/MGNode.h"
 
 #include "Misc/ScopedSlowTask.h"
 
@@ -50,15 +45,15 @@
 
 #include "MontageGraph/MontageGraph.h"
 #include "MontageGraph/MontageGraphComponent.h"
-#include "MontageGraph/Nodes/MGEdge.h"
+#include "Slate/SMontageBlendMatrix.h"
 #include "Slate/SMontageGraphDopeSheet.h"
 #include "Tracks/MontageTrack_CollisionCache.h"
 #include "UObject/AssetRegistryTagsContext.h"
 
-
 const FName FMontageGraphEditor::DetailsTabID(TEXT("MontageGraph_Details"));
 const FName FMontageGraphEditor::ViewportTabID(TEXT("MontageGraph_Viewport"));
 const FName FMontageGraphEditor::GraphViewportTabID(TEXT("MontageGraph_GraphViewport"));
+const FName FMontageGraphEditor::BlendMatrixTabID(TEXT("MontageGraph_BlendMatrix"));
 const FName FMontageGraphEditor::AnimTimelineTabID(TEXT("MontageGraph_AnimTimeline"));
 
 const FName FMontageGraphEditorModes::Rules("Selection");
@@ -76,15 +71,13 @@ FMontageGraphEditor::~FMontageGraphEditor()
 	}
 }
 
-
 void FMontageGraphEditor::InitMontageGraphEditor(EToolkitMode::Type Mode,
-                                                 const TSharedPtr<IToolkitHost>&
-                                                 InitToolkitHost,
-                                                 UMontageGraph* GraphToEdit)
+	const TSharedPtr<IToolkitHost>&
+	InitToolkitHost,
+	UMontageGraph* GraphToEdit)
 {
 	check(GraphToEdit);
 	GraphBeingEdited = GraphToEdit;
-
 
 	CreateDefaultCommands();
 	BindToolkitCommands();
@@ -99,7 +92,6 @@ void FMontageGraphEditor::InitMontageGraphEditor(EToolkitMode::Type Mode,
 	FPersonaModule& PersonaModule = FModuleManager::LoadModuleChecked<FPersonaModule>("Persona");
 	PersonaToolkit                = PersonaModule.CreatePersonaToolkit(GraphToEdit, PersonaToolkitArgs);
 
-
 	// Set a default preview mesh, if any
 	PersonaToolkit->SetPreviewMesh(GraphToEdit->GetPreviewMesh(), false);
 	PersonaToolkit->GetPreviewScene()->SetDefaultAnimationMode(EPreviewSceneDefaultAnimationMode::Animation);
@@ -110,7 +102,6 @@ void FMontageGraphEditor::InitMontageGraphEditor(EToolkitMode::Type Mode,
 	FGenericCommands::Register();
 	FGraphEditorCommands::Register();
 
-
 	CreateEditorGraph();
 	CreateInternalWidgets();
 	CreatePropertyWidget();
@@ -120,21 +111,19 @@ void FMontageGraphEditor::InitMontageGraphEditor(EToolkitMode::Type Mode,
 	constexpr bool bCreateDefaultToolbar        = true;
 
 	FAssetEditorToolkit::InitAssetEditor(Mode,
-	                                     InitToolkitHost,
-	                                     FName(TEXT("MontageGraphEditor")),
-	                                     FTabManager::FLayout::NullLayout,
-	                                     // StandaloneDefaultLayout,
-	                                     bCreateDefaultStandaloneMenu,
-	                                     bCreateDefaultToolbar,
-	                                     GraphBeingEdited);
+		InitToolkitHost,
+		FName(TEXT("MontageGraphEditor")),
+		FTabManager::FLayout::NullLayout,
+		// StandaloneDefaultLayout,
+		bCreateDefaultStandaloneMenu,
+		bCreateDefaultToolbar,
+		GraphBeingEdited);
 
+	UMontageEdGraph* MontageEdGraph = Cast<UMontageEdGraph>(GraphBeingEdited->EditorGraph);
+	check(MontageEdGraph);
 
-	UMontageGraphEdGraph* HBActioGraphEd = Cast<UMontageGraphEdGraph>(GraphBeingEdited->EditorGraph);
-	check(HBActioGraphEd);
-
-	HBActioGraphEd->Debugger = MakeShareable(new FMontageGraphDebugger);
-	HBActioGraphEd->Debugger->Setup(GraphBeingEdited, SharedThis(this));
-
+	MontageEdGraph->Debugger = MakeShareable(new FMontageGraphDebugger);
+	MontageEdGraph->Debugger->Setup(GraphBeingEdited, SharedThis(this));
 
 	if (!ToolbarBuilder.IsValid())
 	{
@@ -171,7 +160,6 @@ void FMontageGraphEditor::CreateInternalWidgets()
 	UEdGraph* EditorGraph = GraphBeingEdited->EditorGraph;
 	check(EditorGraph);
 
-
 	FGraphAppearanceInfo AppearanceInfo;
 	AppearanceInfo.CornerText = FText::FromString(GraphBeingEdited->GetName());
 
@@ -187,10 +175,9 @@ void FMontageGraphEditor::CreateInternalWidgets()
 		.ShowGraphStateOverlay(true);
 
 	TimelineController = MakeShareable(new FDopeSheetController);
-	TimelineController->OnSectionSelected.AddRaw(this,  &FMontageGraphEditor::OnSectionSelected);
+	TimelineController->OnSectionSelected.AddRaw(this, &FMontageGraphEditor::OnSectionSelected);
 	TimelineController->OnTogglePlayback.AddRaw(this, &FMontageGraphEditor::TogglePlayback);
-	TimelineController->OnTimeChanged.AddLambda([this](float NewTime)
-	{
+	TimelineController->OnTimeChanged.AddLambda([this](float NewTime) {
 		if (UAnimInstance* AnimInstance = GetPersonaToolkit()->GetPreviewMeshComponent()->GetAnimInstance())
 		{
 			if (SelectedMontage)
@@ -200,24 +187,21 @@ void FMontageGraphEditor::CreateInternalWidgets()
 		}
 	});
 
-
 	AnimDopeSheet = SNew(SMontageGraphDopeSheet, TimelineController)
 		.OnUpdateNodes(this, &FMontageGraphEditor::RebuildStaleMontages);
-	
-
 
 	// setup filtering
 	FAssetPickerConfig AssetPickerConfig;
 	AssetPickerConfig.Filter.ClassPaths.Add(UAnimMontage::StaticClass()->GetClassPathName());
 	AssetPickerConfig.Filter.ClassPaths.Add(UAnimSequence::StaticClass()->GetClassPathName());
 	AssetPickerConfig.InitialAssetViewType = EAssetViewType::List;
-	
-	AssetPickerConfig.bCanShowClasses = true;
-	AssetPickerConfig.bShowBottomToolbar = true;
-	AssetPickerConfig.bAddFilterUI = true;
-	AssetPickerConfig.SelectionMode = ESelectionMode::Single;
+
+	AssetPickerConfig.bCanShowClasses            = true;
+	AssetPickerConfig.bShowBottomToolbar         = true;
+	AssetPickerConfig.bAddFilterUI               = true;
+	AssetPickerConfig.SelectionMode              = ESelectionMode::Single;
 	AssetPickerConfig.DefaultFilterMenuExpansion = EAssetTypeCategories::Animation;
-	AssetPickerConfig.OnShouldFilterAsset = FOnShouldFilterAsset::CreateSP(this, &FMontageGraphEditor::OnShouldFilterAsset);
+	AssetPickerConfig.OnShouldFilterAsset        = FOnShouldFilterAsset::CreateSP(this, &FMontageGraphEditor::OnShouldFilterAsset);
 	// AssetPickerConfig.OnAssetDoubleClicked = FOnAssetSelected::CreateSP(this, &SRetargetExporterAssetBrowser::OnAssetDoubleClicked);
 	// AssetPickerConfig.GetCurrentSelectionDelegates.Add(&GetCurrentSelectionDelegate);
 	// AssetPickerConfig.bAllowNullSelection = false;
@@ -231,7 +215,7 @@ void FMontageGraphEditor::CreateInternalWidgets()
 	AssetPickerConfig.HiddenColumnNames.Add(TEXT("RevisionControl"));
 
 	// hide all asset registry columns by default (we only really want the name and path)
-	UObject* AnimSequenceDefaultObject = UAnimSequence::StaticClass()->GetDefaultObject();
+	UObject*                      AnimSequenceDefaultObject = UAnimSequence::StaticClass()->GetDefaultObject();
 	FAssetRegistryTagsContextData TagsContext(AnimSequenceDefaultObject, EAssetRegistryTagsCaller::Uncategorized);
 	AnimSequenceDefaultObject->GetAssetRegistryTags(TagsContext);
 	for (const TPair<FName, UObject::FAssetRegistryTag>& TagPair : TagsContext.Tags)
@@ -241,18 +225,24 @@ void FMontageGraphEditor::CreateInternalWidgets()
 
 	// Also hide the type column by default (but allow users to enable it, so don't use bShowTypeInColumnView)
 	AssetPickerConfig.HiddenColumnNames.Add(TEXT("Class"));
-	
-	const FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
 
+	const FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
 
 	AssetBrowserBox = SNew(SBox)
 	[
 		ContentBrowserModule.Get().CreateAssetPicker(AssetPickerConfig)
 	];
+
+	BlendMatrix = SNew(SMontageBlendMatrix).Graph(GraphBeingEdited);
 }
 
 void FMontageGraphEditor::OnSectionSelected(UObject* Object)
 {
+	if (!Object)
+	{
+		return;
+	}
+
 	DetailsView->SetObject(Object);
 
 	if (auto CollisionSection = Cast<UMontageTrackSection_CollisionCache>(Object))
@@ -267,7 +257,6 @@ void FMontageGraphEditor::OnDopeSheetUpdated()
 {
 }
 
-
 TStatId FMontageGraphEditor::GetStatId() const
 {
 	RETURN_QUICK_DECLARE_CYCLE_STAT(FPhysicsAssetEditor, STATGROUP_Tickables);
@@ -277,20 +266,76 @@ void FMontageGraphEditor::Tick(float DeltaTime)
 {
 	GetPersonaToolkit()->GetPreviewScene()->InvalidateViews();
 
-	if (SelectedMontage)
+	const auto* EditorEdGraph = Cast<UMontageEdGraph>(GraphBeingEdited->EditorGraph);
+
+	// During PIE, mirror the debugged actor's animation on the preview mesh
+	if (EditorEdGraph && EditorEdGraph->Debugger.IsValid() && EditorEdGraph->Debugger->IsDebuggerReady())
 	{
+		EditorEdGraph->Debugger->Tick(DeltaTime);
+
+		if (UMontageGraphComponent* DebuggedComponent = EditorEdGraph->Debugger->GetDebuggedTargetActor())
+		{
+			UAnimMontage* DebugMontage = DebuggedComponent->GetActiveLinkMontage();
+
+			// When the tracked montage changes, prime the preview mesh exactly once.
+			// Play at rate 0 so it is initialized to the correct pose but will NOT
+			// auto-advance — position is driven entirely by the in-game pawn each tick.
+			if (DebugMontage != SelectedMontage)
+			{
+				SelectedMontage = DebugMontage;
+
+				UAnimInstance* PreviewAnimInstance = GetPersonaToolkit()->GetPreviewMeshComponent()->GetAnimInstance();
+				if (SelectedMontage)
+				{
+					// Tell Persona which asset is active (updates asset browser / header).
+					GetPersonaToolkit()->GetPreviewScene()->SetPreviewAnimationAsset(SelectedMontage);
+
+					// Start the montage frozen at position 0; Montage_SetPosition below will
+					// drive it to the correct frame every tick without fighting auto-playback.
+					if (PreviewAnimInstance)
+					{
+						PreviewAnimInstance->Montage_Play(SelectedMontage, 0.f);
+					}
+				}
+				else
+				{
+					// Montage finished — stop preview cleanly.
+					if (PreviewAnimInstance)
+					{
+						PreviewAnimInstance->StopAllMontages(0.f);
+					}
+				}
+			}
+
+			// Every tick: mirror the game actor's montage position onto the frozen preview.
+			if (SelectedMontage)
+			{
+				if (AActor* DebugActor = DebuggedComponent->GetOwner())
+				{
+					if (USkeletalMeshComponent* SkelMesh = DebugActor->FindComponentByClass<USkeletalMeshComponent>())
+					{
+						if (UAnimInstance* GameAnimInstance = SkelMesh->GetAnimInstance())
+						{
+							const float GamePosition = GameAnimInstance->Montage_GetPosition(SelectedMontage);
+							if (UAnimInstance* PreviewAnimInstance = GetPersonaToolkit()->GetPreviewMeshComponent()->GetAnimInstance())
+							{
+								PreviewAnimInstance->Montage_SetPosition(SelectedMontage, GamePosition);
+							}
+							TimelineController->SetPlayHeadTime(GamePosition, false);
+						}
+					}
+				}
+			}
+		}
+	}
+	else if (SelectedMontage)
+	{
+		// Normal editor preview: sync timeline with preview animation
 		if (UAnimInstance* AnimInstance = GetPersonaToolkit()->GetPreviewMeshComponent()->GetAnimInstance())
 		{
 			const float CurrentTime = AnimInstance->Montage_GetPosition(SelectedMontage);
 			TimelineController->SetPlayHeadTime(CurrentTime, false);
 		}
-	}
-
-
-	const auto*  EditorEdGraph = Cast<UMontageGraphEdGraph>(GraphBeingEdited->EditorGraph);
-	if (EditorEdGraph && EditorEdGraph->Debugger.IsValid())
-	{
-		EditorEdGraph->Debugger->Tick(DeltaTime);
 	}
 }
 
@@ -313,42 +358,38 @@ void FMontageGraphEditor::AddPersonaToolbar()
 		ToolbarExtender.Reset();
 	}
 
-
 	FName              ParentName;
 	static const FName MenuName = GetToolMenuToolbarName(ParentName);
 
 	UToolMenu*            ToolMenu = UToolMenus::Get()->ExtendMenu(MenuName);
 	const FToolMenuInsert SectionInsertLocation("Asset", EToolMenuInsertType::After);
 
-	ToolMenu->AddDynamicSection("Persona", FNewToolMenuDelegate::CreateLambda([](UToolMenu* InToolMenu)
-	{
-		FPersonaModule& PersonaModule = FModuleManager::LoadModuleChecked<FPersonaModule>("Persona");
+	ToolMenu->AddDynamicSection("Persona", FNewToolMenuDelegate::CreateLambda([](UToolMenu* InToolMenu) {
+		FPersonaModule&                             PersonaModule = FModuleManager::LoadModuleChecked<FPersonaModule>("Persona");
 		FPersonaModule::FCommonToolbarExtensionArgs Args;
 		Args.bReferencePose = true;
 		PersonaModule.AddCommonToolbarExtensions(InToolMenu, Args);
 	}), SectionInsertLocation);
-
 
 	ToolbarExtender = MakeShareable(new FExtender);
 	ToolbarExtender->AddToolBarExtension(
 		"Asset",
 		EExtensionHook::After,
 		GetToolkitCommands(),
-		FToolBarExtensionDelegate::CreateLambda([this](FToolBarBuilder& ParentToolbarBuilder)
-			{
+		FToolBarExtensionDelegate::CreateLambda([this](FToolBarBuilder& ParentToolbarBuilder) {
 				// Second toolbar on right side
-				FPersonaModule& PersonaModule = FModuleManager::LoadModuleChecked<FPersonaModule>("Persona");
-				TSharedRef<class IAssetFamily> AssetFamily = PersonaModule.CreatePersonaAssetFamily(GraphBeingEdited);
+				FPersonaModule&                PersonaModule = FModuleManager::LoadModuleChecked<FPersonaModule>("Persona");
+				TSharedRef<class IAssetFamily> AssetFamily   = PersonaModule.CreatePersonaAssetFamily(GraphBeingEdited);
 				AddToolbarWidget(PersonaModule.CreateAssetFamilyShortcutWidget(SharedThis(this), AssetFamily));
 			}
-		));
+			));
 	AddToolbarExtender(ToolbarExtender);
 }
 
 TSharedRef<SWidget> FMontageGraphEditor::OnGetDebuggerActorsMenu()
 {
 	FMenuBuilder MenuBuilder(true, nullptr);
-	const auto*  EditorEdGraph = Cast<UMontageGraphEdGraph>(GraphBeingEdited->EditorGraph);
+	const auto*  EditorEdGraph = Cast<UMontageEdGraph>(GraphBeingEdited->EditorGraph);
 	if (!EditorEdGraph)
 	{
 		return MenuBuilder.MakeWidget();
@@ -361,24 +402,20 @@ TSharedRef<SWidget> FMontageGraphEditor::OnGetDebuggerActorsMenu()
 		TArray<UMontageGraphComponent*> MatchingInstances;
 		Debugger->GetMatchingInstances(MatchingInstances);
 
-
 		for (auto MatchingInstance : MatchingInstances)
 		{
 			AActor*                MatchingActor = MatchingInstance->GetOwner();
 			TWeakObjectPtr<AActor> InstancePtr   = MatchingActor;
 
-			FUIAction ItemAction(FExecuteAction::CreateLambda([InstancePtr, EditorEdGraph]()
-			{
+			FUIAction ItemAction(FExecuteAction::CreateLambda([InstancePtr, EditorEdGraph]() {
 				EditorEdGraph->Debugger->OnInstanceSelectedInDropdown(InstancePtr.Get());
 			}));
 
-
 			const FText InstanceName = FText::FromString(Debugger->GetActorLabel(MatchingActor));
 			MenuBuilder.AddMenuEntry(InstanceName, TAttribute<FText>(),
-			                         FSlateIcon(FAppStyle::GetAppStyleSetName(), "ClassIcon.AnimMontage"),
-			                         ItemAction);
+				FSlateIcon(FAppStyle::GetAppStyleSetName(), "ClassIcon.AnimMontage"),
+				ItemAction);
 		}
-
 
 		// Failsafe when no components match
 		if (MatchingInstances.Num() == 0)
@@ -386,8 +423,7 @@ TSharedRef<SWidget> FMontageGraphEditor::OnGetDebuggerActorsMenu()
 			const FText            ActorDesc = LOCTEXT("NoMatchForDebug", "Can't find matching actors");
 			TWeakObjectPtr<AActor> InstancePtr;
 
-			FUIAction ItemAction(FExecuteAction::CreateLambda([InstancePtr, EditorEdGraph]()
-			{
+			FUIAction ItemAction(FExecuteAction::CreateLambda([InstancePtr, EditorEdGraph]() {
 				EditorEdGraph->Debugger->OnInstanceSelectedInDropdown(InstancePtr.Get());
 			}));
 			MenuBuilder.AddMenuEntry(ActorDesc, TAttribute<FText>(), FSlateIcon(), ItemAction);
@@ -395,6 +431,22 @@ TSharedRef<SWidget> FMontageGraphEditor::OnGetDebuggerActorsMenu()
 	}
 
 	return MenuBuilder.MakeWidget();
+}
+
+FText FMontageGraphEditor::GetDebuggerActorDesc() const
+{
+	const auto* EditorEdGraph = Cast<UMontageEdGraph>(GraphBeingEdited->EditorGraph);
+	if (EditorEdGraph && EditorEdGraph->Debugger.IsValid())
+	{
+		return FText::FromString(EditorEdGraph->Debugger->GetDebuggedInstanceDesc());
+	}
+	return LOCTEXT("NoDebugObject", "No debug object");
+}
+
+bool FMontageGraphEditor::IsDebuggerReady() const
+{
+	const auto* EditorEdGraph = Cast<UMontageEdGraph>(GraphBeingEdited->EditorGraph);
+	return EditorEdGraph && EditorEdGraph->Debugger.IsValid() && EditorEdGraph->Debugger->IsDebuggerReady();
 }
 
 bool FMontageGraphEditor::IsPIESimulating() const
@@ -416,49 +468,49 @@ void FMontageGraphEditor::CreateDefaultCommands()
 		FGenericCommands::Get().SelectAll,
 		FExecuteAction::CreateRaw(this, &FMontageGraphEditor::SelectAllNodes),
 		FCanExecuteAction::CreateRaw(this, &FMontageGraphEditor::CanSelectAllNodes)
-	);
+		);
 
 	DefaultCommands->MapAction(
 		FGenericCommands::Get().Delete,
 		FExecuteAction::CreateRaw(this, &FMontageGraphEditor::DeleteSelectedNodes),
 		FCanExecuteAction::CreateRaw(this, &FMontageGraphEditor::CanDeleteNodes)
-	);
+		);
 
 	DefaultCommands->MapAction(
 		FGenericCommands::Get().Copy,
 		FExecuteAction::CreateRaw(this, &FMontageGraphEditor::CopySelectedNodes),
 		FCanExecuteAction::CreateRaw(this, &FMontageGraphEditor::CanCopyNodes)
-	);
+		);
 
 	DefaultCommands->MapAction(
 		FGenericCommands::Get().Cut,
 		FExecuteAction::CreateRaw(this, &FMontageGraphEditor::CutSelectedNodes),
 		FCanExecuteAction::CreateRaw(this, &FMontageGraphEditor::CanCutNodes)
-	);
+		);
 
 	DefaultCommands->MapAction(
 		FGenericCommands::Get().Paste,
 		FExecuteAction::CreateRaw(this, &FMontageGraphEditor::PasteNodes),
 		FCanExecuteAction::CreateRaw(this, &FMontageGraphEditor::CanPasteNodes)
-	);
+		);
 
 	DefaultCommands->MapAction(
 		FGenericCommands::Get().Duplicate,
 		FExecuteAction::CreateRaw(this, &FMontageGraphEditor::DuplicateNodes),
 		FCanExecuteAction::CreateRaw(this, &FMontageGraphEditor::CanDuplicateNodes)
-	);
+		);
 
 	DefaultCommands->MapAction(
 		FGenericCommands::Get().Rename,
 		FExecuteAction::CreateSP(this, &FMontageGraphEditor::OnRenameNode),
 		FCanExecuteAction::CreateSP(this, &FMontageGraphEditor::CanRenameNodes)
-	);
+		);
 
 	DefaultCommands->MapAction(
 		FGraphEditorCommands::Get().CreateComment,
 		FExecuteAction::CreateRaw(this, &FMontageGraphEditor::OnCreateComment),
 		FCanExecuteAction::CreateRaw(this, &FMontageGraphEditor::CanCreateComment)
-	);
+		);
 }
 
 void FMontageGraphEditor::BindToolkitCommands()
@@ -487,7 +539,6 @@ void FMontageGraphEditor::BindToolkitCommands()
 	// );
 }
 
-
 void FMontageGraphEditor::HandlePreviewSceneCreated(
 	const TSharedRef<IPersonaPreviewScene>& InPersonaPreviewScene)
 {
@@ -499,14 +550,12 @@ void FMontageGraphEditor::HandlePreviewSceneCreated(
 	UStaticMesh*        FloorMesh       = Cast<UStaticMesh>(
 		StaticLoadObject(UStaticMesh::StaticClass(), NULL, GroundAssetPath, NULL, LOAD_None, NULL));
 
-
 	static const TCHAR* GroundMatAssetPath = TEXT(
 		"/MontageGraph/M_MontageGraph_GroundPreview.M_MontageGraph_GroundPreview");
 	UMaterial* GroundMaterial = Cast<UMaterial>(
 		StaticLoadObject(UMaterial::StaticClass(), NULL, GroundMatAssetPath, NULL, LOAD_None, NULL));
 	check(FloorMesh);
 	check(GroundMaterial);
-
 
 	UWorld* World = InPersonaPreviewScene->GetWorld();
 	if (World)
@@ -533,7 +582,6 @@ void FMontageGraphEditor::HandlePreviewSceneCreated(
 		WeakGroundActorPtr = GroundActor;
 	}
 
-
 	AAnimationEditorPreviewActor* Actor = InPersonaPreviewScene->GetWorld()->SpawnActor<AAnimationEditorPreviewActor>(
 		AAnimationEditorPreviewActor::StaticClass(), FTransform::Identity);
 	Actor->SetFlags(RF_Transient);
@@ -556,6 +604,7 @@ void FMontageGraphEditor::HandlePreviewSceneCreated(
 	InPersonaPreviewScene->AddComponent(MontageGraphComponent, FTransform::Identity, true);
 	InPersonaPreviewScene->SetAllowMeshHitProxies(false);
 	InPersonaPreviewScene->SetAdditionalMeshesSelectable(false);
+
 }
 
 void FMontageGraphEditor::HandleOnPreviewSceneSettingsCustomized(IDetailLayoutBuilder& DetailLayoutBuilder)
@@ -576,7 +625,7 @@ TSharedRef<SDockTab> FMontageGraphEditor::SpawnTab_Details(const FSpawnTabArgs& 
 
 	TSharedRef<SDockTab> NewTab = SNew(SDockTab)
 		.Label(LOCTEXT("MontageGraphDetailsTitle",
-		               "Details"))
+			"Details"))
 		.TabColorScale(GetTabColorScale())
 		[
 
@@ -627,6 +676,20 @@ void FMontageGraphEditor::DebuggerUpdateGraph(bool bIsPIEActive)
 	// }
 }
 
+TSharedRef<SDockTab> FMontageGraphEditor::SpawnTab_BlendMatrix(const FSpawnTabArgs& SpawnTabArgs)
+{
+	check(SpawnTabArgs.GetTabId() == FMontageGraphEditor::BlendMatrixTabID);
+
+	TSharedRef<SDockTab> SpawnedTab = SNew(SDockTab)
+		.Label(LOCTEXT("MontageGraphBlendMatrixTab_Title", "Montage BlendMatrix"));
+
+	if (BlendMatrix.IsValid())
+	{
+		SpawnedTab->SetContent(BlendMatrix.ToSharedRef());
+	}
+
+	return SpawnedTab;
+}
 
 TSharedRef<SDockTab> FMontageGraphEditor::SpawnTab_AnimTimeline(const FSpawnTabArgs& SpawnTabArgs)
 {
@@ -642,7 +705,6 @@ TSharedRef<SDockTab> FMontageGraphEditor::SpawnTab_AnimTimeline(const FSpawnTabA
 
 	return SpawnedTab;
 }
-
 
 TSharedRef<SDockTab> FMontageGraphEditor::SpawnTab_AssetBrowser(const FSpawnTabArgs& SpawnTabArgs)
 {
@@ -674,7 +736,6 @@ TSharedRef<SDockTab> FMontageGraphEditor::SpawnTab_GraphViewport(const FSpawnTab
 	return SpawnedTab;
 }
 
-
 void FMontageGraphEditor::RegisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
 {
 	WorkspaceMenuCategory = TabManager->AddLocalWorkspaceMenuCategory(LOCTEXT(
@@ -685,30 +746,34 @@ void FMontageGraphEditor::RegisterTabSpawners(const TSharedRef<FTabManager>& InT
 	FAssetEditorToolkit::RegisterTabSpawners(InTabManager);
 
 	InTabManager->RegisterTabSpawner(FMontageGraphEditor::GraphViewportTabID,
-	                                 FOnSpawnTab::CreateSP(this, &FMontageGraphEditor::SpawnTab_GraphViewport))
-	            .SetDisplayName(LOCTEXT("MontageGraphViewportTab", "GraphViewport"))
-	            .SetGroup(WorkspaceMenuCategoryRef)
-	            .SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "GraphEditor.EventGraph_16x"));
-	
-	
+					FOnSpawnTab::CreateSP(this, &FMontageGraphEditor::SpawnTab_GraphViewport))
+				.SetDisplayName(LOCTEXT("MontageGraphViewportTab", "GraphViewport"))
+				.SetGroup(WorkspaceMenuCategoryRef)
+				.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "GraphEditor.EventGraph_16x"));
+
 	InTabManager->RegisterTabSpawner(FPersonaTabs::AssetBrowserID,
-	                                 FOnSpawnTab::CreateSP(this, &FMontageGraphEditor::SpawnTab_AssetBrowser))
-	            .SetDisplayName(LOCTEXT("MontageGraphAssetBrowserTab", "AssetBrowser"))
-	            .SetGroup(WorkspaceMenuCategoryRef)
-	            .SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "ClassIcon.AnimSequence"));
+					FOnSpawnTab::CreateSP(this, &FMontageGraphEditor::SpawnTab_AssetBrowser))
+				.SetDisplayName(LOCTEXT("MontageGraphAssetBrowserTab", "AssetBrowser"))
+				.SetGroup(WorkspaceMenuCategoryRef)
+				.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "ClassIcon.AnimSequence"));
 
 	InTabManager->RegisterTabSpawner(FMontageGraphEditor::AnimTimelineTabID,
-	                                 FOnSpawnTab::CreateSP(this, &FMontageGraphEditor::SpawnTab_AnimTimeline))
-	            .SetDisplayName(LOCTEXT("MontageGraphAnimTimelineTab", "AnimTimeline"))
-	            .SetGroup(WorkspaceMenuCategoryRef)
-	            .SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "GraphEditor.EventGraph_16x"));
+					FOnSpawnTab::CreateSP(this, &FMontageGraphEditor::SpawnTab_AnimTimeline))
+				.SetDisplayName(LOCTEXT("MontageGraphAnimTimelineTab", "AnimTimeline"))
+				.SetGroup(WorkspaceMenuCategoryRef)
+				.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "GraphEditor.EventGraph_16x"));
 
+	InTabManager->RegisterTabSpawner(FMontageGraphEditor::BlendMatrixTabID,
+					FOnSpawnTab::CreateSP(this, &FMontageGraphEditor::SpawnTab_BlendMatrix))
+				.SetDisplayName(LOCTEXT("MontageGraphBlendMatrixTab", "BlendMatrix"))
+				.SetGroup(WorkspaceMenuCategoryRef)
+				.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "GraphEditor.EventGraph_16x"));
 
 	InTabManager->RegisterTabSpawner(FMontageGraphEditor::DetailsTabID,
-	                                 FOnSpawnTab::CreateSP(this, &FMontageGraphEditor::SpawnTab_Details))
-	            .SetDisplayName(LOCTEXT("MontageGraphDetailsTab", "PropertyDetails"))
-	            .SetGroup(WorkspaceMenuCategoryRef)
-	            .SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "LevelEditor.Tabs.Details"));
+					FOnSpawnTab::CreateSP(this, &FMontageGraphEditor::SpawnTab_Details))
+				.SetDisplayName(LOCTEXT("MontageGraphDetailsTab", "PropertyDetails"))
+				.SetGroup(WorkspaceMenuCategoryRef)
+				.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "LevelEditor.Tabs.Details"));
 }
 
 void FMontageGraphEditor::UnregisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
@@ -732,8 +797,8 @@ FText FMontageGraphEditor::GetToolkitName() const
 	FFormatNamedArguments Args;
 	Args.Add(TEXT("MontageGraphName"), FText::FromString(EditingObject->GetName()));
 	Args.Add(TEXT("DirtyState"), EditingObject->GetOutermost()->IsDirty()
-		                             ? FText::FromString(TEXT("*"))
-		                             : FText::GetEmpty());
+									 ? FText::FromString(TEXT("*"))
+									 : FText::GetEmpty());
 	return FText::Format(LOCTEXT("MontageGraphAssetEditorToolkitName", "{MontageGraphName}{DirtyState}"), Args);
 }
 
@@ -743,11 +808,15 @@ bool FMontageGraphEditor::OnShouldFilterAsset(const FAssetData& InAssetData)
 	{
 		if (InAssetData.IsInstanceOf(UAnimationAsset::StaticClass()))
 		{
-			const USkeleton* DesiredSkeleton = GetPersonaToolkit()->GetPreviewMesh()->GetSkeleton();
-			if (DesiredSkeleton)
+			if (auto Mesh = GetPersonaToolkit()->GetPreviewMesh())
 			{
-				return !DesiredSkeleton->IsCompatibleForEditor(InAssetData);
+				const USkeleton* DesiredSkeleton = Mesh->GetSkeleton();
+				if (DesiredSkeleton)
+				{
+					return !DesiredSkeleton->IsCompatibleForEditor(InAssetData);
+				}
 			}
+
 		}
 	}
 
@@ -761,11 +830,9 @@ void FMontageGraphEditor::RebuildStaleMontages()
 		return;
 	}
 
-	if (auto Graph{CastChecked<UMontageGraphEdGraph>(GraphBeingEdited->EditorGraph)})
+	if (auto Graph{CastChecked<UMontageEdGraph>(GraphBeingEdited->EditorGraph)})
 	{
 		Graph->RebuildRuntimeGraph();
-
-		// RegenerateActionTracers();
 	}
 }
 
@@ -776,7 +843,7 @@ void FMontageGraphEditor::LoadMontageGraph()
 		return;
 	}
 
-	if (auto Graph{CastChecked<UMontageGraphEdGraph>(GraphBeingEdited->EditorGraph)})
+	if (auto Graph{CastChecked<UMontageEdGraph>(GraphBeingEdited->EditorGraph)})
 	{
 		Graph->RebuildRuntimeGraph();
 
@@ -860,8 +927,8 @@ void FMontageGraphEditor::CreateEditorGraph()
 	if (!GraphBeingEdited)
 	{
 		GraphBeingEdited = NewObject<UMontageGraph>(GraphBeingEdited,
-		                                            UMontageGraph::StaticClass(),
-		                                            FName("MontageGraph"));
+			UMontageGraph::StaticClass(),
+			FName("MontageGraph"));
 	}
 
 	if (!GraphBeingEdited->EditorGraph)
@@ -870,9 +937,9 @@ void FMontageGraphEditor::CreateEditorGraph()
 		GraphBeingEdited->EditorGraph = FBlueprintEditorUtils::CreateNewGraph(
 			GraphBeingEdited,
 			FName("MontageEdGraph"),
-			UMontageGraphEdGraph::StaticClass(),
+			UMontageEdGraph::StaticClass(),
 			UMontageGraphSchema::StaticClass()
-		);
+			);
 		GraphBeingEdited->EditorGraph->bAllowRenaming = false;
 		GraphBeingEdited->EditorGraph->bAllowDeletion = false;
 
@@ -881,7 +948,6 @@ void FMontageGraphEditor::CreateEditorGraph()
 		GraphSchema->CreateDefaultNodesForGraph(*GraphBeingEdited->EditorGraph);
 	}
 }
-
 
 FGraphPanelSelectionSet FMontageGraphEditor::GetSelectedNodes() const
 {
@@ -1224,51 +1290,124 @@ void FMontageGraphEditor::OnCreateComment() const
 // ReSharper disable once CppMemberFunctionMayBeConst
 void FMontageGraphEditor::OnGraphSelectionChanged(const TSet<UObject*>& NewSelection)
 {
-	TArray<UObject*>   SelectedNodes;
-	TArray<UMGEdNode*> GraphNodes;
+	TArray<UObject*>          SelectedObjects;
+	TArray<UMGEdNode_Montage*> SelectedMontageNodes;
+
 	for (UObject* Selection : NewSelection)
 	{
-		SelectedNodes.Add(Selection);
+		SelectedObjects.Add(Selection);
 
 		if (UMGEdNode* Node = Cast<UMGEdNode>(Selection))
 		{
-			GraphNodes.Add(Node);
+			SelectedObjects.Add(Node);
 		}
 
 		if (UMGEdNode_Montage* MontageNode = Cast<UMGEdNode_Montage>(Selection))
 		{
-			if (GraphBeingEdited->Montages.IsValidIndex(MontageNode->RuntimeNode->ID))
-			{
-				SelectedMontage = GraphBeingEdited->Montages[MontageNode->RuntimeNode->ID];
-				GetPersonaToolkit()->GetPreviewScene()->SetPreviewAnimationAsset(SelectedMontage);
-				if (auto World = GetPersonaToolkit()->GetPreviewScene()->GetWorld())
-				{
-					World->bAllowAudioPlayback = false;
-				}
-			}
-			break;
+			SelectedMontageNodes.Add(MontageNode);
 		}
 	}
 
-
-	if (SelectedNodes.Num() > 0)
+	// Set preview montage from first selected montage node
+	if (SelectedMontageNodes.Num() > 0)
 	{
-		DetailsView->SetObjects(SelectedNodes);
-
-		if (auto MontageEdNode = Cast<UMGEdNode_Montage>(SelectedNodes[0]))
+		UMGEdNode_Montage* FirstMontageNode = SelectedMontageNodes[0];
+		if (GraphBeingEdited->Montages.IsValidIndex(FirstMontageNode->RuntimeNode->ID))
 		{
-			if (AnimDopeSheet.IsValid())
+			SelectedMontage = GraphBeingEdited->Montages[FirstMontageNode->RuntimeNode->ID];
+			GetPersonaToolkit()->GetPreviewScene()->SetPreviewAnimationAsset(SelectedMontage);
+			if (auto World = GetPersonaToolkit()->GetPreviewScene()->GetWorld())
 			{
-				AnimDopeSheet->SetSelection(MontageEdNode);
-				AnimDopeSheet->SetVisibility(EVisibility::Visible);
+				World->bAllowAudioPlayback = false;
 			}
+		}
+	}
+
+	if (SelectedObjects.Num() > 0)
+	{
+		DetailsView->SetObjects(SelectedObjects);
+
+		if (SelectedMontageNodes.Num() > 0 && AnimDopeSheet.IsValid())
+		{
+			if (SelectedMontageNodes.Num() == 1)
+			{
+				AnimDopeSheet->SetSelection(SelectedMontageNodes[0]);
+			}
+			else
+			{
+				// Build set of selected montage runtime nodes for quick lookup
+				TSet<UMGNode*> SelectedRuntimeNodes;
+				TMap<UMGNode*, UMGEdNode_Montage*> RuntimeToEdNode;
+				for (UMGEdNode_Montage* MontageNode : SelectedMontageNodes)
+				{
+					SelectedRuntimeNodes.Add(MontageNode->RuntimeNode);
+					RuntimeToEdNode.Add(MontageNode->RuntimeNode, MontageNode);
+				}
+
+				// Find roots: nodes with no parent in the selected set
+				TArray<UMGEdNode_Montage*> Roots;
+				for (UMGEdNode_Montage* MontageNode : SelectedMontageNodes)
+				{
+					bool bHasSelectedParent = false;
+					for (UMGNode* Parent : MontageNode->RuntimeNode->ParentNodes)
+					{
+						if (SelectedRuntimeNodes.Contains(Parent))
+						{
+							bHasSelectedParent = true;
+							break;
+						}
+					}
+					if (!bHasSelectedParent)
+					{
+						Roots.Add(MontageNode);
+					}
+				}
+
+				// Walk from each root through children to build ordered chains
+				TSet<UMGEdNode_Montage*> Visited;
+				TArray<TArray<UMGEdNode_Montage*>> Chains;
+				for (UMGEdNode_Montage* Root : Roots)
+				{
+					if (Visited.Contains(Root))
+					{
+						continue;
+					}
+
+					TArray<UMGEdNode_Montage*> Chain;
+					UMGEdNode_Montage* Current = Root;
+					while (Current && !Visited.Contains(Current))
+					{
+						Visited.Add(Current);
+						Chain.Add(Current);
+
+						// Find next child in selected set
+						UMGEdNode_Montage* Next = nullptr;
+						for (UMGNode* Child : Current->RuntimeNode->ChildrenNodes)
+						{
+							if (SelectedRuntimeNodes.Contains(Child))
+							{
+								UMGEdNode_Montage** Found = RuntimeToEdNode.Find(Child);
+								if (Found && !Visited.Contains(*Found))
+								{
+									Next = *Found;
+									break;
+								}
+							}
+						}
+						Current = Next;
+					}
+					Chains.Add(Chain);
+				}
+
+				AnimDopeSheet->SetMultiSelection(Chains);
+			}
+			AnimDopeSheet->SetVisibility(EVisibility::Visible);
 		}
 	}
 	else
 	{
 		DetailsView->SetObject(GraphBeingEdited);
 	}
-
 }
 
 // ReSharper disable once CppMemberFunctionMayBeConst
@@ -1278,8 +1417,8 @@ void FMontageGraphEditor::OnGraphNodeDoubleClicked(UEdGraphNode* Node)
 	// or opening of animation editor
 }
 
-void FMontageGraphEditor::OnNodeTitleCommitted(const FText&  NewText, ETextCommit::Type CommitInfo,
-                                               UEdGraphNode* NodeBeingChanged)
+void FMontageGraphEditor::OnNodeTitleCommitted(const FText& NewText, ETextCommit::Type CommitInfo,
+	UEdGraphNode*                                           NodeBeingChanged)
 {
 	if (NodeBeingChanged)
 	{
@@ -1290,7 +1429,6 @@ void FMontageGraphEditor::OnNodeTitleCommitted(const FText&  NewText, ETextCommi
 	}
 }
 
-
 void FMontageGraphEditor::OnSelectedNodesChanged(const TSet<UObject*>& Objects) const
 {
 }
@@ -1299,10 +1437,11 @@ void FMontageGraphEditor::OnGraphActionMenuClosed(bool bArg, bool bCond) const
 {
 }
 
-FActionMenuContent FMontageGraphEditor::OnCreateGraphActionMenu(UEdGraph* EdGraph,
-                                                                const UE::Math::TVector2<double>& Vector2,
-                                                                const TArray<UEdGraphPin*>& EdGraphPins, bool bArg,
-                                                                TDelegate<void()> Delegate)
+FActionMenuContent FMontageGraphEditor::OnCreateGraphActionMenu(
+	UEdGraph*                   EdGraph,
+	const FVector2f&            InNodePosition,
+	const TArray<UEdGraphPin*>& EdGraphPins, bool bArg,
+	TDelegate<void()>           Delegate)
 {
 	return FActionMenuContent();
 }

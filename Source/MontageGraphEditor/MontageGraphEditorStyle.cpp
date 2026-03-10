@@ -113,24 +113,47 @@ TSharedRef<FSlateStyleSet> FMontageGraphEditorStyle::Create()
 	           new BORDER_BRUSH("Timeline/DopeSheet_Border_Selecting", FMargin(6.0f/32.0f)));
 	Style->Set("MontageGraph.DopeSheet.Border.Selected",
 	           new BORDER_BRUSH("Timeline/DopeSheet_Border_Selected", FMargin(6.0f/32.0f)));
+
 	
+	Style->Set("MontageGraph.Section.Body",
+	           new IMAGE_BRUSH("Timeline/TimelineTrack_Section_Body", Icon32x32));
+	Style->Set("MontageGraph.Section.Body.Hovered",
+	           new IMAGE_BRUSH("Timeline/TimelineTrack_Section_Hover", Icon32x32));
+	Style->Set("MontageGraph.Section.Border",
+	           new BORDER_BRUSH("Timeline/TimelineTrack_Section_Border", FMargin(6.0f/32.0f)));
+	Style->Set("MontageGraph.Section.Border.Selected",
+	           new BORDER_BRUSH("Timeline/Timeline/TimelineTrack_Section_Hover", FMargin(6.0f/32.0f)));
+	
+	
+	Style->Set("MontageGraph.SequenceTrack.Section.Body",
+	           new IMAGE_BRUSH("Timeline/TimelineTrack_Sequence_Section_Body", Icon32x32));
 	Style->Set("MontageGraph.SequenceTrack.Section.Border",
-	           new BORDER_BRUSH("Timeline/TimelineTrack_Sequence_Section_Border", FMargin(6.0f/32.0f)));
+	           new BORDER_BRUSH("Timeline/TimelineTrack_Section_Border_Selected", FMargin(6.0f/32.0f)));
 
 	Style->Set("MontageGraph.SequenceTrack.Section.Preview",
 	           new BORDER_BRUSH("Timeline/TimelineTrack_DashedBorder", FMargin(6.0f/32.0f)));
 	
-
+	
+	Style->Set("MontageGraph.SequenceTrack.BlendHandle.In",
+	           new IMAGE_BRUSH("Timeline/TimelineSection_BlendHandle_In", Icon32x32));
+	Style->Set("MontageGraph.SequenceTrack.BlendHandle.Out",
+	           new IMAGE_BRUSH("Timeline/TimelineSection_BlendHandle_Out", Icon32x32));
+	
 	Style->Set("MontageGraph.SequenceTrack.Section.ResizeHandle",
 	           new IMAGE_BRUSH("Timeline/TimelineSection_ResizeHandle", Icon32x32));
 	Style->Set("MontageGraph.SequenceTrack.Section.ResizeHandle.Hovered",
 	           new IMAGE_BRUSH("Timeline/TimelineSection_ResizeHandle_Hovered", Icon32x32));
 	
 	
-	Style->Set("MontageGraph.SequenceTrack.Section.Body",
-	           new IMAGE_BRUSH("Timeline/TimelineTrack_Sequence_Section_Body", Icon40x40));
+	Style->Set("MontageGraph.SequenceTrack.Section.Border",
+	           new BORDER_BRUSH("Timeline/TimelineTrack_Sequence_Section_Border", FMargin(6.0f/32.0f)));
+
+	
+	Style->Set("MontageGraph.SequenceTrack.Section.Border.Hovered",
+	           new BORDER_BRUSH("Timeline/TimelineTrack_Sequence_Section_Hovered_Border", FMargin(6.0f/32.0f)));
+	
 	Style->Set("MontageGraph.SequenceTrack.Section.Body.Hovered",
-	           new IMAGE_BRUSH("Timeline/TimelineTrack_Sequence_Section_Hovered", Icon40x40));
+	           new IMAGE_BRUSH("Timeline/TimelineTrack_Sequence_Section_Hovered", Icon32x32));
 
 	Style->Set("Graph.Node.Pin.BackgroundHovered", new BOX_BRUSH("Graph/Node_Pin_HoverCue", FMargin(12.0f/64.0f)));
 	//**END MontageGraph DopeSheet**//
@@ -163,10 +186,10 @@ TSharedRef<FSlateStyleSet> FMontageGraphEditorStyle::Create()
 
 void FMontageGraphEditorStyle::ReloadTextures()
 {
-	// if (FSlateApplication::IsInitialized())
-	// {
-	// 	FSlateApplication::Get().GetRenderer()->ReloadTextureResources();
-	// }
+	if (FSlateApplication::IsInitialized())
+	{
+		FSlateApplication::Get().GetRenderer()->ReloadTextureResources();
+	}
 }
 
 const ISlateStyle& FMontageGraphEditorStyle::Get()

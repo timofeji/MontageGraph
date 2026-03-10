@@ -1,6 +1,7 @@
 #include "DopeSheetController.h"
 
 #include "MontageGraphEditorStyle.h"
+#include "ToolContextInterfaces.h"
 #include "Tracks/DopeSheetTrackBase.h"
 #include "Tracks/DopeSheetTrackViewModel.h"
 
@@ -37,24 +38,123 @@ void FDopeSheetController::AddDirtyFlags(EDopeSheetFlags NewFlags)
 	DirtyFlags |= (NewFlags | EDopeSheetFlags::Stale);
 }
 
-void FDopeSheetController::SetTracksSource(const TArray<UDopeSheetTrackBase*>& TrackSrc)
+void FDopeSheetController::SetTracksSource(TArray<UDopeSheetTrackBase*>& TrackSrc, UObject* TracksOuter)
 {
 	RootTracks.Reset(TrackSrc.Num());
 	VisibleTracks.Reset(TrackSrc.Num());
 
+	ClearSelection();
+
+	TracksOwner = TracksOuter;
+	TracksPtr   = &TrackSrc;
+
+	// Register any new collection names as visible by default
+	for (UDopeSheetTrackBase* Track : TrackSrc)
+	{
+		if (Track && Track->CollectionName != NAME_None && !CollectionVisibility.Contains(Track->CollectionName))
+		{
+			CollectionVisibility.Add(Track->CollectionName, true);
+		}
+	}
+
 	TSharedPtr<FDopeSheetController> ThisController = SharedThis(this);
 
-	for (auto Track : TrackSrc)
+	for (UDopeSheetTrackBase* Track : TrackSrc)
 	{
+		if (!Track) { continue; }
+		if (!IsCollectionVisible(Track->CollectionName)) { continue; }
+
 		FDopeSheetTrackViewModelRef NewTrackModel = MakeShared<FDopeSheetTrackViewModel>(Track, ThisController);
 		RootTracks.Add(NewTrackModel);
 		VisibleTracks.Add(Track);
 
-		for (auto SubTrack : Track->SubTracks)
+		for (UDopeSheetTrackBase* SubTrack : Track->SubTracks)
 		{
 			FDopeSheetTrackViewModelRef NewSubTrackModel = MakeShared<FDopeSheetTrackViewModel>(
 				SubTrack, ThisController);
 			NewTrackModel->Children.Add(NewSubTrackModel);
+			NewSubTrackModel->ParentPtr = Track;
+		}
+	}
+
+	AddDirtyFlags(EDopeSheetFlags::RebuildTracks);
+	ForceUpdate();
+}
+
+TSet<FName> FDopeSheetController::GetAllCollectionNames() const
+{
+	TSet<FName> Names;
+	if (TracksPtr)
+	{
+		for (UDopeSheetTrackBase* Track : *TracksPtr)
+		{
+			if (Track && Track->CollectionName != NAME_None)
+			{
+				Names.Add(Track->CollectionName);
+			}
+		}
+	}
+	return Names;
+}
+
+bool FDopeSheetController::IsCollectionVisible(FName InCollectionName) const
+{
+	if (InCollectionName == NAME_None) { return true; }
+	const bool* bVisible = CollectionVisibility.Find(InCollectionName);
+	return bVisible == nullptr || *bVisible;
+}
+
+void FDopeSheetController::MoveTracksToCollection(const TArray<UDopeSheetTrackBase*>& Tracks, FName NewCollection)
+{
+	// Register the collection as visible before modifying tracks so SetTracksSource
+	// won't overwrite it with a default later.
+	if (NewCollection != NAME_None && !CollectionVisibility.Contains(NewCollection))
+	{
+		CollectionVisibility.Add(NewCollection, true);
+	}
+
+	const FScopedTransaction Transaction(NSLOCTEXT("DopeSheet", "MoveToCollection_Transaction", "Move Tracks to Collection"), !GIsTransacting);
+	for (UDopeSheetTrackBase* Track : Tracks)
+	{
+		if (Track)
+		{
+			Track->CollectionName = NewCollection;
+			Track->Modify();
+		}
+	}
+
+	if (TracksPtr)
+	{
+		SetTracksSource(*TracksPtr, TracksOwner);
+	}
+}
+
+void FDopeSheetController::SetCollectionVisibility(FName InCollectionName, bool bVisible)
+{
+	CollectionVisibility.FindOrAdd(InCollectionName) = bVisible;
+
+	if (!TracksPtr) { return; }
+
+	// Rebuild root/visible tracks respecting new visibility
+	RootTracks.Reset();
+	VisibleTracks.Reset();
+	ClearSelection();
+
+	TSharedPtr<FDopeSheetController> ThisController = SharedThis(this);
+	for (UDopeSheetTrackBase* Track : *TracksPtr)
+	{
+		if (!Track) { continue; }
+		if (!IsCollectionVisible(Track->CollectionName)) { continue; }
+
+		FDopeSheetTrackViewModelRef NewTrackModel = MakeShared<FDopeSheetTrackViewModel>(Track, ThisController);
+		RootTracks.Add(NewTrackModel);
+		VisibleTracks.Add(Track);
+
+		for (UDopeSheetTrackBase* SubTrack : Track->SubTracks)
+		{
+			FDopeSheetTrackViewModelRef NewSubTrackModel = MakeShared<FDopeSheetTrackViewModel>(SubTrack, ThisController);
+			NewTrackModel->Children.Add(NewSubTrackModel);
+			NewSubTrackModel->ParentPtr = Track;
 		}
 	}
 
@@ -67,12 +167,18 @@ void FDopeSheetController::OnTrackExpanded(TSharedRef<FDopeSheetTrackViewModel> 
 	if (ExpandedTrackModel->ObjPtr)
 	{
 		ExpandedTrackModel->ObjPtr->bIsExpanded = bExpanded;
-
+		
+		int ParentIndex = VisibleTracks.IndexOfByKey(ExpandedTrackModel->ObjPtr);
 		for (auto Child : ExpandedTrackModel->Children)
 		{
-			bExpanded
-				? VisibleTracks.AddUnique(Child->ObjPtr)
-				: VisibleTracks.Remove(Child->ObjPtr);
+			if (bExpanded)
+			{
+				VisibleTracks.Insert(Child->ObjPtr, ++ParentIndex);
+			}
+			else if (VisibleTracks.Contains(Child->ObjPtr))
+			{
+				VisibleTracks.Remove(Child->ObjPtr);
+			}
 		}
 	}
 
@@ -84,19 +190,29 @@ void FDopeSheetController::OnTrackExpanded(TSharedRef<FDopeSheetTrackViewModel> 
 void FDopeSheetController::AddViewSection(FDopeSheetViewSection NewSection)
 {
 	TotalNumberOfFrames += NewSection.NumOfFrames;
-	Sections.Add(NewSection);
+	ViewSections.Add(NewSection);
 }
 
 void FDopeSheetController::Reset(bool bMarkDirty)
 {
 	int DefaultNumFrames = 60;
-	Sections.Reset(1);
+	ViewSections.Reset(1);
 	TotalNumberOfFrames = 0;
 
 	if (bMarkDirty)
 	{
 		AddDirtyFlags(EDopeSheetFlags::All);
 	}
+}
+
+void FDopeSheetController::OnKeyUp(const FGeometry& Geometry, const FKeyEvent& InKeyEvent)
+{
+	bShiftKeyDown = InKeyEvent.IsShiftDown();
+}
+
+void FDopeSheetController::OnKeyDown(const FGeometry& Geometry, const FKeyEvent& InKeyEvent)
+{
+	bShiftKeyDown = InKeyEvent.IsShiftDown();
 }
 
 FReply FDopeSheetController::OnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -110,9 +226,9 @@ FReply FDopeSheetController::OnMouseMove(const FGeometry& InGeometry, const FPoi
 	}
 	if (InMouseEvent.IsMouseButtonDown(EKeys::RightMouseButton))
 	{
-		// bIsPanning        = true;
-		// const float Delta = (InMouseEvent.GetCursorDelta().X / InGeometry.GetAbsoluteSize().X) * TimeDurationInView;
-		// SetViewRange(ViewStartTime - Delta, ViewEndTime - Delta);
+		bIsPanning        = true;
+		const float Delta = (InMouseEvent.GetCursorDelta().X / InGeometry.GetAbsoluteSize().X) * ViewTimeLength;
+		SetViewRange(ViewStartTime - Delta, ViewEndTime - Delta);
 	}
 
 	return FReply::Handled();
@@ -151,16 +267,16 @@ FReply FDopeSheetController::OnMouseButtonUp(const FGeometry&    InGeometry, con
 	{
 		if (bIsRMB_Pressed)
 		{
-			// if (bIsPanning)
-			// {
-			// 	bIsPanning = false;
-			// 	InWidget->SetCursor(EMouseCursor::Default);
-			// }
-			//
-
-
+			const bool bWasPanning = bIsPanning;
+			bIsPanning     = false;
 			bIsRMB_Pressed = false;
-			CreateContextMenu(MouseEvent, InWidget);
+			InWidget->SetCursor(EMouseCursor::Default);
+
+			if (!bWasPanning)
+			{
+				CreateContextMenu(MouseEvent, InWidget);
+			}
+
 			Reply = FReply::Handled().ReleaseMouseCapture();
 		}
 	}
@@ -185,7 +301,8 @@ FReply FDopeSheetController::OnMouseButtonDown(const FGeometry&    InGeometry, c
 	if (InMouseEvent.GetEffectingButton() == EKeys::RightMouseButton)
 	{
 		bIsRMB_Pressed = true;
-		// InWidget->SetCursor(EMouseCursor::CardinalCross);
+		bIsPanning     = false;
+		InWidget->SetCursor(EMouseCursor::GrabHandClosed);
 		Reply = FReply::Handled().CaptureMouse(InWidget);
 	}
 
@@ -194,21 +311,26 @@ FReply FDopeSheetController::OnMouseButtonDown(const FGeometry&    InGeometry, c
 
 void FDopeSheetController::KeySelection()
 {
-	for (int i = SelectionStartRow; i <= SelectionEndRow; i++)
+	if (HasSelectionFlags(EDopeSheetSelectionFlags::RangeSelected))
 	{
-		if (VisibleTracks.IsValidIndex(i))
+		for (int i = SelectionStartRow; i <= SelectionEndRow; i++)
 		{
-			UDopeSheetTrackBase* SelectedTrack = VisibleTracks[i];
-			if (SelectedTrack)
+			if (VisibleTracks.IsValidIndex(i))
 			{
-				float StartTime = SelectionStartFrame / (float)TotalNumberOfFrames;
-				float EndTime   = SelectionEndFrame / (float)TotalNumberOfFrames;
-				SelectedTrack->KeyTimeRange(StartTime, EndTime);
-				SelectedTrack->OnTrackPropertiesChanged.Broadcast();
+				UDopeSheetTrackBase* SelectedTrack = VisibleTracks[i];
+				if (SelectedTrack)
+				{
+					SelectedTrack->KeyTimeRange(SelectionStartTime, SelectionEndTime);
+					SelectedTrack->OnTrackPropertiesChanged.Broadcast();
 
-				ClearSelection();
+
+					AddDirtyFlags(EDopeSheetFlags::RebuildTracks);
+					ForceUpdate();
+				}
 			}
 		}
+
+		ClearSelection();
 	}
 }
 
@@ -227,10 +349,9 @@ void FDopeSheetController::BeginSelection(const FGeometry& InGeometry, const FPo
 	FVector2f MouseLocationAbsolute = InMouseEvent.GetScreenSpacePosition();
 	FVector2f MouseLocation         = InGeometry.AbsoluteToLocal(MouseLocationAbsolute);
 
-	float AdjustedX = ((MouseLocation.X / InGeometry.Size.X) * TimeDurationInView) + ViewStartTime;
 
-	StartCoord = FVector2D(AdjustedX, MouseLocation.Y);
-	EndCoord   = StartCoord;
+	Selection_Start = MouseLocation;
+	Selection_End   = Selection_Start;
 
 	SelectionStartRow = -1;
 	SelectionEndRow   = -1;
@@ -242,71 +363,67 @@ void FDopeSheetController::DragSelection(const FGeometry& InGeometry, const FPoi
 {
 	FVector2f MouseLocationAbsolute = InMouseEvent.GetScreenSpacePosition();
 	FVector2f MouseLocation         = InGeometry.AbsoluteToLocal(MouseLocationAbsolute);
+	Selection_End        =  MouseLocation;
 
-	float AdjustedX = ((MouseLocation.X / InGeometry.Size.X) * TimeDurationInView) + ViewStartTime;
-	EndCoord        = FVector2D(AdjustedX, MouseLocation.Y);
+	FVector2D A = FVector2D(TimeToXOffset(Selection_Start.X, InGeometry), Selection_Start.Y);
+	FVector2D B = FVector2D(TimeToXOffset(Selection_End.X, InGeometry), Selection_End.Y);
 
+	double StartX = ConvertXCoordToTime(Selection_Start.X, InGeometry);
+	double EndX   = ConvertXCoordToTime(Selection_End.X, InGeometry);
 
-	FVector2D A = FVector2D(TimeToXOffset(StartCoord.X, InGeometry), StartCoord.Y);
-	FVector2D B = FVector2D(TimeToXOffset(EndCoord.X, InGeometry), EndCoord.Y);
+	if (InMouseEvent.IsShiftDown() && !CachedSectionCellWidths.IsEmpty())
+	{
+		for (FDopeSheetViewSection ViewSection : ViewSections)
+		{
+			StartX *= ViewSection.NumOfFrames;
+			EndX *= ViewSection.NumOfFrames;
+		}
 
-	const float StartTime = FMath::Min(AdjustedX, StartCoord.X);
-	const float EndTime   = FMath::Max(AdjustedX, StartCoord.X);
+	}
 
-	if (CachedSectionCellWidths.IsEmpty() || CachedTrackHeights.IsEmpty())
+	SelectionStartTime = StartX;
+	SelectionEndTime   = EndX;
+
+	SetPlayHeadTime(SelectionEndTime, true);
+
+	if ( CachedTrackHeights.IsEmpty())
 	{
 		return;
 	}
 
-
-	int AccumulatedFrames = 0;
-	for (int i = 0; i < Sections.Num(); ++i)
-	{
-		FDopeSheetViewSection ViewSection         = Sections[i];
-		const int             NumOfFrames      = ViewSection.NumOfFrames;
-		const float           CellViewDuration = (ViewSection.EndTime - ViewSection.StartTime);
-
-		if (StartTime > ViewSection.StartTime && StartTime < ViewSection.EndTime)
-		{
-			const float Fraction = (StartTime - ViewSection.StartTime) / CellViewDuration;
-			SelectionStartFrame  = FMath::Max(
-				0, FMath::FloorToInt(Fraction * NumOfFrames) + AccumulatedFrames);
-		}
-
-		if (EndTime > ViewSection.StartTime && EndTime < ViewSection.EndTime)
-		{
-			const float Fraction = (EndTime - ViewSection.StartTime) / CellViewDuration;
-			SelectionEndFrame    = FMath::Max(
-				0, FMath::FloorToInt(Fraction * NumOfFrames) + AccumulatedFrames);
-		}
-
-		AccumulatedFrames += NumOfFrames;
-	}
-
-
 	FVector2D TopLeft(FMath::Min(A.X, B.X), FMath::Min(A.Y, B.Y));
 	FVector2D Size(FMath::Abs(A.X - B.X), FMath::Abs(A.Y - B.Y));
+	FVector2D BotRight = TopLeft + Size;
 
-	float CurrentY = TimeSliderHeight.Get();
+	float CurrentY = 0.f;
 
 	// Find which rows the selection spans
 	for (int i = 0; i < CachedTrackHeights.Num(); ++i)
 	{
 		float NextY = CurrentY + CachedTrackHeights[i];
-
-		if (SelectionStartRow == -1 && TopLeft.Y < NextY)
+		if (TopLeft.Y < NextY)
 		{
 			SelectionStartRow = i;
+			break;
 		}
+		CurrentY = NextY;
+	}
 
-		if (TopLeft.Y + Size.Y <= NextY)
+	CurrentY = 0.f;
+	for (int i = 0; i < CachedTrackHeights.Num(); ++i)
+	{
+		float NextY = CurrentY + CachedTrackHeights[i];
+
+		if (BotRight.Y <= NextY)
 		{
 			SelectionEndRow = i;
 			break;
 		}
-
 		CurrentY = NextY;
 	}
+
+	
+	
 
 	
 	SelectionEndRow = FMath::Clamp(SelectionEndRow, 0, CachedTrackHeights.Num() - 1);
@@ -330,6 +447,61 @@ void FDopeSheetController::EndSelection()
 void FDopeSheetController::ClearSelection()
 {
 	SelectionFlags = EDopeSheetSelectionFlags::None;
+
+	Selection_Start = FVector2f(0, 0);
+	Selection_End = FVector2f(0, 0);
+
+	SelectionStartRow   = -1;
+	SelectionEndRow     = -1;
+	SelectionStartFrame = -1;
+	SelectionEndFrame   = -1;
+
+	SelectionStartTime = -1;
+	SelectionEndTime   = -1;
+
+
+	SelectedSections.Empty();
+}
+
+void FDopeSheetController::SelectSection(TSharedPtr<FDopeSheetSectionViewModel>& SelectedSection, bool bIsAdditive)
+{
+	if (!bIsAdditive)
+	{
+		SelectedSections.Reset();
+	}
+	
+	SelectedSections.Add(SelectedSection);
+	OnSectionSelected.Broadcast(SelectedSection->Section);
+}
+
+void FDopeSheetController::DeleteSelection()
+{
+	const FScopedTransaction Transaction(NSLOCTEXT("DopeSheet", "DeleteDopeSheetSelection_Transaction",
+	                                               "Delete Selection"));
+
+	for (auto SectionModel: SelectedSections)
+	{
+		UDopeSheetTrackBase* Track =  SectionModel->TrackModelPtr->ObjPtr;
+		
+		SectionModel->Section->MarkAsGarbage();
+		Track->Sections.Remove(SectionModel->Section);
+		Track->Modify();
+		Track->OnTrackPropertiesChanged.Broadcast();
+		
+	}
+	//
+	// ObjPtr->OnTrackPropertiesChanged.Broadcast();
+	//
+	//
+	// if (ObjPtr->Sections.IsValidIndex(SectionIndex))
+	// {
+	// 	if (UDopeSheetTrackSection* Section = ObjPtr->Sections[SectionIndex])
+	// 	{
+	// 		Section->MarkAsGarbage();
+	// 		ObjPtr->Modify(true);
+	// 		ObjPtr->Sections.RemoveAt(SectionIndex);
+	// 	}
+	// }	
 }
 
 void FDopeSheetController::ProcessBoxSelection()
@@ -339,44 +511,52 @@ void FDopeSheetController::ProcessBoxSelection()
 
 FPaintGeometry FDopeSheetController::GetAdjustedSelectionGeometry(const FGeometry& InGeometry) const
 {
-	FVector2D A = FVector2D(TimeToXOffset(StartCoord.X, InGeometry), StartCoord.Y);
-	FVector2D B = FVector2D(TimeToXOffset(EndCoord.X, InGeometry), EndCoord.Y);
+	// FVector2D A = FVector2D(TimeToXOffset(Selection_Start.X, InGeometry), Selection_Start.Y);
+	// FVector2D B = FVector2D(TimeToXOffset(Selection_End.X, InGeometry), Selection_End.Y);
+	
+	
+	FVector2f A = FVector2f(Selection_Start.X, Selection_Start.Y);
+	FVector2f B = FVector2f(Selection_End.X, Selection_End.Y);
 
+	
+	double StartX = ConvertXCoordToTime(Selection_Start.X, InGeometry);
+	double EndX   = ConvertXCoordToTime(Selection_End.X, InGeometry);
 
-	FVector2D TopLeft(FMath::Min(A.X, B.X), FMath::Min(A.Y, B.Y));
-	FVector2D Size(FMath::Abs(A.X - B.X), FMath::Abs(A.Y - B.Y));
+	// if (bShiftKeyDown && !CachedSectionCellWidths.IsEmpty())
+	// {
+	// 	for (FDopeSheetViewSection ViewSection : ViewSections)
+	// 	{
+	// 		StartX *= ViewSection.NumOfFrames;
+	// 		EndX *= ViewSection.NumOfFrames;
+	// 	}
+	//
+	// }
+	
 
+	FVector2f TopLeft(FMath::Min(A.X, B.X), FMath::Min(A.Y, B.Y));
+	FVector2f Size(FMath::Abs(A.X - B.X), FMath::Abs(A.Y - B.Y));
 
+	// return InGeometry.ToPaintGeometry(Size, FSlateLayoutTransform(TopLeft));
+	
 	const bool bBoxSelect = HasSelectionFlags(EDopeSheetSelectionFlags::BoxSelect);
-	if (bBoxSelect)
+	if (bBoxSelect || CachedTrackHeights.IsEmpty())
 	{
-		return InGeometry.ToPaintGeometry(TopLeft, Size);
+		return InGeometry.ToPaintGeometry(Size, FSlateLayoutTransform(TopLeft));
 	}
 
-	// TopLeft = FVector2D(
-	// 	FMath::Clamp(TopLeft.X, CachedViewRect.Left, CachedViewRect.Right),
-	// 	FMath::Clamp(TopLeft.Y, CachedViewRect.Top, CachedViewRect.Bottom));
-	//
-	// Size = FVector2D(
-	// 	FMath::Clamp(Size.X, CachedViewRect.Left, CachedViewRect.Right),
-	// 	FMath::Clamp(Size.Y, CachedViewRect.Top, CachedViewRect.Bottom));
-	//
-	if (CachedTrackHeights.IsEmpty())
-	{
-		return InGeometry.ToPaintGeometry(TopLeft, Size);
-	}
-
-
-	float OffsetX        = TopLeft.X;
-	float OffsetY        = TopLeft.Y;
+	float OffsetX       = TopLeft.X;
+	float OffsetY       = TopLeft.Y;
 	float SnappedHeight = Size.Y;
 
 	if (SelectionStartRow >= 0 && SelectionEndRow >= 0 && SelectionStartRow <= SelectionEndRow)
 	{
-		OffsetY = TimeSliderHeight.Get();
+		OffsetY = 0.f;
 		for (int i = 0; i < SelectionStartRow; ++i)
 		{
-			OffsetY += CachedTrackHeights[i];
+			if (CachedTrackHeights.IsValidIndex(i))
+			{
+				OffsetY += CachedTrackHeights[i];
+			}
 		}
 
 		SnappedHeight = 0.f;
@@ -385,30 +565,7 @@ FPaintGeometry FDopeSheetController::GetAdjustedSelectionGeometry(const FGeometr
 			SnappedHeight += CachedTrackHeights[i];
 		}
 	}
-	
-
-	int AccumulatedFrames = 0;
-	for (int i = 0; i < Sections.Num(); ++i)
-	{
-		FDopeSheetViewSection ViewSection         = Sections[i];
-		const float           FrameSize        = CachedSectionCellWidths[i];
-		const int             NumOfFrames      = ViewSection.NumOfFrames;
-
-		if (SelectionStartFrame > AccumulatedFrames  && SelectionStartFrame < AccumulatedFrames + NumOfFrames)
-		{
-			OffsetX = (SelectionStartFrame*FrameSize);
-		}
-
-		if (SelectionEndFrame > AccumulatedFrames  && SelectionEndFrame < AccumulatedFrames  + NumOfFrames)
-		{
-
-		}
-
-		AccumulatedFrames += NumOfFrames;
-	}
-
-
-	return InGeometry.ToPaintGeometry(FVector2D(OffsetX, OffsetY), FVector2D(Size.X, SnappedHeight));
+	return InGeometry.ToPaintGeometry(FVector2f(Size.X, SnappedHeight), FSlateLayoutTransform(FVector2f(TopLeft.X, OffsetY)));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -447,9 +604,9 @@ void FDopeSheetController::DrawSelection(FSlateWindowElementList& OutDrawElement
 			OutDrawElements,
 			LayerId + 1,
 			SelectionBoxGeometry,
-			FString::Printf(TEXT("[%i-%i]"),
-			                SelectionStartFrame,
-			                SelectionEndFrame),
+			FString::Printf(TEXT("[%.2f-%.2f]"),
+			                SelectionStartTime,
+			                SelectionEndTime),
 			SelectionFontInfo,
 			ESlateDrawEffect::None,
 			FLinearColor::White
@@ -476,7 +633,7 @@ void FDopeSheetController::SetViewRange(double NewStartTime, double NewEndTime)
 	ViewStartTime = NewStartTime;
 	ViewEndTime   = NewEndTime;
 
-	TimeDurationInView = NewEndTime - NewStartTime;
+	ViewTimeLength = NewEndTime - NewStartTime;
 
 	AddDirtyFlags(EDopeSheetFlags::HViewChanged);
 	ForceUpdate();
@@ -484,28 +641,28 @@ void FDopeSheetController::SetViewRange(double NewStartTime, double NewEndTime)
 
 void FDopeSheetController::FrameViewRange()
 {
-	const float EndTime = Sections.IsEmpty() ? 1 : Sections.Last().EndTime;
+	const float EndTime = ViewSections.IsEmpty() ? 1 : ViewSections.Last().EndTime;
 	SetViewRange(0.f, EndTime);
 }
 
-float FDopeSheetController::LocalXCoordToTime(float X) const
+double FDopeSheetController::LocalXCoordToTime(double X) const
 {
-	return ((X / CachedGeometry.Size.X) * TimeDurationInView) + ViewStartTime;
+	return ((X / CachedGeometry.Size.X) * ViewTimeLength) + ViewStartTime;
 }
 
-float FDopeSheetController::AbsoluteXCoordToTime(float X) const
+double FDopeSheetController::AbsoluteXCoordToTime(double X) const
 {
-	return (((X - CachedGeometry.GetAbsolutePosition().X) / CachedGeometry.Size.X) * TimeDurationInView) + ViewStartTime;
+	return (((X - CachedGeometry.GetAbsolutePosition().X) / CachedGeometry.GetLocalSize().X) * ViewTimeLength) + ViewStartTime;
 }
 
-float FDopeSheetController::TimeToXOffset(const float InTime, const FGeometry& AllottedGeometry) const
+double FDopeSheetController::TimeToXOffset(const double InTime, const FGeometry& AllottedGeometry) const
 {
-	return AllottedGeometry.Size.X * ((InTime - ViewStartTime) / TimeDurationInView);
+	return AllottedGeometry.GetLocalSize().X * ((InTime - ViewStartTime) / ViewTimeLength);
 }
 
-float FDopeSheetController::ConvertXCoordToTime(const float XCoord, const FGeometry& AllottedGeometry) const
+double FDopeSheetController::ConvertXCoordToTime(const double XCoord, const FGeometry& AllottedGeometry) const
 {
-	return ((XCoord / AllottedGeometry.Size.X) * TimeDurationInView) + ViewStartTime;
+	return ((XCoord/AllottedGeometry.GetLocalSize().X) * ViewTimeLength) + ViewStartTime;
 }
 
 
@@ -513,7 +670,7 @@ void FDopeSheetController::UpdateViewForGeometry(const FGeometry& AllottedGeomet
 {
 	//Prevent Render thread from using stale cache
 
-	if (Sections.IsEmpty())
+	if (ViewSections.IsEmpty())
 	{
 		return;
 	}
@@ -522,11 +679,11 @@ void FDopeSheetController::UpdateViewForGeometry(const FGeometry& AllottedGeomet
 
 
 	//Cachce Frame Widths for each ViewSection
-	CachedSectionCellWidths.Reset(Sections.Num());
-	for (FDopeSheetViewSection ViewSection : Sections)
+	CachedSectionCellWidths.Reset(ViewSections.Num());
+	for (FDopeSheetViewSection ViewSection : ViewSections)
 	{
 		const float SectionDuration = ViewSection.EndTime - ViewSection.StartTime;
-		const float SectionFraction = SectionDuration / TimeDurationInView;
+		const float SectionFraction = SectionDuration / ViewTimeLength;
 		const float AllotedWidth    = (CachedGeometry.Size.X * SectionFraction);
 		const float FrameWidth      = AllotedWidth / ViewSection.NumOfFrames;
 
@@ -534,8 +691,8 @@ void FDopeSheetController::UpdateViewForGeometry(const FGeometry& AllottedGeomet
 	}
 
 	//
-	FDopeSheetViewSection FirstCellSection = Sections[0];
-	FDopeSheetViewSection LastCellSection  = Sections.Last();
+	FDopeSheetViewSection FirstCellSection = ViewSections[0];
+	FDopeSheetViewSection LastCellSection  = ViewSections.Last();
 
 	const double ViewLeftBound  = TimeToXOffset(FirstCellSection.StartTime, CachedGeometry);
 	const double ViewRightBound = TimeToXOffset(LastCellSection.EndTime, CachedGeometry);
@@ -546,7 +703,7 @@ void FDopeSheetController::UpdateViewForGeometry(const FGeometry& AllottedGeomet
 
 bool FDopeSheetController::CanDraw()
 {
-	if (Sections.Num() != CachedSectionCellWidths.Num()) { return false; }
+	if (ViewSections.Num() != CachedSectionCellWidths.Num()) { return false; }
 
 	if (EnumHasAnyFlags(DirtyFlags, EDopeSheetFlags::Stale))
 	{
@@ -554,6 +711,73 @@ bool FDopeSheetController::CanDraw()
 		return false;
 	}
 	return true;
+}
+
+void FDopeSheetController::AddTrackToSelected(UClass* Class)
+{
+	if (TracksOwner && TracksPtr)
+	{
+		auto NewTrack = NewObject<UDopeSheetTrackBase>(TracksOwner, Class);
+		TracksPtr->Add(NewTrack);
+
+		TSharedPtr<FDopeSheetController> ThisController = SharedThis(this);
+		FDopeSheetTrackViewModelRef      NewTrackModel  = MakeShared<FDopeSheetTrackViewModel>(NewTrack, ThisController);
+		RootTracks.Add(NewTrackModel);
+		VisibleTracks.Add(NewTrack);
+
+		for (auto SubTrack : NewTrack->SubTracks)
+		{
+			FDopeSheetTrackViewModelRef NewSubTrackModel = MakeShared<FDopeSheetTrackViewModel>(
+				SubTrack, ThisController);
+			NewTrackModel->Children.Add(NewSubTrackModel);
+		}
+	}
+	
+	
+	AddDirtyFlags(EDopeSheetFlags::RebuildTracks);
+	ForceUpdate();
+}
+void FDopeSheetController::RemoveTrack( FDopeSheetTrackViewModelRef TrackModelRef)
+{
+	if (TrackModelRef->ParentPtr->SubTracks.Remove(TrackModelRef->ObjPtr))
+	{
+		TrackModelRef->ParentPtr->Modify();
+	}
+	
+	if (TracksPtr->Remove(TrackModelRef->ObjPtr))
+	{
+		TracksOwner->Modify();
+	}
+
+	
+	AddDirtyFlags(EDopeSheetFlags::RebuildTracks);
+	ForceUpdate();
+}
+
+void FDopeSheetController::AddSubTrackToSelected(UClass* Class, FDopeSheetTrackViewModelRef TrackModelRef)
+{
+	const FScopedTransaction Transaction(NSLOCTEXT("DopeSheet", "AddeDopeSheetTrack_Transaction", "Add DopeSheet Track"), !GIsTransacting);
+	if (TrackModelRef->ObjPtr)
+	{
+		auto NewTrack = NewObject<UDopeSheetTrackBase>(TrackModelRef->ObjPtr, Class);
+		TrackModelRef->ObjPtr->SubTracks.Add(NewTrack);
+		TrackModelRef->ObjPtr->Modify();
+
+		TSharedPtr<FDopeSheetController> ThisController = SharedThis(this);
+		FDopeSheetTrackViewModelRef      NewTrackModel  = MakeShared<FDopeSheetTrackViewModel>(NewTrack, ThisController);
+		TrackModelRef->Children.Add(NewTrackModel);
+		
+		for (auto SubTrack : NewTrack->SubTracks)
+		{
+			FDopeSheetTrackViewModelRef NewSubTrackModel = MakeShared<FDopeSheetTrackViewModel>(
+				SubTrack, ThisController);
+			NewTrackModel->Children.Add(NewSubTrackModel);
+			NewTrackModel->ParentPtr = TrackModelRef->ObjPtr;
+		}
+	}
+
+	AddDirtyFlags(EDopeSheetFlags::RebuildTracks);
+	ForceUpdate();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////

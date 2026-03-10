@@ -1,4 +1,5 @@
 #pragma once
+#include "GameplayPrediction.h"
 
 #include "MontageCollisionTracer.generated.h"
 
@@ -12,13 +13,10 @@ struct FCollisionEffectiveRange
 	GENERATED_BODY()
 
 	UPROPERTY()
-	float AnimStartAlpha;
+	double AnimStartAlpha;
 	
 	UPROPERTY()
-	float AnimEndAlpha;
-
-	UPROPERTY()
-	TArray<int> TargetGameplayEffectIndices;
+	double AnimEndAlpha;
 
 	FCollisionEffectiveRange(float A, float B)
 		: AnimStartAlpha(A),
@@ -44,9 +42,6 @@ public:
 
 	UPROPERTY()
 	FVector CollisionExtent;
-	
-	UPROPERTY()
-	TEnumAsByte<ECollisionChannel> TraceChannel;
 	
 	UPROPERTY()
 	TArray<FVector> SamplePositions;
@@ -76,8 +71,12 @@ public:
 	UPROPERTY()
 	TArray<FProcMeshTangent> Tangents;
 
+	
+	UPROPERTY()
+	TEnumAsByte<ECollisionChannel> TraceChannel;
 
-	int GetCollisionAlphaIndex(float AnimAlpha) const;
+
+	int GetCurrentFrame(float AnimAlpha) const;
 };
 
 //
@@ -85,17 +84,21 @@ USTRUCT()
 struct FMontageCollisionTracerTickFunction : public FTickFunction
 {
 	GENERATED_BODY()
+
+	FMontageCollisionTracerTickFunction();
 	
 	UMontageGraphComponent* Target;
 
 	float StartTime;
 	float AccumulatedDilatedTime;
 	float EndTime;
-	
+
 	// FTickFunction interface
 	virtual void ExecuteTick(float DeltaTime, ELevelTick TickType, ENamedThreads::Type CurrentThread, const FGraphEventRef& MyCompletionGraphEvent) override;
 	virtual FString DiagnosticMessage() override;
 	virtual FName DiagnosticContext(bool bDetailed) override;
+
+	
 };
 
 

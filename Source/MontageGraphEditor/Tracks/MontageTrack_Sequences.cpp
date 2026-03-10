@@ -1,18 +1,23 @@
 #include "MontageTrack_Sequences.h"
 
+#include "AlphaBlend.h"
 #include "AssetSelection.h"
+#include "MontageGraph/MontageGraph.h"
 #include "AssetToolsModule.h"
 #include "MontageGraphEditorLog.h"
 #include "MontageGraphEditorStyle.h"
 #include "MontageTrack_BlendLinks.h"
+#include "MontageTrack_Sections.h"
 #include "DopeSheet/DopeSheetController.h"
 #include "DopeSheet/Tracks/SDopeSheetTrackTimeline.h"
 #include "DragAndDrop/AssetDragDropOp.h"
+#include "Graph/EdNodes/MGEdNode_Montage.h"
 #include "Slate/SAnimMontageSlotPicker.h"
 
-namespace MGDopeSheetBrushes
+namespace FDopeSheetStyle
 {
-	FColor SequenceSectionColor = FColor(80, 123, 72, 255);
+	static const FVector2D BlendHandleSize = FVector2D(10.f, 10.f);
+	static const FLinearColor AnimSequenceColor = FColor(80, 123, 72, 255);
 
 	static const FSlateBrush* SectionBodyBrush         = nullptr;
 	static const FSlateBrush* SectionBodyBrush_Hovered = nullptr;
@@ -89,23 +94,172 @@ TSharedRef<FDopeSheetSequenceSectionDragDrop> FDopeSheetSequenceSectionDragDrop:
 	return Operation;
 }
 
+// ============================================================
+// FMGBlendHandleDragDrop
+// ============================================================
+
+TSharedPtr<SWidget> FMGBlendHandleDragDrop::GetDefaultDecorator() const
+{
+	return SNew(SBorder)
+		.BorderImage(FAppStyle::GetBrush("Menu.Background"))
+		[
+			SNew(STextBlock)
+			.Text_Lambda([this]() -> FText
+			{
+				UMontageTrackSection_Sequences* Data = SectionDataPtr.Get();
+				if (!Data) return FText::GetEmpty();
+				const float T = HandleType == EMGBlendHandleType::BlendIn
+					? Data->BlendInSettings.Blend.BlendTime
+					: Data->BlendOutSettings.Blend.BlendTime;
+				return FText::FromString(FString::Printf(TEXT("%s: %.2fs"),
+					HandleType == EMGBlendHandleType::BlendIn ? TEXT("Blend In") : TEXT("Blend Out"), T));
+			})
+		];
+}
+
+void FMGBlendHandleDragDrop::Construct()
+{
+	FDragDropOperation::Construct();
+}
+
+void FMGBlendHandleDragDrop::OnDrop(bool bDropWasHandled, const FPointerEvent& MouseEvent)
+{
+	FDragDropOperation::OnDrop(bDropWasHandled, MouseEvent);
+}
+
+void FMGBlendHandleDragDrop::OnDragged(const FDragDropEvent& DragDropEvent)
+{
+	UMontageTrackSection_Sequences* Data = SectionDataPtr.Get();
+	if (!Data || !ControllerPtr) return;
+
+	const FVector2D MousePos  = DragDropEvent.GetScreenSpacePosition();
+	const float     MouseTime = static_cast<float>(ControllerPtr->AbsoluteXCoordToTime(MousePos.X));
+	const float     HalfDur   = static_cast<float>(Data->EndTime - Data->StartTime) * 0.5f;
+
+	if (HandleType == EMGBlendHandleType::BlendIn)
+	{
+		// Blend-in time = distance from section start to cursor.
+		Data->BlendInSettings.Blend.BlendTime =
+			FMath::Clamp(MouseTime - static_cast<float>(Data->StartTime), 0.f, HalfDur);
+	}
+	else
+	{
+		// Blend-out time = distance from cursor to section end.
+		Data->BlendOutSettings.Blend.BlendTime =
+			FMath::Clamp(static_cast<float>(Data->EndTime) - MouseTime, 0.f, HalfDur);
+	}
+
+	CursorDecoratorWindow->MoveWindowTo(MousePos + FVector2D(14.f, -14.f));
+}
+
+TSharedRef<FMGBlendHandleDragDrop> FMGBlendHandleDragDrop::New(
+	TWeakObjectPtr<UMontageTrackSection_Sequences> InSectionData,
+	TSharedPtr<FDopeSheetController>               InController,
+	EMGBlendHandleType                             InHandleType)
+{
+	TSharedRef<FMGBlendHandleDragDrop> Op = MakeShareable(new FMGBlendHandleDragDrop);
+	Op->SectionDataPtr = InSectionData;
+	Op->ControllerPtr  = InController;
+	Op->HandleType     = InHandleType;
+
+	if (UMontageTrackSection_Sequences* Data = InSectionData.Get())
+	{
+		Data->Modify();
+	}
+
+	Op->Construct();
+	return Op;
+}
+
+// ============================================================
+// SMGSequenceBlendHandle
+// ============================================================
+
+void SMGSequenceBlendHandle::Construct(const FArguments& InArgs)
+{
+	SectionDataPtr = InArgs._SectionData;
+	ControllerPtr  = InArgs._Controller;
+	HandleType     = InArgs._HandleType;
+
+	ChildSlot
+	[
+		SNew(SBorder)
+		.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+		.Padding(1.f)
+		.Content()
+		[
+			SNew(SImage)
+			.Image_Lambda([this] {
+				return HandleType == EMGBlendHandleType::BlendIn
+						   ? FMontageGraphEditorStyle::Get().GetBrush("MontageGraph.SequenceTrack.BlendHandle.In")
+						   : FMontageGraphEditorStyle::Get().GetBrush("MontageGraph.SequenceTrack.BlendHandle.Out");
+			})
+			.DesiredSizeOverride(FDopeSheetStyle::BlendHandleSize)
+			.ColorAndOpacity_Lambda([this]() {
+				const float Alpha = bIsHovered ? 1.f : .72f;
+				return FLinearColor(0.3f, 0.85f, 0.5f, Alpha);
+			})
+			.OnMouseButtonDown_Lambda([this](const FGeometry&, const FPointerEvent&) {
+				return FReply::Handled().DetectDrag(SharedThis(this), EKeys::LeftMouseButton);
+			})
+		]];
+}
+
+void SMGSequenceBlendHandle::OnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
+{
+	SetCursor(EMouseCursor::ResizeLeftRight);
+	bIsHovered = true;
+}
+
+void SMGSequenceBlendHandle::OnMouseLeave(const FPointerEvent& MouseEvent)
+{
+	SetCursor(EMouseCursor::Default);
+	bIsHovered = false;
+}
+
+FReply SMGSequenceBlendHandle::OnDragDetected(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
+{
+	if (MouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton) && SectionDataPtr.IsValid() && ControllerPtr)
+	{
+		return FReply::Handled()
+			.BeginDragDrop(FMGBlendHandleDragDrop::New(SectionDataPtr, ControllerPtr, HandleType))
+			.ReleaseMouseCapture();
+	}
+	return FReply::Unhandled();
+}
+
+// ============================================================
+
 /** Constructs this widget with InArgs */
 void SMGSequenceTrackSection::Construct(const FArguments& InArgs)
 {
-	MGDopeSheetBrushes::SectionBodyBrush = FMontageGraphEditorStyle::Get().GetBrush(
+	FDopeSheetStyle::SectionBodyBrush = FMontageGraphEditorStyle::Get().GetBrush(
 		"MontageGraph.SequenceTrack.Section.Body");
-	MGDopeSheetBrushes::SectionBodyBrush_Hovered = FMontageGraphEditorStyle::Get().GetBrush(
+	FDopeSheetStyle::SectionBodyBrush_Hovered = FMontageGraphEditorStyle::Get().GetBrush(
 		"MontageGraph.SequenceTrack.Section.Body.Hovered");
-	MGDopeSheetBrushes::SectionBorderBrush = FMontageGraphEditorStyle::Get().GetBrush(
+	FDopeSheetStyle::SectionBorderBrush = FMontageGraphEditorStyle::Get().GetBrush(
 		"MontageGraph.SequenceTrack.Section.Border");
 
+	SequencePtr    = InArgs._Sequence;
+	SectionDataPtr = InArgs._SectionData;
+	ControllerPtr  = InArgs._Controller;
 
-	SequencePtr = InArgs._Sequence;
 	SetCursor(EMouseCursor::GrabHand);
 	ChildSlot[
 		SNew(SBorder)
-		.BorderImage_Lambda([] { return MGDopeSheetBrushes::SectionBorderBrush; })
-		.BorderBackgroundColor(MGDopeSheetBrushes::SequenceSectionColor)
+		.BorderBackgroundColor(FLinearColor::Transparent)
+		.Padding(TAttribute<FMargin>::CreateLambda([this]() -> FMargin {
+			if (!SectionDataPtr.IsValid())
+				return FMargin(0);
+			const UMontageTrackSection_Sequences* Data  = SectionDataPtr.Get();
+			const float                           Width = GetCachedGeometry().GetLocalSize().X;
+			const float                           Dur   = static_cast<float>(Data->EndTime - Data->StartTime);
+			if (Dur <= 0.f || Width <= 0.f)
+				return FMargin(0);
+			const float BlendInPx  = FMath::Min(Data->BlendInSettings.Blend.BlendTime * (Width / Dur), Width * 0.5f);
+			const float BlendOutPx = FMath::Min(Data->BlendOutSettings.Blend.BlendTime * (Width / Dur), Width * 0.5f);
+			return FMargin(FMath::Max(0.f, BlendInPx), 0.f, FMath::Max(0.f, BlendOutPx), 0.f);
+		}))
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()
@@ -113,25 +267,163 @@ void SMGSequenceTrackSection::Construct(const FArguments& InArgs)
 			.VAlign(VAlign_Fill)
 			[
 				SNew(SImage)
-				.ColorAndOpacity(MGDopeSheetBrushes::SequenceSectionColor)
-				.Image_Lambda([&]()
-
-				{
-					return bIsHovered
-						       ? MGDopeSheetBrushes::SectionBodyBrush_Hovered
-						       : MGDopeSheetBrushes::SectionBodyBrush;
+				.ColorAndOpacity(FDopeSheetStyle::AnimSequenceColor)
+				.Image_Lambda([&]() {
+					 return bIsHovered
+					 		   ? FDopeSheetStyle::SectionBodyBrush_Hovered
+					 		   : FDopeSheetStyle::SectionBodyBrush;
 				})
 			]
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Fill)
 			.VAlign(VAlign_Fill)
-			.Padding(5)
 			[
-				SNew(STextBlock)
-				.Text(FText::FromString(InArgs._Sequence->GetName()))
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Left)
+				.VAlign(VAlign_Top)
+				.AutoWidth()
+				[
+					SNew(SMGSequenceBlendHandle)
+					.SectionData(SectionDataPtr)
+					.Controller(ControllerPtr)
+					.HandleType(EMGBlendHandleType::BlendIn)
+				]
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Fill)
+				.FillWidth(1.f)
+				[
+
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot()
+					.HAlign(HAlign_Fill)
+					.VAlign(VAlign_Fill)
+					.AutoWidth()
+					.Padding(5)
+					[
+						SNew(SImage).Image(FSlateIcon(FAppStyle::GetAppStyleSetName(), "ClassIcon.AnimSequence").GetIcon())
+					]
+					+ SHorizontalBox::Slot()
+					.Padding(FMargin(2.f, 0.f, 0, 0))
+					.AutoWidth()
+					.HAlign(HAlign_Fill)
+					.VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Text(FText::FromString(InArgs._Sequence->GetName()))
+						.Justification(ETextJustify::Center)
+					]
+				]
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Right)
+				.VAlign(VAlign_Top)
+				.AutoWidth()
+				[
+					SNew(SMGSequenceBlendHandle)
+					.SectionData(SectionDataPtr)
+					.Controller(ControllerPtr)
+					.HandleType(EMGBlendHandleType::BlendOut)
+				]
 			]
+
 		]
 	];
+}
+
+
+int32 SMGSequenceTrackSection::OnPaint(
+	const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
+	FSlateWindowElementList& OutDrawElements, int32 InLayerId,
+	const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
+{
+	int32 LayerId = SCompoundWidget::OnPaint(Args, AllottedGeometry, MyCullingRect, OutDrawElements,
+	                                         InLayerId, InWidgetStyle, bParentEnabled);
+
+	UMontageTrackSection_Sequences* SectionData = SectionDataPtr.Get();
+	if (!SectionData) return LayerId;
+
+	const float Width    = AllottedGeometry.GetLocalSize().X;
+	const float Height   = AllottedGeometry.GetLocalSize().Y;
+	const float Duration = static_cast<float>(SectionData->EndTime - SectionData->StartTime);
+	if (Duration <= 0.f || Width <= 0.f) return LayerId;
+
+	const float        PixelsPerSec = Width / Duration;
+	const FSlateBrush* WhiteBrush   = FAppStyle::GetBrush("WhiteBrush");
+
+	auto DrawBlendCurve = [&](float StartX, float BW, const FAlphaBlendArgs& Blend,
+	                          bool bBlendIn, FLinearColor Color)
+	{
+		const EAlphaBlendOption BlendOpt = Blend.BlendOption;
+		UCurveFloat*            Custom   = Blend.CustomCurve.Get();
+
+		// // One seamless dark box covering the full blend region.
+		// // Using per-strip dark boxes creates a visible horizontal staircase; a single box avoids it.
+		// FSlateDrawElement::MakeBox(
+		// 	OutDrawElements, LayerId + 1,
+		// 	AllottedGeometry.ToPaintGeometry(FVector2D(StartX, 0.f), FVector2D(BW, Height)),
+		// 	WhiteBrush, ESlateDrawEffect::None,
+		// 	FLinearColor(0.f, 0.f, 0.f, 0.42f));
+
+		// Fill strips — one per pixel so the staircase is sub-pixel and invisible.
+		const int32 NumStrips = FMath::Max(1, FMath::CeilToInt(BW));
+		const float StripW    = BW / static_cast<float>(NumStrips);
+		for (int32 i = 0; i < NumStrips; ++i)
+		{
+			const float t      = (static_cast<float>(i) + 0.5f) / static_cast<float>(NumStrips);
+			const float Alpha  = FAlphaBlend::AlphaToBlendOption(bBlendIn ? 1.f - t : t, BlendOpt, Custom);
+			const float X      = StartX + static_cast<float>(i) * StripW;
+			const float CurveY = Height * (1.f - Alpha);
+			if (Height - CurveY > 0.5f)
+			{
+				FSlateDrawElement::MakeBox(
+					OutDrawElements, LayerId + 1,
+					AllottedGeometry.ToPaintGeometry(FVector2D(X, CurveY), FVector2D(StripW + 0.5f, Height - CurveY)),
+					WhiteBrush, ESlateDrawEffect::None,
+					Color.CopyWithNewOpacity(FMath::Pow(Alpha,1.25f)));
+			}
+		}
+
+		////////////////////////////////////////////////////////////////////////
+		// Bright line tracing the top of the blend curve
+		////////////////////////////////////////////////////////////////////////
+		const int32       NumPts = FMath::Max(2, NumStrips + 1);
+		TArray<FVector2D> CurvePoints;
+		CurvePoints.Reserve(NumPts);
+		for (int32 i = 0; i < NumPts; ++i)
+		{
+			const float t     = static_cast<float>(i) / static_cast<float>(NumPts - 1);
+			const float Alpha = FAlphaBlend::AlphaToBlendOption(bBlendIn ? 1.f - t : t, BlendOpt, Custom);
+			CurvePoints.Add(FVector2D(StartX + t * BW, Height * (1.f - Alpha)));
+		}
+		FSlateDrawElement::MakeLines(
+			OutDrawElements, LayerId + 2,
+			AllottedGeometry.ToPaintGeometry(),
+			CurvePoints,
+			ESlateDrawEffect::None,
+			FLinearColor(0.3f, 0.85f, 0.5f, .95f),
+			true, 3.f);
+	};
+
+	// Blend-in — left side, green.
+	const float BlendInTime = SectionData->BlendInSettings.Blend.BlendTime;
+	if (BlendInTime > 0.f)
+	{
+		const float BW = FMath::Min(BlendInTime * PixelsPerSec, Width * 0.5f);
+		DrawBlendCurve(0.f, BW, SectionData->BlendInSettings.Blend,
+		               /*bInvert=*/false, FDopeSheetStyle::AnimSequenceColor);
+	}
+
+	// Blend-out — right side, orange. bInvert=true so weight reads 1→0 left-to-right.
+	const float BlendOutTime = SectionData->BlendOutSettings.Blend.BlendTime;
+	if (BlendOutTime > 0.f)
+	{
+		const float BW = FMath::Min(BlendOutTime * PixelsPerSec, Width * 0.5f);
+		DrawBlendCurve(Width - BW, BW, SectionData->BlendOutSettings.Blend,
+		               /*bInvert=*/true, FDopeSheetStyle::AnimSequenceColor );
+	}
+
+	return LayerId + 2;
 }
 
 
@@ -157,7 +449,7 @@ FReply SMGSequenceTrackSection::OnMouseButtonDoubleClick(const FGeometry& MyGeom
 			TEXT("AssetTools"));
 		TWeakPtr<IAssetTypeActions> AssetTypeActions = AssetToolsModule.Get().GetAssetTypeActionsForClass(
 			UAnimSequence::StaticClass());
-		if (AssetTypeActions.IsValid())
+		if (AssetTypeActions.IsValid() && SequencePtr)
 		{
 			const TArray<UObject*> AssetsToOpen{SequencePtr};
 			AssetTypeActions.Pin()->OpenAssetEditor(AssetsToOpen);
@@ -353,7 +645,7 @@ int32 SMGSequenceTrack::OnPaint(const FPaintArgs&   Args, const FGeometry&      
 			int32 Index   = RearrangeIndices[i];
 			auto  Section = TrackModel->SectionModels[Index];
 
-			const float ViewedTimeCoefficient = Section.GetTimeLength() / TrackModel->Controller->TimeDurationInView;
+			const float ViewedTimeCoefficient = Section->GetTimeLength() / TrackModel->Controller->ViewTimeLength;
 			const float SectionWidth          = AllottedWidth * ViewedTimeCoefficient;
 
 			FSlateDrawElement::MakeBox
@@ -429,7 +721,12 @@ void SMGSequenceTrack::OnArrangeChildren(const FGeometry&   AllottedGeometry,
 		return;
 	}
 
-	float AccumulatedOffset = TrackModel->Controller->EditableRect.Left;
+	const float AllottedWidth  = static_cast<float>(AllottedGeometry.GetLocalSize().X);
+	const float TimeOffsetPx   = TrackModel->Controller->ViewTimeLength > 0.f
+		? static_cast<float>(TrackModel->DisplayTimeOffset / TrackModel->Controller->ViewTimeLength) * AllottedWidth
+		: 0.f;
+
+	float AccumulatedOffset = TrackModel->Controller->EditableRect.Left + TimeOffsetPx;
 	for (int32 ChildIndex = 0; ChildIndex < TrackSectionWidgets.Num(); ++ChildIndex)
 	{
 		const TSharedRef<SWidget> ChildWidget = TrackSectionWidgets[ChildIndex];
@@ -440,12 +737,11 @@ void SMGSequenceTrack::OnArrangeChildren(const FGeometry&   AllottedGeometry,
 			continue;
 		}
 
-		const float AllottedWidth = static_cast<float>(AllottedGeometry.GetLocalSize().X);
 		const float AllottedHeight = static_cast<float>(AllottedGeometry.GetLocalSize().Y);
 			
 		auto Section = TrackModel->SectionModels[ChildIndex];
 		
-		const float ViewedTimeCoefficient = Section.GetTimeLength() / TrackModel->Controller->TimeDurationInView;
+		const float ViewedTimeCoefficient = Section->GetTimeLength() / TrackModel->Controller->ViewTimeLength;
 		const float SectionWidth = AllottedWidth * ViewedTimeCoefficient;
 		
 
@@ -477,13 +773,22 @@ void SMGSequenceTrack::RegenerateSequenceSections()
 				if (UMontageTrackSection_Sequences* MontageSection =
 					Cast<UMontageTrackSection_Sequences>(SequencesTrack->Sections[i]))
 				{
+					
 					UAnimSequence* AnimSequence = MontageSection->AnimSequence;
 
 					const float StartTime = AccumulatedTime;
 					AccumulatedTime += AnimSequence->GetPlayLength();
-					TrackModel->SectionModels.Add(FDopeSheetSectionViewModel(StartTime, AccumulatedTime));
 
-					TrackSectionWidgets.Add(SNew(SMGSequenceTrackSection).Sequence(AnimSequence));
+					MontageSection->StartTime = StartTime;
+					MontageSection->EndTime   = AccumulatedTime;
+					
+					TrackModel->SectionModels.Add(MakeShared<FDopeSheetSectionViewModel>(MontageSection, TrackModel.Get()));
+
+					TrackSectionWidgets.Add(
+					SNew(SMGSequenceTrackSection)
+					.Sequence(AnimSequence)
+					.SectionData(MontageSection)
+					.Controller(TrackModel->Controller));
 				}
 			}
 		}
@@ -491,14 +796,52 @@ void SMGSequenceTrack::RegenerateSequenceSections()
 }
 
 
+void UMontageTrack_Sequences::BakeToNode(UMGNode_Montage* RuntimeNode, FMGBakedNodeData& BakedData,
+                                          UMontageGraph* OwnerGraph, const FString& DisplayName)
+{
+	// Bake the AnimMontage asset from this track's sequence sections.
+	BakedData.Montage = CreateNewDataObject<UAnimMontage>(OwnerGraph, FName(DisplayName + "_Montage"));
+
+	// Scrape blend links from sub-tracks and write them directly to the runtime node.
+	RuntimeNode->BlendLinks.Empty();
+	for (UDopeSheetTrackBase* SubTrack : SubTracks)
+	{
+		if (UMontageTrack_BlendLinks* LinkTrack = Cast<UMontageTrack_BlendLinks>(SubTrack))
+		{
+			for (UDopeSheetTrackSection* Section : LinkTrack->Sections)
+			{
+				if (UMontageTrackSection_LinkBlend* LinkSection = Cast<UMontageTrackSection_LinkBlend>(Section))
+				{
+					if (!LinkSection->TargetNode) { continue; }
+					if (UMGNode_Montage* LinkToNode = Cast<UMGNode_Montage>(LinkSection->TargetNode->GetRuntimeNode()))
+					{
+						FMontageGraphLinkSettings& LinkRef = RuntimeNode->BlendLinks.Add(LinkToNode, LinkSection->LinkSettings);
+						LinkRef.StartTime = LinkSection->StartTime;
+					}
+				}
+			}
+		}
+
+		// Apply named montage sections — overrides the per-clip sections written by GenerateNewDataAsset
+		if (UMontageTrack_Sections* SectionsTrack = Cast<UMontageTrack_Sections>(SubTrack))
+		{
+			SectionsTrack->ApplyToMontage(BakedData.Montage);
+		}
+	}
+}
+
 UMontageTrack_Sequences::UMontageTrack_Sequences(const FObjectInitializer& ObjectInitializer)
 {
 	UMontageTrack_BlendLinks* BlendLinksTrack =
-		ObjectInitializer.CreateDefaultSubobject<UMontageTrack_BlendLinks>(this,TEXT("MontageTrack_BlendLinks"));
+		ObjectInitializer.CreateDefaultSubobject<UMontageTrack_BlendLinks>(this,TEXT("MontageTrack_BlendLinks_DefaultBlend"));
+	BlendLinksTrack->bAllowRename = false;
 
 	SubTracks.Add(BlendLinksTrack);
 
+	bAllowRename  = false;
+	bAllowDelete  = false;  // Sequences track is mandatory — it owns the montage asset.
 	bShouldDrawCells = false;
+	CollectionName = FName("Sequences");
 }
 
 UObject* UMontageTrack_Sequences::GenerateNewDataAsset(UObject* Outer, FName Name)
@@ -684,7 +1027,7 @@ void SMGSequenceTrack::MakeSectionContextMenu(FMenuBuilder& ContextMenuBuilder)
 					+ SHorizontalBox::Slot()
 					.FillWidth(1.f)
 					.VAlign(VAlign_Top)
-					.HAlign(HAlign_Fill)
+					.HAlign(HAlign_Center)
 					.Padding(FMargin(5, 0))
 					[
 						SNew(SVerticalBox)
@@ -754,6 +1097,19 @@ void UMontageTrack_Sequences::DroppedAssetsOnTrack(TArray<FAssetData> Array)
 	{
 		OnTrackPropertiesChanged.Broadcast();
 	}
+}
+
+
+
+bool UMontageTrack_Sequences::CanCreateSubTracks()
+{
+	return true;
+}
+
+void UMontageTrack_Sequences::GetSubTrackClasses(TArray<UClass*>& TrackClasses)
+{
+	TrackClasses.Add(UMontageTrack_BlendLinks::StaticClass());
+	TrackClasses.Add(UMontageTrack_Sections::StaticClass());
 }
 
 TSharedRef<SWidget> UMontageTrack_Sequences::MakeTrackTimelineWidget(

@@ -3,14 +3,22 @@
 #include "AnimPose.h"
 #include "GameplayEffect.h"
 #include "MontageGraphEditorStyle.h"
-#include "MontageTrack_BlendLinks.h"
 #include "ProceduralMeshComponent.h"
 #include "MontageGraph/MontageGraph.h"
 #include "MontageGraph/Tracers/MontageCollisionTracer.h"
 
-
 UMontageTrack_CollisionCache::UMontageTrack_CollisionCache(const FObjectInitializer& ObjectInitializer)
 {
+	bAllowRename = false;
+}
+
+void UMontageTrack_CollisionCache::BakeToNode(UMGNode_Montage* RuntimeNode, FMGBakedNodeData& BakedData,
+                                               UMontageGraph* OwnerGraph, const FString& DisplayName)
+{
+	// Collision data is parented to the montage so it travels with it; fall back to the graph
+	// if the sequence track hasn't run yet (shouldn't happen in normal track order).
+	UObject* MontageOuter = BakedData.Montage ? (UObject*)BakedData.Montage.Get() : (UObject*)OwnerGraph;
+	BakedData.CollisionTracer = CreateNewDataObject<UCollisionTracer>(MontageOuter, FName(DisplayName + "_Collision"));
 }
 
 UObject* UMontageTrack_CollisionCache::GenerateNewDataAsset(UObject* Outer, FName Name)
@@ -38,28 +46,12 @@ UObject* UMontageTrack_CollisionCache::GenerateNewDataAsset(UObject* Outer, FNam
 		const double startTime = CollisionSection->StartTime;
 		const double endTime   = CollisionSection->EndTime;
 
-		TArray<double> SampleTimes;
-		float          ArcLenTop = 0.f;
-		float          ArcLenBot = 0.f;
-
-		double SweepInteral = endTime - startTime;
-		for (double i = startTime; i < endTime; i += SweepInteral / CollisionSection->Resolution)
-		{
-			SampleTimes.Add(i);
-		}
 
 		TracerData->TraceChannel    = CollisionSection->TraceChannel;
 		TracerData->CollisionExtent = CollisionSection->CollisionExtent;
 		TracerData->AnimSampleRange = FCollisionEffectiveRange(startTime / MontageLength, endTime / MontageLength);
 
-		//Copy TargetEffects
-		for (auto Effect : CollisionSection->TargetAppliedEffects)
-		{
-			int EffectIndex = OwnerGraph->GameplayEffects.AddUnique(Effect.LoadSynchronous());
-			TracerData->AnimSampleRange.TargetGameplayEffectIndices.Add(EffectIndex);
-		}
-        
-
+		
 		float                  AccumulatedTime = 0;
 		TArray<UAnimSequence*> SequencesWithinSection;
 		for (auto Sequence : MontageSequences)
@@ -78,52 +70,72 @@ UObject* UMontageTrack_CollisionCache::GenerateNewDataAsset(UObject* Outer, FNam
 
 		for (UAnimSequence* AnimSequence : SequencesWithinSection)
 		{
+
+			const double StepTime   = (1/CollisionSection->SampleMultiplier) * AnimSequence->GetDataModel()->GetFrameRate().AsInterval();
+
+			
+			TArray<double> SampleTimes;
+			for (double i = startTime; i <= endTime; i+=StepTime )
+			{
+				SampleTimes.Add(i);
+			}
 			TArray<FAnimPose>          AnimPoses;
 			FAnimPoseEvaluationOptions PoseEvaluationOptions;
 			UAnimPoseExtensions::GetAnimPoseAtTimeIntervals(AnimSequence, SampleTimes,
-			                                                PoseEvaluationOptions,
-			                                                AnimPoses);
-			//Step through sequence at sweep notify times
+				PoseEvaluationOptions,
+				AnimPoses);
+
+			/*Step through sequence at collision sweep sample times 
+			 * to cache collision and preview tracer meshes*/
+			double         ArcLenTop = 0.f;
+			double         ArcLenBot = 0.f;
 			for (int i = 0; i < AnimPoses.Num() - 1; i++)
 			{
 
-				FTransform OriginSocketTransform = UAnimPoseExtensions::GetBonePose(
+				const FTransform OriginSocketTransform = UAnimPoseExtensions::GetBonePose(
 					AnimPoses[i], CollisionSection->SampleOrigin, EAnimPoseSpaces::World);
-				
-				FTransform NextSocketTransform = UAnimPoseExtensions::GetBonePose(
+				const FTransform SocketTransform = UAnimPoseExtensions::GetBonePose(
 					AnimPoses[i], CollisionSection->SocketToSample, EAnimPoseSpaces::World);
-
-				FTransform SocketTransform = UAnimPoseExtensions::GetBonePose(
+				const FTransform NextOriginSocketTransform = UAnimPoseExtensions::GetBonePose(
+					AnimPoses[i + 1], CollisionSection->SampleOrigin, EAnimPoseSpaces::World);
+				const FTransform NextSocketTransform = UAnimPoseExtensions::GetBonePose(
 					AnimPoses[i + 1], CollisionSection->SocketToSample, EAnimPoseSpaces::World);
 
 
-				FTransform WeaponStart     = SocketTransform;
-				FTransform WeaponEnd       = FTransform(CollisionSection->CollisionOffset) + SocketTransform;
-				FTransform LastWeaponStart = NextSocketTransform;
-				FTransform LastWeaponEnd   = FTransform(CollisionSection->CollisionOffset) + NextSocketTransform;
+				const FTransform WeaponStart     = SocketTransform;
+				const FTransform WeaponEnd       = FTransform(CollisionSection->CollisionOffset) * SocketTransform;
+				const FTransform NextWeaponStart = NextSocketTransform;
+				const FTransform NextWeaponEnd   = FTransform(CollisionSection->CollisionOffset) * NextSocketTransform;
+/*
+			Current Frame  →  Next Frame
+                  ^
+				 /*\ 3          2
+				 ||| ●━━━━━━━━━━● 
+				 ||| ////////////
+				 ||| ////////////
+				 ||| ///////////
+SocketToSample > ||| ●━━━━━━━━━━●
+  (weapon_r)	 ||| 0          1
+			   ^\_*_/^
+				  ║
+				  ║  (hilt/handle)
+			      ⇓
+*/
 
-				//Cur      next
-				/*__________
-					  *|3///////2|- 
-					  *|/////////|
-					  *|/////////|
-					  *|0///////1|- 
-					   _|_
-						|
-					 */
-				FVector Origin = OriginSocketTransform.GetLocation();
-				FVector Loc0   = WeaponStart.GetLocation() - Origin;
-				FVector Loc3   = WeaponEnd.GetLocation() - Origin;
-				FVector Loc1   = LastWeaponStart.GetLocation() - Origin;
-				FVector Loc2   = LastWeaponEnd.GetLocation() - Origin;
+				const FVector Origin     = OriginSocketTransform.GetLocation();
+				const FVector NextOrigin = NextOriginSocketTransform.GetLocation();
+				const FVector Loc0       = WeaponStart.GetLocation() - Origin;
+				const FVector Loc3       = WeaponEnd.GetLocation() - Origin;
+				const FVector Loc1       = NextWeaponStart.GetLocation() - NextOrigin;
+				const FVector Loc2       = NextWeaponEnd.GetLocation() - NextOrigin;
 
 
-				TracerData->SamplePositions.Add(Loc0);
+				TracerData->SamplePositions.Add(Loc0 + .5f*(Loc3 - Loc0));
 				TracerData->SampleOrientations.Add(SocketTransform.GetRotation());
 
 
-				ArcLenTop += (Loc2 - Loc3).Length();
-				ArcLenBot += (Loc1 - Loc0).Length();
+				ArcLenTop += (Loc3 - Loc2).Length();
+				ArcLenBot += (Loc0 - Loc1).Length();
 
 
 				TracerData->Vertices.Add(Loc0);
@@ -131,7 +143,7 @@ UObject* UMontageTrack_CollisionCache::GenerateNewDataAsset(UObject* Outer, FNam
 				TracerData->Vertices.Add(Loc2);
 				TracerData->Vertices.Add(Loc3);
 
-				int IndexOffset = (i) * 4;
+				const int IndexOffset = (i) * 4;
 				TracerData->Indices.Add(IndexOffset + 0);
 				TracerData->Indices.Add(IndexOffset + 3);
 				TracerData->Indices.Add(IndexOffset + 1);
@@ -139,8 +151,8 @@ UObject* UMontageTrack_CollisionCache::GenerateNewDataAsset(UObject* Outer, FNam
 				TracerData->Indices.Add(IndexOffset + 2);
 				TracerData->Indices.Add(IndexOffset + 1);
 
-				float WidthBot = FVector::Distance(Loc1, Loc0);
-				float WidthTop = FVector::Distance(Loc2, Loc3);
+				// float WidthBot = FVector::Distance(Loc1, Loc0);
+				// float WidthTop = FVector::Distance(Loc2, Loc3);
 
 				FVector NormalVector = FVector::CrossProduct(Loc3 - Loc0, Loc1 - Loc0).GetSafeNormal();
 				TracerData->Normals.Add(NormalVector);
@@ -153,10 +165,10 @@ UObject* UMontageTrack_CollisionCache::GenerateNewDataAsset(UObject* Outer, FNam
 			double BotLast = 0.f;
 			for (int i = 0; i < TracerData->Vertices.Num(); i += 4)
 			{
-				FVector Loc0 = TracerData->Vertices[i];
-				FVector Loc1 = TracerData->Vertices[i + 1];
-				FVector Loc2 = TracerData->Vertices[i + 2];
-				FVector Loc3 = TracerData->Vertices[i + 3];
+				const FVector Loc0 = TracerData->Vertices[i];
+				const FVector Loc1 = TracerData->Vertices[i + 1];
+				const FVector Loc2 = TracerData->Vertices[i + 2];
+				const FVector Loc3 = TracerData->Vertices[i + 3];
 
 
 				double TopDist = (Loc3 - Loc2).Length();
@@ -165,16 +177,19 @@ UObject* UMontageTrack_CollisionCache::GenerateNewDataAsset(UObject* Outer, FNam
 				double TopWidth = TopDist / ArcLenTop;
 				double BotWidth = BotDist / ArcLenBot;
 
-
-				TracerData->UV0.Add(FVector2D(BotLast + BotWidth, 0.99f));
-				TracerData->UV0.Add(FVector2D(BotLast, 0.99f));
-				TracerData->UV0.Add(FVector2D(TopLast, 0.f));
-				TracerData->UV0.Add(FVector2D(TopLast + TopWidth, .0f));
+				TracerData->UV0.Add(FVector2D(BotLast, 1.f));
+				TracerData->UV0.Add(FVector2D(BotLast + BotWidth, 1.f));
+				TracerData->UV0.Add(FVector2D(TopLast + TopWidth, 0.f));
+				TracerData->UV0.Add(FVector2D(TopLast, .0f));
 
 				TopLast += TopWidth;
 				BotLast += BotWidth;
 			}
 		}
+		
+
+		
+		
 		TArray<FProcMeshTangent> Tangents;
 		for (int i = 0; i < TracerData->Vertices.Num(); i += 4)
 		{
@@ -192,7 +207,7 @@ UObject* UMontageTrack_CollisionCache::GenerateNewDataAsset(UObject* Outer, FNam
 
 void UMontageTrack_CollisionCache::KeyTimeRange(float SelectionStartFrame, float SelectionEndFrame)
 {
-	const FScopedTransaction Transaction(NSLOCTEXT("DopeSheet", "RemoveDopeSheetAddSection_Transaction",
+	const FScopedTransaction Transaction(NSLOCTEXT("DopeSheet", "RemoveDopeSheetSection_Transaction",
 	                                               "Add Timeline section"));
 
 	Modify(true);

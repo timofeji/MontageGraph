@@ -199,7 +199,7 @@ FMontageGraphEditorMode_Blends::FMontageGraphEditorMode_Blends(const TSharedRef<
 						// Middle top - document edit area
 						FTabManager::NewStack()
 						->SetSizeCoefficient(0.8f)
-						->AddTab(FMontageGraphEditor::GraphViewportTabID,ETabState::OpenedTab)
+						->AddTab(FMontageGraphEditor::BlendMatrixTabID,ETabState::OpenedTab)
 					)
 					// ->Split
 					// (
@@ -346,6 +346,7 @@ FMontageGraphEditorMode_Debug::FMontageGraphEditorMode_Debug(const TSharedRef<FM
 		);
 
 	InMontageGraphEditor->GetToolbarBuilder()->AddModesToolbar(ToolbarExtender);
+	InMontageGraphEditor->GetToolbarBuilder()->AddDebuggerToolbar(ToolbarExtender);
 }
 
 void FMontageGraphEditorMode_Debug::RegisterTabFactories(TSharedPtr<FTabManager> InTabManager)

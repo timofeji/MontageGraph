@@ -8,17 +8,26 @@
 #include "Tracks/DopeSheetTrackBase.h"
 #include "Tracks/DopeSheetTrackViewModel.h"
 
-
+//
 TSharedPtr<SWidget> FDopeSheetSectionDragDrop_Resize::GetDefaultDecorator() const
 {
-	return SectionBeingDragged.Pin();
+
+	return SNew(SBorder)
+		.Visibility(EVisibility::Visible)
+		.BorderImage(FAppStyle::GetBrush("Menu.Background"))
+		[
+			SNew(STextBlock)
+			.Text_Lambda([this] {
+				return FText::FromString(DecoratorString);
+			})
+		];
 }
 
 void FDopeSheetSectionDragDrop_Resize::Construct()
 {
 	FDragDropOperation::Construct();
 
-	CursorDecoratorWindow->SetOpacity(.25f);
+	// CursorDecoratorWindow->SetOpacity(.25f);
 }
 
 void FDopeSheetSectionDragDrop_Resize::OnDrop(bool bDropWasHandled, const FPointerEvent& MouseEvent)
@@ -32,9 +41,12 @@ void FDopeSheetSectionDragDrop_Resize::OnDrop(bool bDropWasHandled, const FPoint
 	// }
 	//
 
-	if (OwningTrack.IsValid())
+	
+	HandleWidget.Pin()->bIsDragged = false;
+	
+	if (SectionModel.IsValid())
 	{
-		// OwningTrack.Pin()->OnRearrangeDrop();
+		SectionModel.Pin()->CommitTimeRange();
 	}
 
 
@@ -44,134 +56,152 @@ void FDopeSheetSectionDragDrop_Resize::OnDrop(bool bDropWasHandled, const FPoint
 
 void FDopeSheetSectionDragDrop_Resize::OnDragged(const class FDragDropEvent& DragDropEvent)
 {
-	FSlateRect BoundingRect = OwningTrack.Pin()->GetCachedGeometry().GetLayoutBoundingRect();
-	FSlateRect SectionRect  = SectionBeingDragged.Pin()->GetCachedGeometry().GetLayoutBoundingRect();
+	// FSlateRect BoundingRect = SectionModel.Pin()->GetCachedGeometry().GetLayoutBoundingRect();
+	// FSlateRect SectionRect  = SectionBeingDragged.Pin()->GetCachedGeometry().GetLayoutBoundingRect();
 
+	TSharedPtr<FDopeSheetSectionViewModel> SectionModelPtr = SectionModel.Pin();
+	if (!SectionModelPtr)
+	{
+		return;
+	}
+	//
+	FVector2D   MousePos  = DragDropEvent.GetScreenSpacePosition();
+	const float deltaTime = SectionModelPtr->TrackModelPtr->Controller->AbsoluteXCoordToTime(MousePos.X) - SectionModelPtr->TrackModelPtr->Controller->AbsoluteXCoordToTime(StartingScreenPos.X);
+	
+	HandleType == EDopeSheetTrackSectionHandleType::Start ? SectionModel.Pin()->StartTime = InitialTime + deltaTime : SectionModel.Pin()->EndTime = InitialTime + deltaTime;
+	
+	DecoratorString = FString::Printf(TEXT("%.2f %.2f"), InitialTime, deltaTime);
 
-	FVector2D MousePos = DragDropEvent.GetScreenSpacePosition();
-	FVector2D SectionDerotatowPos;
-	SectionDerotatowPos.X = FMath::Clamp((MousePos + Offset).X,
-	                                     BoundingRect.Left,
-	                                     BoundingRect.Right - SectionRect.GetSize().X);
-	SectionDerotatowPos.Y = StartingScreenPos.Y;
-	CursorDecoratorWindow->MoveWindowTo(SectionDerotatowPos);
-
-	// OwningTrack.Pin()->PreviewRearrange(MousePos);
+	if (HandleWidget.IsValid())
+	{
+		CursorDecoratorWindow->MoveWindowTo(HandleWidget.Pin()->GetCachedGeometry().AbsolutePosition - CursorDecoratorWindow->GetCachedGeometry().GetAbsoluteSize());
+	}
 }
 
 TSharedRef<FDopeSheetSectionDragDrop_Resize> FDopeSheetSectionDragDrop_Resize::New(
-	TSharedRef<SDopeSheetTrackSection> ParentTrack,
-	TSharedRef<SWidget>          SectionWidget, const FVector2D& CursorPosition, const FVector2D& ScreenPositionOfNode)
+	TSharedPtr<SDopeSheetTrackSection_SizeHandle> InHandleWidget,
+	TSharedPtr<FDopeSheetSectionViewModel>&       InSectionModel,
+	const FVector2D&                              CursorPosition,
+	const EDopeSheetTrackSectionHandleType        InHandleType)
 {
 	TSharedRef<FDopeSheetSectionDragDrop_Resize> Operation = MakeShareable(new FDopeSheetSectionDragDrop_Resize);
 
-	Operation->OwningTrack         = ParentTrack;
-	Operation->SectionBeingDragged = SectionWidget;
-	Operation->Offset              = ScreenPositionOfNode - CursorPosition;
-	Operation->StartingScreenPos   = ScreenPositionOfNode;
+	Operation->HandleWidget      = InHandleWidget;
+	Operation->SectionModel      = InSectionModel;
+	Operation->StartingScreenPos = CursorPosition;
+	Operation->HandleType = InHandleType;
+
+	Operation->InitialTime = (InHandleType == EDopeSheetTrackSectionHandleType::Start) ? InSectionModel->StartTime : InSectionModel->EndTime;
 
 	Operation->Construct();
+	
+	InHandleWidget->bIsDragged = true;
 
 
 	return Operation;
 }
 
-class MONTAGEGRAPHEDITOR_API SDopeSheetTrackSection_SizeHandle : public SCompoundWidget
+
+void SDopeSheetTrackSection_SizeHandle::OnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) 
 {
-public:
-	SLATE_BEGIN_ARGS(SDopeSheetTrackSection)
-		{
-		}
+	SetCursor(EMouseCursor::ResizeLeftRight);
+	bIsHovered = true;
+}
 
-	SLATE_END_ARGS()
+void SDopeSheetTrackSection_SizeHandle::OnMouseLeave(const FPointerEvent& MouseEvent)
+{
+	SetCursor(EMouseCursor::Default);
+	bIsHovered = false;
+}
 
-	virtual void OnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
+FReply SDopeSheetTrackSection_SizeHandle::OnDragDetected(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
+{
+	if (MouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
 	{
-		SetCursor(EMouseCursor::ResizeLeftRight);
-		bIsHovered = true;
+		FVector2D ScreenCursorPos = MouseEvent.GetScreenSpacePosition();
+
+		return FReply::Handled().BeginDragDrop(
+			FDopeSheetSectionDragDrop_Resize::New(
+				SharedThis(this),
+				SectionModel,
+				ScreenCursorPos,
+				HandleType)).ReleaseMouseCapture();
 	}
+	//
+	return FReply::Unhandled();
+};
 
-	virtual void OnMouseLeave(const FPointerEvent& MouseEvent) override
-	{
-		SetCursor(EMouseCursor::Default);
-		bIsHovered = false;
-	}
-	
-	virtual FReply OnDragDetected(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
-	{
-		return FReply::Unhandled();
-	};
+void SDopeSheetTrackSection_SizeHandle::Construct(const FArguments& InArgs, TSharedPtr<FDopeSheetSectionViewModel> InSectionModel, EDopeSheetTrackSectionHandleType InType)
+{
+	ResizeHandleBrush = FMontageGraphEditorStyle::Get().GetBrush(
+		"MontageGraph.SequenceTrack.Section.ResizeHandle");
+	ResizeHandleBrush_Hovered = FMontageGraphEditorStyle::Get().GetBrush(
+		"MontageGraph.SequenceTrack.Section.ResizeHandle.Hovered");
 
-	
+	HandleType   = InType;
+	SectionModel = InSectionModel;
 
-	void Construct(const FArguments& InArgs)
-	{
-		ResizeHandleBrush = FMontageGraphEditorStyle::Get().GetBrush(
-			"MontageGraph.SequenceTrack.Section.ResizeHandle");
-		ResizeHandleBrush_Hovered = FMontageGraphEditorStyle::Get().GetBrush(
-			"MontageGraph.SequenceTrack.Section.ResizeHandle.Hovered");
-		ChildSlot
-		[
-			SNew(SImage)
-			.DesiredSizeOverride(FVector2D(32.f))
-			.OnMouseButtonDown_Lambda([this](const FGeometry&, const FPointerEvent&)
-			{
-				return FReply::Handled().DetectDrag(SharedThis(this), EKeys::LeftMouseButton);
-			})
-			.Image_Lambda([this]()
-			{
-				return bIsHovered ? ResizeHandleBrush_Hovered : ResizeHandleBrush;
-			})
-		];
-	};
-
-private:
-	const FSlateBrush* ResizeHandleBrush;
-	const FSlateBrush* ResizeHandleBrush_Hovered;
-	bool bIsHovered = false;
+	ChildSlot
+	[
+		SNew(SImage)
+		.RenderTransformPivot(FVector2D(0.5f, 0.5f))
+		.RenderTransform_Lambda([this]() {
+			const float BaseSize = (bIsHovered||bIsDragged) ? 2.f : 1.5f;
+			return FSlateRenderTransform(FScale2D(HandleType == EDopeSheetTrackSectionHandleType::Start ? -BaseSize : BaseSize, 1.0f));
+		})
+		.DesiredSizeOverride(FVector2D(16.f))
+		.OnMouseButtonDown_Lambda([this](const FGeometry&, const FPointerEvent&) {
+			return FReply::Handled().DetectDrag(SharedThis(this), EKeys::LeftMouseButton);
+		})
+		.Image_Lambda([this]() {
+			return (bIsHovered||bIsDragged) ? ResizeHandleBrush_Hovered : ResizeHandleBrush;
+		})
+	];
 };
 
 BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
 
-void SDopeSheetTrackSection::Construct(const FArguments& InArgs, TSharedPtr<FDopeSheetTrackViewModel> TrackModel)
+void SDopeSheetTrackSection::Construct(const FArguments& InArgs, TSharedPtr<FDopeSheetTrackViewModel> InTrackModel, int SectionIndex)
 {
 	SectionBodyBrush = FMontageGraphEditorStyle::Get().GetBrush(
-		"MontageGraph.SequenceTrack.Section.Body");
+		"MontageGraph.Section.Body");
 	SectionBodyBrush_Hovered = FMontageGraphEditorStyle::Get().GetBrush(
-		"MontageGraph.SequenceTrack.Section.Body.Hovered");
+		"MontageGraph.Section.Body.Hovered");
 	SectionBorderBrush = FMontageGraphEditorStyle::Get().GetBrush(
-		"MontageGraph.SequenceTrack.Section.Border");
+		"MontageGraph.Section.Border");
 	SectionBorderBrush_Selected = FMontageGraphEditorStyle::Get().GetBrush(
-		"MontageGraph.SequenceTrack.Section.Preview");
+		"MontageGraph.Section.Border.Selected");
 
 
-	SequenceSectionColor = TrackModel->ObjPtr->GetTrackColor();
+	SectionModel = InTrackModel->SectionModels[SectionIndex];
+	SequenceSectionColor = InTrackModel->ObjPtr->GetSectionColor();
 
 	SetCursor(EMouseCursor::GrabHand);
 	ChildSlot
 	[
 		SNew(SBorder)
-		.BorderImage_Lambda([this]
-		{
+		.Padding(0)
+		.BorderImage_Lambda([this] {
+			const bool bIsSelected = SectionModel->IsSelected();
 			return (bIsSelected) ? SectionBorderBrush_Selected : SectionBorderBrush;
 		})
-		.BorderBackgroundColor_Lambda([this]
-		{
+		.BorderBackgroundColor_Lambda([this] {
+			const bool bIsSelected = SectionModel->IsSelected();
 			return (bIsSelected) ? FColor::White : SequenceSectionColor;
 		})
 		[
 			SNew(SOverlay)
+			
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Fill)
 			.VAlign(VAlign_Fill)
 			[
 				SNew(SImage)
 				.ColorAndOpacity(SequenceSectionColor)
-				.Image_Lambda([this]()
-				{
+				.Image_Lambda([this]() {
 					return bIsHovered
-						       ? SectionBodyBrush_Hovered
-						       : SectionBodyBrush;
+							   ? SectionBodyBrush
+							   : SectionBodyBrush_Hovered;
 				})
 			]
 			+ SOverlay::Slot()
@@ -183,13 +213,13 @@ void SDopeSheetTrackSection::Construct(const FArguments& InArgs, TSharedPtr<FDop
 				.HAlign(HAlign_Left)
 				.VAlign(VAlign_Fill)
 				[
-					SNew(SDopeSheetTrackSection_SizeHandle)
+					SNew(SDopeSheetTrackSection_SizeHandle, SectionModel, EDopeSheetTrackSectionHandleType::Start)
 				]
 				+ SHorizontalBox::Slot()
 				.HAlign(HAlign_Right)
 				.VAlign(VAlign_Fill)
 				[
-					SNew(SDopeSheetTrackSection_SizeHandle)
+					SNew(SDopeSheetTrackSection_SizeHandle,SectionModel, EDopeSheetTrackSectionHandleType::End)
 				]
 			]
 		]
@@ -197,7 +227,6 @@ void SDopeSheetTrackSection::Construct(const FArguments& InArgs, TSharedPtr<FDop
 }
 
 END_SLATE_FUNCTION_BUILD_OPTIMIZATION
-
 
 void SDopeSheetTrackSection ::OnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {

@@ -4,6 +4,7 @@
 #include "MontageGraphEditor.h"
 #include "UnrealEdGlobals.h"
 #include "Engine/Selection.h"
+#include "EngineUtils.h"
 #include "Graph/EdNodes/MGEdNode_Entry.h"
 #include "Graph/EdNodes/MGEdNode_Montage.h"
 #include "MontageGraph/MontageGraph.h"
@@ -66,14 +67,34 @@ bool FMontageGraphDebugger::IsTickable() const
 void FMontageGraphDebugger::Setup(UMontageGraph* InMontageGraphAsset,
                                   TSharedRef<FMontageGraphEditor, ESPMode::ThreadSafe> InEditorOwner)
 {
-	EditorOwner = InEditorOwner;
+	EditorOwner       = InEditorOwner;
 	MontageGraphAsset = InMontageGraphAsset;
 	KnownInstances.Reset();
 
 #if WITH_EDITORONLY_DATA
 	if (IsPIESimulating())
 	{
+		// Subscribe to delegates for future events.
 		OnBeginPIE(GEditor->bIsSimulatingInEditor);
+
+		// Components that were already running before the editor opened have already broadcast
+		// OnGraphInitialized and won't do so again.  Scan all game-world actors now and
+		// register any MontageGraphComponent that is using this asset.
+		ForEachGameWorld([this](UWorld* World)
+		{
+			for (TActorIterator<AActor> ActorIt(World); ActorIt; ++ActorIt)
+			{
+				if (UMontageGraphComponent* MGC = (*ActorIt)->FindComponentByClass<UMontageGraphComponent>())
+				{
+					if (MGC->GetGraph() == MontageGraphAsset)
+					{
+						// OnGraphInitialized handles deduplication (KnownInstances.AddUnique not
+						// necessary here, but OnGraphInitialized won't duplicate — it only adds).
+						OnGraphInitialized(MGC);
+					}
+				}
+			}
+		});
 	}
 #endif
 }
@@ -90,8 +111,31 @@ AActor* FMontageGraphDebugger::GetSelectedActor() const
 
 void FMontageGraphDebugger::OnGraphInitialized(const UMontageGraphComponent* InitializedGraphComponent)
 {
+	if (!InitializedGraphComponent) { return; }
+
 	TWeakObjectPtr<UMontageGraphComponent> WeakPtr = const_cast<UMontageGraphComponent*>(InitializedGraphComponent);
-	KnownInstances.Add(WeakPtr);
+
+	// Guard against duplicates (can happen when scanning existing PIE actors at editor-open time)
+	const bool bAlreadyKnown = KnownInstances.ContainsByPredicate(
+		[&](const TWeakObjectPtr<UMontageGraphComponent>& Existing)
+		{
+			return Existing.Get() == InitializedGraphComponent;
+		});
+	if (!bAlreadyKnown)
+	{
+		KnownInstances.Add(WeakPtr);
+	}
+
+	// Auto-select first component if nothing is selected yet
+	if (!CurrentlyDebuggedActor.IsValid() && InitializedGraphComponent->GetOwner())
+	{
+		CurrentlyDebuggedActor = InitializedGraphComponent->GetOwner();
+
+		if (EditorOwner.IsValid())
+		{
+			EditorOwner.Pin()->RegenerateMenusAndToolbars();
+		}
+	}
 }
 
 void FMontageGraphDebugger::OnBeginPIE(const bool bIsSimulating)
@@ -152,9 +196,29 @@ void FMontageGraphDebugger::OnObjectSelected(UObject* Object)
 	if (Object && Object->IsSelected())
 	{
 		AActor* Actor = Cast<AActor>(Object);
-		if (Actor)
+		if (!Actor)
 		{
-			CurrentlyDebuggedActor = Actor;
+			return;
+		}
+
+		// Only switch debug target if the actor has a known MontageGraphComponent
+		for (const TWeakObjectPtr<UMontageGraphComponent>& Instance : KnownInstances)
+		{
+			if (Instance.IsValid() && Instance->GetOwner() == Actor)
+			{
+				CurrentlyDebuggedActor = Actor;
+
+				// Clear stale debug state from previous actor
+				SelectedNode = nullptr;
+				EvaluatedNodes.Empty();
+				SelectedNodes.Empty();
+
+				if (EditorOwner.IsValid())
+				{
+					EditorOwner.Pin()->RegenerateMenusAndToolbars();
+				}
+				return;
+			}
 		}
 	}
 }
@@ -170,6 +234,12 @@ void FMontageGraphDebugger::OnGraphNodeSelected(const UMontageGraphComponent* Ev
 		return;
 	}
 
+	// Filter: only process events from the currently debugged actor
+	if (CurrentlyDebuggedActor.IsValid() && WeakPtr->GetOwner() != CurrentlyDebuggedActor.Get())
+	{
+		return;
+	}
+
 	//Find evaluated EdNode
 	UMGEdNode* EvaluatedEdNode = nullptr;
 	if (auto Graph = WeakPtr.Get()->GetGraph())
@@ -181,7 +251,7 @@ void FMontageGraphDebugger::OnGraphNodeSelected(const UMontageGraphComponent* Ev
 				if (MGEdNode->RuntimeNode == &EvaluatedNode)
 				{
 					EvaluatedEdNode = MGEdNode;
-					EvaluatedEdNode->DebugEvaluate();
+					// EvaluatedEdNode->DebugEvaluate();
 
 					break;
 				}
@@ -203,9 +273,8 @@ void FMontageGraphDebugger::OnGraphNodeSelected(const UMontageGraphComponent* Ev
 	UMGEdNode* CurEdNode = EvaluatedEdNode;
 	while (Cast<UMGEdNode_Entry>(CurEdNode) == nullptr)
 	{
-		// CurEdNode ->DebugEvaluate();
 		SelectedNodes.Add(CurEdNode );
-		
+
 		CurEdNode = Cast<UMGEdNode>(CurEdNode->GetInputPin()->LinkedTo[0]->GetOwningNode());
 	}
 }
@@ -213,10 +282,15 @@ void FMontageGraphDebugger::OnGraphNodeSelected(const UMontageGraphComponent* Ev
 void FMontageGraphDebugger::OnGraphNodeEvaluated(const UMontageGraphComponent* EvaluatedGraphComponent,
                                                  const UMGNode& EvaluatedNode)
 {
-
 	TWeakObjectPtr<UMontageGraphComponent> WeakPtr = const_cast<UMontageGraphComponent*>(EvaluatedGraphComponent);
 
 	if (!WeakPtr.IsValid())
+	{
+		return;
+	}
+
+	// Filter: only process events from the currently debugged actor
+	if (CurrentlyDebuggedActor.IsValid() && WeakPtr->GetOwner() != CurrentlyDebuggedActor.Get())
 	{
 		return;
 	}
@@ -240,6 +314,16 @@ void FMontageGraphDebugger::OnGraphNodeEvaluated(const UMontageGraphComponent* E
 	}
 
 	SelectedNode = const_cast<UMGNode*>(&EvaluatedNode);
+	if (EditorOwner.IsValid())
+	{
+		if (auto DopeSheet = EditorOwner.Pin()->GetAnimDopeSheetWidget())
+		{
+			if (const auto MGEdNode_Montage = Cast<UMGEdNode_Montage>(EvaluatedEdNode))
+			{
+				DopeSheet->SetSelection(MGEdNode_Montage);
+			}
+		}
+	}
 
 
 	if (!EvaluatedEdNode)
@@ -253,9 +337,7 @@ void FMontageGraphDebugger::OnGraphNodeEvaluated(const UMontageGraphComponent* E
 	UMGEdNode* CurEdNode = EvaluatedEdNode;
 	while (Cast<UMGEdNode_Entry>(CurEdNode) == nullptr)
 	{
-		CurEdNode ->DebugEvaluate();
 		EvaluatedNodes.Add(CurEdNode );
-		
 		CurEdNode = Cast<UMGEdNode>(CurEdNode->GetInputPin()->LinkedTo[0]->GetOwningNode());
 	}
 }
@@ -265,7 +347,7 @@ void FMontageGraphDebugger::OnGraphReset(const UMontageGraphComponent& OwnerActi
 {
 	EvaluatedNodes.Empty();
 
-	for (int32 i = KnownInstances.Num() - 1; i == 0; i--)
+	for (int32 i = KnownInstances.Num() - 1; i >= 0; i--)
 	{
 		UMontageGraphComponent* Task = KnownInstances[i].Get();
 		if (Task == nullptr)
@@ -411,6 +493,10 @@ void FMontageGraphDebugger::OnInstanceSelectedInDropdown(AActor* SelectedActor)
 
 		CurrentlyDebuggedActor = SelectedActor;
 
+		// Clear stale debug state from previous actor
+		SelectedNode = nullptr;
+		EvaluatedNodes.Empty();
+		SelectedNodes.Empty();
 
 		if (EditorOwner.IsValid())
 		{

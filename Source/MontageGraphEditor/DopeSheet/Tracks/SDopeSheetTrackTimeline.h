@@ -40,8 +40,8 @@ protected:
 	int32 SectionIndex = -1;
 	TWeakPtr<SDopeSheetTrackTimeline> OwnerTrack;
 	TWeakPtr<SWidget> SectionBeingDragged;
-	FVector2D         Offset;
 	FVector2D         StartingScreenPos;
+	FVector2D         Offset;
 	
 };
 
@@ -63,14 +63,15 @@ public:
 	SDopeSheetTrackTimeline();
 	~SDopeSheetTrackTimeline();
 
-	void RegenerateSections();
+
+	
 	/** Constructs this widget with InArgs */
 	void Construct(const FArguments& InArgs, TSharedPtr<FDopeSheetTrackViewModel> InTrackModel);
 
 	virtual bool PassesAssetReferenceFilter(const TArray<FAssetData>& Array) { return false; }
-
-
+	virtual void RegenerateSections();
 	virtual void MakeSectionContextMenu(FMenuBuilder& ContextMenuBuilder);
+	virtual void MakeTrackContextMenu(FMenuBuilder& ContextMenuBuilder);
 
 	/** SPanel */
 	virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override;
