@@ -47,8 +47,10 @@ Game designers control how to traverse the chain of dependencies in the graph, w
 
 
 
-
 # Editor Features
+- ### Live Debugging & Persona Toolkit integration
+![mg_debug](https://github.com/user-attachments/assets/e5eae68c-3ce9-429f-b071-03fe0ce00afd)
+
 - ### Custom Timeline editor
 ![UnrealEditor-Win64-DebugGame_SSS5CsxcXN](https://github.com/user-attachments/assets/cc41c7f1-be42-46aa-9974-dc5c7d158cfd)
 
